@@ -6,7 +6,7 @@
 //
 // Env: RESEND_API_KEY (optional — without it we stamp and return the link),
 //      EMAIL_FROM (e.g. "Home Service Ops <jobs@yourdomain.com.au>"),
-//      APP_URL (fallback for links when the request has no origin).
+//      APP_URL (base for customer links; falls back to the caller's origin).
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const cors = {
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Invalid JSON' }, 400)
   }
   const { kind, id } = payload
-  const origin = (payload.origin || Deno.env.get('APP_URL') || '').replace(/\/$/, '')
+  const origin = (Deno.env.get('APP_URL') || payload.origin || '').replace(/\/$/, '')
   if (!kind || !id || !origin) return json({ error: 'kind, id and origin are required' }, 400)
 
   let to: string | null = null

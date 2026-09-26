@@ -2,8 +2,6 @@
 -- Multi-tenant: every business-owned row carries business_id and is guarded by RLS.
 -- Money is AUD, stored as numeric(12,2). Line item prices are GST-exclusive; `price` is the final total.
 
-create extension if not exists pgcrypto;
-
 -- ─────────────────────────────────────────────────────────────
 -- Enums
 -- ─────────────────────────────────────────────────────────────
@@ -16,9 +14,10 @@ create type public.pay_method as enum ('cash', 'bank', 'online');
 create type public.rate_type as enum ('hour', 'job');
 create type public.duty_status as enum ('Available', 'On job', 'Off today');
 
+-- 244 random bits from core gen_random_uuid(): no extension needed, safe under any search_path.
 create or replace function public.new_token() returns text
-language sql volatile as $$
-  select encode(gen_random_bytes(18), 'hex')
+language sql volatile set search_path = public, pg_catalog as $$
+  select replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')
 $$;
 
 -- ─────────────────────────────────────────────────────────────
@@ -246,7 +245,7 @@ $$;
 -- Totals: line items are GST-exclusive. total = (sub - discount) * 1.1 when gst.
 -- ─────────────────────────────────────────────────────────────
 create or replace function public.compute_total(items jsonb, disc numeric, with_gst boolean) returns numeric
-language sql immutable as $$
+language sql immutable set search_path = public, pg_catalog as $$
   with sub as (
     select coalesce(sum(coalesce((i->>'qty')::numeric, 1) * coalesce((i->>'unit_price')::numeric, 0)), 0) as s
     from jsonb_array_elements(coalesce(items, '[]'::jsonb)) i
@@ -255,7 +254,7 @@ language sql immutable as $$
 $$;
 
 create or replace function public.tg_set_total() returns trigger
-language plpgsql as $$
+language plpgsql set search_path = public as $$
 begin
   if jsonb_array_length(coalesce(new.line_items, '[]'::jsonb)) > 0 then
     new.price := public.compute_total(new.line_items, new.discount, new.gst);
@@ -321,7 +320,7 @@ create trigger jobs_guard_crew before update on public.jobs for each row execute
 
 -- Plan / trial / numbering are managed by the platform, not by tenants.
 create or replace function public.tg_guard_business_update() returns trigger
-language plpgsql as $$
+language plpgsql set search_path = public as $$
 begin
   if auth.uid() is not null and (new.plan, new.trial_ends_at, new.created_by)
      is distinct from (old.plan, old.trial_ends_at, old.created_by) then
