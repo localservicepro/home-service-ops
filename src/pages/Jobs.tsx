@@ -46,7 +46,7 @@ export function JobsPage() {
   const quotes = data.quotes.filter((x) => match(x.customer, x.address, x.num))
   const counts: Record<FilterKey, number> = {
     active: data.jobs.filter((j) => ACTIVE.includes(j.status)).length,
-    quotes: data.quotes.filter((x) => x.status === 'Awaiting').length,
+    quotes: data.quotes.filter((x) => x.status === 'Draft' || x.status === 'Sent').length,
     requests: data.jobs.filter((j) => j.status === 'New').length,
     all: data.jobs.length,
     completed: data.jobs.filter((j) => j.status === 'Done' || j.status === 'Paid').length,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { computeTotals } from './totals'
-import { money, timeParts, clock, abn } from './format'
+import { money, timeParts, clock, abn, initials } from './format'
 import type { LineItem } from './types'
 
 const item = (qty: number, unit_price: number): LineItem => ({ id: 'x', name: 'x', qty, unit_price, kind: 'service' })
@@ -32,5 +32,7 @@ describe('format', () => {
   it('formats clocks and ABNs', () => {
     expect(clock(3_723_000)).toBe('01:02:03')
     expect(abn('51824753556')).toBe('51 824 753 556')
+    expect(initials('Daniel & Kate Morris')).toBe('DK')
+    expect(initials("Liam O'Connor")).toBe('LO')
   })
 })

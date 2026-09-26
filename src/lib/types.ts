@@ -1,11 +1,14 @@
-export type Role = 'owner' | 'admin' | 'crew'
-export type JobStatus = 'New' | 'Quote Sent' | 'Job Scheduled' | 'In Progress' | 'Done' | 'Paid' | 'Cancelled'
-export type QuoteStatus = 'Awaiting' | 'Accepted' | 'Declined' | 'Converted'
-export type WorkState = 'idle' | 'running' | 'done'
-export type PayState = 'awaiting' | 'paid'
-export type PayMethod = 'cash' | 'bank' | 'online'
-export type RateType = 'hour' | 'job'
-export type Duty = 'Available' | 'On job' | 'Off today'
+import type { Enums, Tables } from './database.types'
+
+// Enums come straight from the database schema (src/lib/database.types.ts).
+export type Role = Enums<'member_role'>
+export type JobStatus = Enums<'job_status'>
+export type QuoteStatus = Enums<'quote_status'>
+export type WorkState = Enums<'work_state'>
+export type PayState = Enums<'pay_state'>
+export type PayMethod = Enums<'pay_method'>
+export type RateType = Enums<'rate_type'>
+export type Duty = Enums<'duty_status'>
 
 export interface Business {
   id: string
@@ -154,6 +157,7 @@ export interface Job {
   pay_state: PayState
   pay_method: PayMethod | null
   paid_at: string | null
+  amount_paid: number
   public_token: string
   invoice_sent_at: string | null
   source: string
@@ -188,6 +192,18 @@ export interface Quote {
   updated_at: string
 }
 
+export interface Payment {
+  id: string
+  business_id: string
+  job_id: string
+  amount: number
+  method: PayMethod
+  paid_at: string
+  note: string | null
+  recorded_by: string | null
+  created_at: string
+}
+
 export interface Activity {
   id: string
   business_id: string
@@ -212,3 +228,21 @@ export interface PublicBusiness {
   payment_terms_days: number | null
   online_payment_url: string | null
 }
+
+// ── Schema drift check ──────────────────────────────────────
+// Fails to compile if a table gains/loses a column that the matching interface doesn't mirror.
+type SameKeys<A, B> = [Exclude<keyof A, keyof B>, Exclude<keyof B, keyof A>] extends [never, never] ? true : [Exclude<keyof A, keyof B>, Exclude<keyof B, keyof A>]
+type Expect<T extends true> = T
+export type SchemaChecks = [
+  Expect<SameKeys<Tables<'jobs'>, Job>>,
+  Expect<SameKeys<Tables<'quotes'>, Quote>>,
+  Expect<SameKeys<Tables<'payments'>, Payment>>,
+  Expect<SameKeys<Tables<'staff'>, Staff>>,
+  Expect<SameKeys<Tables<'clients'>, Client>>,
+  Expect<SameKeys<Tables<'services'>, Omit<Service, never> & { created_at: string }>>,
+  Expect<SameKeys<Tables<'addons'>, Addon & { created_at: string }>>,
+  Expect<SameKeys<Tables<'settings'>, Settings & { updated_at: string }>>,
+  Expect<SameKeys<Tables<'activity'>, Activity>>,
+  Expect<SameKeys<Tables<'invites'>, Invite & { invited_by: string | null; accepted_by: string | null }>>,
+  Expect<SameKeys<Tables<'businesses'>, Business & { next_job_num: number; next_quote_num: number; created_by: string | null }>>,
+]

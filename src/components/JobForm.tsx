@@ -42,9 +42,12 @@ export function JobFormSheet({
   job,
   presetClient,
   presetDate,
+  bookOnSave,
   onClose,
   onSaved,
 }: {
+  /** Saving with a date moves a New / Quote Sent job to Job Scheduled. */
+  bookOnSave?: boolean
   job?: Job
   presetClient?: Client
   presetDate?: string
@@ -86,7 +89,7 @@ export function JobFormSheet({
       const client_id = d.client_id || (await upsertClientFrom(bid, { name: d.customer, phone: d.phone, email: d.email, address: d.address }))
       // A new job with a date and crew is booked; otherwise it's a request.
       let status = d.status
-      if (!job && d.scheduled_date && status === 'New') status = 'Job Scheduled'
+      if ((!job || bookOnSave) && d.scheduled_date && (status === 'New' || status === 'Quote Sent')) status = 'Job Scheduled'
       const row = {
         ...d,
         client_id,

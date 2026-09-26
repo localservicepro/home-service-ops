@@ -16,10 +16,10 @@ export const JOB_STATUS: Record<JobStatus, Tone> = {
 }
 
 export const QUOTE_STATUS: Record<QuoteStatus, Tone> = {
-  Awaiting: { c: '#D98A1F', bg: '#FBF1E1' },
+  Draft: { c: '#5A7189', bg: '#EEF3F8' },
+  Sent: { c: '#0C9BD6', bg: '#E2F6FD' },
   Accepted: { c: '#2C9E73', bg: '#E3F5EC' },
   Declined: { c: '#C4453C', bg: '#FBEDEB' },
-  Converted: { c: '#0C6FD0', bg: '#E7F1FB' },
 }
 
 export const DUTY: Record<Duty, Tone> = {
@@ -33,9 +33,9 @@ export const ACTIVE: JobStatus[] = ['Quote Sent', 'Job Scheduled', 'In Progress'
 
 export const PIPE_LABEL: Record<JobStatus, string> = {
   New: 'New',
-  'Quote Sent': 'Quoted',
+  'Quote Sent': 'Quote Sent',
   'Job Scheduled': 'Scheduled',
-  'In Progress': 'On site',
+  'In Progress': 'In Progress',
   Done: 'Done',
   Paid: 'Paid',
   Cancelled: 'Cancelled',
@@ -52,4 +52,8 @@ export const FREQUENCIES = ['One-off', 'Weekly', 'Fortnightly', 'Monthly', 'Quar
 
 export const CREW_COLOURS = ['#0C6FD0', '#35C6F4', '#075BAF', '#2C9E73', '#D98A1F', '#8B5CF6', '#C4453C', '#5A7189']
 
-export const PAY_METHOD_LABEL = { cash: 'Cash', bank: 'Bank transfer', online: 'Card / online' } as const
+export const PAY_METHOD_LABEL = { cash: 'Cash', bank: 'Bank transfer', card: 'Card' } as const
+export const PAY_METHODS = ['cash', 'bank', 'card'] as const
+
+/** LC-1001 → INV-1001 */
+export const invoiceNum = (jobNum: string) => `INV-${jobNum.replace(/^[A-Z]+-/, '')}`

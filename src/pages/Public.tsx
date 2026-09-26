@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { abn, dateLong, isoDate, money } from '../lib/format'
-import { PAY_METHOD_LABEL, QUOTE_STATUS } from '../lib/status'
+import { PAY_METHOD_LABEL, QUOTE_STATUS, invoiceNum } from '../lib/status'
 import type { JobStatus, LineItem, PayMethod, PayState, PublicBusiness, QuoteStatus } from '../lib/types'
 import { BrandMark, Icon } from '../components/Icon'
 import { InvoiceLines } from '../components/job'
@@ -148,7 +148,8 @@ export function PublicQuotePage() {
     setMode(null)
     load()
   }
-  const expired = q.valid_until && q.valid_until < isoDate() && q.status === 'Awaiting'
+  const open = q.status === 'Draft' || q.status === 'Sent'
+  const expired = q.valid_until && q.valid_until < isoDate() && open
   const tone = QUOTE_STATUS[q.status]
 
   return (
@@ -158,7 +159,7 @@ export function PublicQuotePage() {
       title={money(q.price)}
       right={
         <Pill c={tone.c} bg={tone.bg}>
-          {q.status === 'Awaiting' ? 'Awaiting your reply' : q.status}
+          {open ? 'Awaiting your reply' : q.status}
         </Pill>
       }
     >
@@ -181,10 +182,10 @@ export function PublicQuotePage() {
       </div>
 
       <div className="card rise rise-1 no-print" style={{ marginTop: 14 }}>
-        {q.status === 'Awaiting' && !expired && mode === null && (
+        {open && !expired && mode === null && (
           <div className="stack">
             <div style={{ fontWeight: 800, fontSize: 17 }}>Happy to go ahead?</div>
-            <p className="muted">Accepting books the job in — {q.business.name} will confirm the time with you.</p>
+            <p className="muted">Accept and {q.business.name} will be in touch to lock in a day and time.</p>
             <div className="row">
               <button className="btn btn-ghost grow" onClick={() => setMode('decline')}>
                 Decline
@@ -195,7 +196,7 @@ export function PublicQuotePage() {
             </div>
           </div>
         )}
-        {q.status === 'Awaiting' && expired && <div className="note warn">This quote expired on {dateLong(q.valid_until)}. Contact {q.business.name} for an updated price.</div>}
+        {open && expired && <div className="note warn">This quote expired on {dateLong(q.valid_until)}. Contact {q.business.name} for an updated price.</div>}
         {mode === 'accept' && (
           <div className="stack">
             <div style={{ fontWeight: 800, fontSize: 17 }}>Accept {money(q.price)}</div>
@@ -208,7 +209,7 @@ export function PublicQuotePage() {
                 Back
               </button>
               <button className="btn btn-primary btn-lg grow" disabled={busy} onClick={() => respond(true)}>
-                {busy ? <Spinner /> : 'Confirm & book'}
+                {busy ? <Spinner /> : 'Accept quote'}
               </button>
             </div>
           </div>
@@ -230,15 +231,15 @@ export function PublicQuotePage() {
             </div>
           </div>
         )}
-        {(q.status === 'Accepted' || q.status === 'Converted') && (
+        {q.status === 'Accepted' && (
           <div className="row">
             <span className="avatar lg" style={{ background: 'var(--green-2)' }}>
               ✓
             </span>
             <div>
-              <div style={{ fontWeight: 800 }}>You’re booked in!</div>
+              <div style={{ fontWeight: 800 }}>Quote accepted — thank you!</div>
               <div className="muted" style={{ fontSize: 13 }}>
-                {q.business.name} will be in touch to confirm the day{q.business.phone ? ` — or call ${q.business.phone}` : ''}.
+                {q.business.name} will be in touch to book a day and time{q.business.phone ? ` — or call ${q.business.phone}` : ''}.
               </div>
             </div>
           </div>
@@ -272,7 +273,7 @@ export function PublicInvoicePage() {
   return (
     <PublicFrame
       biz={b}
-      kicker={`Tax invoice INV-${inv.num.replace(/^J-/, '')}`}
+      kicker={`Tax invoice ${invoiceNum(inv.num)}`}
       title={money(inv.price)}
       right={paid ? <Pill c="var(--green)" bg="var(--green-tint)">Paid</Pill> : <Pill c="var(--amber)" bg="var(--amber-tint)">Due {dateLong(isoDate(due))}</Pill>}
     >
@@ -306,7 +307,7 @@ export function PublicInvoicePage() {
       {!paid && (
         <div className="card rise rise-1" style={{ marginTop: 14 }}>
           <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 10 }}>How to pay</div>
-          {methods.includes('online') && b.online_payment_url && (
+          {methods.includes('card') && b.online_payment_url && (
             <a className="btn btn-primary btn-lg btn-block no-print" href={b.online_payment_url} target="_blank" rel="noreferrer" style={{ marginBottom: 14 }}>
               Pay {money(inv.price)} by card
             </a>

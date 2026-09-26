@@ -11,32 +11,54 @@ import { JobRow } from '../components/job'
 import { JobFormSheet } from '../components/JobForm'
 import { Confirm, Empty, Field, LoadingPage, QuotePill, Sheet, Spinner, useAction } from '../components/ui'
 
+type ClientJob = Pick<Job, 'client_id' | 'price' | 'amount_paid' | 'pay_state' | 'status' | 'scheduled_date' | 'created_at'>
+type SortKey = 'name' | 'value' | 'owing' | 'recent'
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: 'name', label: 'A–Z' },
+  { key: 'value', label: 'Lifetime value' },
+  { key: 'owing', label: 'Owing' },
+  { key: 'recent', label: 'Recent' },
+]
+
+/** Lifetime value = everything paid (incl. part-payments); owing = unpaid balance on completed work. */
+function clientStats(jobs: ClientJob[]) {
+  const live = jobs.filter((j) => j.status !== 'Cancelled')
+  return {
+    jobs: live.length,
+    spend: live.reduce((s, j) => s + Number(j.amount_paid || 0), 0),
+    owing: live.filter((j) => j.status === 'Done').reduce((s, j) => s + Math.max(0, Number(j.price) - Number(j.amount_paid || 0)), 0),
+    last: live.map((j) => j.scheduled_date || j.created_at.slice(0, 10)).sort().pop() || null,
+  }
+}
+
 export function ClientsPage() {
   const { bid } = useBiz()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [adding, setAdding] = useState(false)
+  const [sort, setSort] = useState<SortKey>('name')
   const { data, loading, reload } = useLoad(async () => {
     const [clients, jobs] = await Promise.all([
       loadClients(bid),
-      supabase.from('jobs').select('client_id,price,pay_state,status').eq('business_id', bid).then(must),
+      supabase.from('jobs').select('client_id,price,amount_paid,pay_state,status,scheduled_date,created_at').eq('business_id', bid).then(must),
     ])
-    return { clients, jobs: jobs as Pick<Job, 'client_id' | 'price' | 'pay_state' | 'status'>[] }
+    return { clients, jobs: jobs as ClientJob[] }
   }, [bid])
   if (loading || !data) return <LoadingPage />
 
-  const stats = (id: string) => {
-    const js = data.jobs.filter((j) => j.client_id === id && j.status !== 'Cancelled')
-    return {
-      jobs: js.length,
-      spend: js.filter((j) => j.pay_state === 'paid').reduce((s, j) => s + Number(j.price), 0),
-      owing: js.filter((j) => j.pay_state !== 'paid' && j.status === 'Done').reduce((s, j) => s + Number(j.price), 0),
-    }
-  }
+  const statsById = Object.fromEntries(data.clients.map((c) => [c.id, clientStats(data.jobs.filter((j) => j.client_id === c.id))]))
+  const stats = (id: string) => statsById[id]
   const needle = q.trim().toLowerCase()
-  const list = data.clients.filter(
-    (c) => !needle || [c.name, c.phone, c.email, ...c.addresses.map((a) => a.line)].some((f) => (f || '').toLowerCase().includes(needle)),
-  )
+  const list = data.clients
+    .filter((c) => !needle || [c.name, c.phone, c.email, ...c.addresses.map((a) => a.line)].some((f) => (f || '').toLowerCase().includes(needle)))
+    .sort((a, b) => {
+      const x = stats(a.id)
+      const y = stats(b.id)
+      if (sort === 'value') return y.spend - x.spend
+      if (sort === 'owing') return y.owing - x.owing
+      if (sort === 'recent') return (y.last || '').localeCompare(x.last || '')
+      return a.name.localeCompare(b.name)
+    })
 
   return (
     <div className="page">
@@ -54,6 +76,13 @@ export function ClientsPage() {
           <Icon name="search" size={16} />
         </b>
         <input className="input" style={{ paddingLeft: 38 }} placeholder="Search name, phone, address" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      <div className="seg" style={{ marginBottom: 14 }}>
+        {SORTS.map((o) => (
+          <button key={o.key} className={`chip ${sort === o.key ? 'on' : ''}`} onClick={() => setSort(o.key)}>
+            {o.label}
+          </button>
+        ))}
       </div>
       <div className="grid-cards">
         {list.length === 0 && <Empty title={needle ? 'No matches' : 'No clients yet'}>Clients are created automatically when you add jobs or quotes.</Empty>}
@@ -177,8 +206,7 @@ export function ClientDetailPage() {
   const { client, jobs, quotes } = data
   const staffById = byId(data.staff)
   const live = jobs.filter((j) => j.status !== 'Cancelled')
-  const spend = live.filter((j) => j.pay_state === 'paid').reduce((s, j) => s + Number(j.price), 0)
-  const owing = live.filter((j) => j.pay_state !== 'paid' && j.status === 'Done').reduce((s, j) => s + Number(j.price), 0)
+  const { spend, owing } = clientStats(jobs)
   const lastPaid = live.filter((j) => j.paid_at).sort((a, b) => (b.paid_at || '').localeCompare(a.paid_at || ''))[0]
 
   return (

@@ -4,15 +4,15 @@ import { useBiz } from '../context/AuthContext'
 import { useLoad } from '../hooks/useLoad'
 import { loadAddons, loadStaff } from '../lib/data'
 import { copy, invoiceLink, removeJobPhoto, sendEmail, signedPhotoUrls, uploadJobPhoto } from '../lib/api'
-import { dateShort, dateNumeric, directionsUrl, hoursLabel, initials, mapEmbedUrl, money, timeLabel } from '../lib/format'
-import { JOB_STATUS, PAY_METHOD_LABEL } from '../lib/status'
+import { dateShort, dateNumeric, directionsUrl, hoursLabel, initials, isoDate, mapEmbedUrl, money, timeLabel } from '../lib/format'
+import { JOB_STATUS, PAY_METHOD_LABEL, invoiceNum } from '../lib/status'
 import { must, supabase } from '../lib/supabase'
-import type { Job, JobStatus, PayMethod, Photo, Staff } from '../lib/types'
+import type { Job, JobStatus, PayMethod, Payment, Photo, Staff } from '../lib/types'
 import { Icon } from '../components/Icon'
 import { InvoiceLines, StatusPipeline, WorkTimer, elapsedMs } from '../components/job'
 import { ExtraSheet } from '../components/LineBuilder'
 import { JobFormSheet } from '../components/JobForm'
-import { Avatar, Confirm, LoadingPage, Sheet, Spinner, useAction, useToast } from '../components/ui'
+import { Avatar, Confirm, Field, LoadingPage, MoneyInput, Sheet, Spinner, useAction, useToast } from '../components/ui'
 
 export function JobDetailPage() {
   const { id = '' } = useParams()
@@ -20,12 +20,19 @@ export function JobDetailPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const { busy, run } = useAction()
-  const [sheet, setSheet] = useState<null | 'assign' | 'extra' | 'pay' | 'cancel' | 'edit' | 'delete'>(null)
+  const [sheet, setSheet] = useState<null | 'assign' | 'extra' | 'pay' | 'cancel' | 'edit' | 'delete' | 'unpay' | 'book'>(null)
+  const [unpayTo, setUnpayTo] = useState<JobStatus>('Done')
 
   const { data, setData, loading, error } = useLoad(async () => {
     const job = must(await supabase.from('jobs').select('*').eq('id', id).single()) as Job
-    const [staff, addons] = await Promise.all([loadStaff(bid), isOffice ? loadAddons(bid) : Promise.resolve([])])
-    return { job, staff, addons }
+    const [staff, addons, payments] = await Promise.all([
+      loadStaff(bid),
+      isOffice ? loadAddons(bid) : Promise.resolve([]),
+      isOffice
+        ? supabase.from('payments').select('*').eq('job_id', id).order('paid_at').then(must).then((r) => r as Payment[])
+        : Promise.resolve([] as Payment[]),
+    ])
+    return { job, staff, addons, payments }
   }, [id, bid, isOffice])
 
   const job = data?.job
@@ -53,6 +60,15 @@ export function JobDetailPage() {
   }
 
   const staff = data.staff.find((s) => s.id === job.staff_id) || null
+  const balance = Math.max(0, Math.round((Number(job.price) - Number(job.amount_paid)) * 100) / 100)
+
+  const refresh = async () => {
+    const [next, payments] = await Promise.all([
+      supabase.from('jobs').select('*').eq('id', job.id).single().then(must),
+      supabase.from('payments').select('*').eq('job_id', job.id).order('paid_at').then(must),
+    ])
+    setData({ ...data, job: next as Job, payments: payments as Payment[] })
+  }
 
   const update = async (patch: Partial<Job>, ok?: string) =>
     run(async () => {
@@ -78,10 +94,13 @@ export function JobDetailPage() {
 
   const setStatus = (status: JobStatus) => {
     if (status === job.status) return
-    const patch: Partial<Job> = { status }
-    if (status === 'Paid') Object.assign(patch, { pay_state: 'paid', paid_at: job.paid_at || new Date().toISOString(), pay_method: job.pay_method || 'cash' })
-    else if (job.status === 'Paid') Object.assign(patch, { pay_state: 'awaiting', paid_at: null, pay_method: null })
-    update(patch, `Moved to ${status}`)
+    // "Paid" is driven by recorded payments, not set by hand.
+    if (status === 'Paid') return setSheet('pay')
+    if (job.status === 'Paid' || data.payments.length) {
+      setUnpayTo(status)
+      return setSheet('unpay')
+    }
+    update({ status }, `Moved to ${status}`)
   }
 
   const sendInvoice = () =>
@@ -131,7 +150,7 @@ export function JobDetailPage() {
       case 'New':
         return { label: 'Build & send quote', act: () => navigate(`/quotes/new?job=${job.id}`) }
       case 'Quote Sent':
-        return { label: job.scheduled_date ? 'Mark as booked' : 'Book it in', act: () => (job.scheduled_date ? setStatus('Job Scheduled') : setSheet('edit')) }
+        return { label: 'Book it in', act: () => setSheet('book') }
       case 'Job Scheduled':
         return job.staff_id ? { label: 'Start job', act: startWork } : { label: 'Assign crew', act: () => setSheet('assign') }
       case 'In Progress':
@@ -320,7 +339,7 @@ export function JobDetailPage() {
             <div className="row" style={{ gap: 8 }}>
               <span className="section-label">Invoice</span>
               <span className="mono faint" style={{ fontSize: 10.5 }}>
-                INV-{job.num.replace(/^J-/, '')}
+                {invoiceNum(job.num)}
                 {job.invoice_sent_at ? ` · sent ${dateNumeric(job.invoice_sent_at)}` : ''}
               </span>
             </div>
@@ -334,14 +353,47 @@ export function JobDetailPage() {
             items={job.line_items}
             discount={job.discount}
             gst={job.gst}
-            caption={job.pay_state === 'paid' ? 'Total paid' : 'Total due'}
+            caption="Total"
             onRemove={editable ? (lid) => update({ line_items: job.line_items.filter((l) => l.id !== lid) }) : undefined}
             footer={
-              job.pay_state === 'paid' ? (
-                <div className="paid-banner">
-                  <i>✓</i> Paid via {job.pay_method ? PAY_METHOD_LABEL[job.pay_method] : '—'} · {dateNumeric(job.paid_at)}
-                </div>
-              ) : null
+              <>
+                {data.payments.map((p) => (
+                  <div key={p.id} className="row" style={{ padding: '9px 0', borderBottom: '1px solid var(--line-soft)', fontSize: 13 }}>
+                    <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--green-tint)', color: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flex: 'none' }}>
+                      ✓
+                    </span>
+                    <span className="grow" style={{ fontWeight: 600 }}>
+                      {PAY_METHOD_LABEL[p.method]} · {dateNumeric(p.paid_at)}
+                      {p.note ? <span className="muted"> · {p.note}</span> : null}
+                    </span>
+                    <b className="num" style={{ color: 'var(--green)' }}>
+                      −{money(p.amount)}
+                    </b>
+                    <button
+                      className="line-x"
+                      aria-label="Remove payment"
+                      onClick={() =>
+                        run(async () => {
+                          must(await supabase.from('payments').delete().eq('id', p.id))
+                          await refresh()
+                        }, 'Payment removed')
+                      }
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                {job.pay_state === 'paid' ? (
+                  <div className="paid-banner">
+                    <i>✓</i> Paid in full{job.pay_method ? ` · ${PAY_METHOD_LABEL[job.pay_method]}` : ''} · {dateNumeric(job.paid_at)}
+                  </div>
+                ) : data.payments.length > 0 ? (
+                  <div className="row-between" style={{ marginTop: 10, padding: '10px 12px', background: 'var(--amber-tint)', borderRadius: 12, color: '#8a5510', fontWeight: 700, fontSize: 13 }}>
+                    <span>Balance due</span>
+                    <span className="num">{money(balance)}</span>
+                  </div>
+                ) : null}
+              </>
             }
           />
           <div className="row wrap" style={{ marginTop: 14 }}>
@@ -449,12 +501,33 @@ export function JobDetailPage() {
       {sheet === 'pay' && (
         <PaymentSheet
           job={job}
-          methods={settings?.payment_methods?.length ? settings.payment_methods : ['cash', 'bank', 'online']}
+          balance={balance}
+          methods={settings?.payment_methods?.length ? settings.payment_methods : ['cash', 'bank', 'card']}
           bank={settings}
           onClose={() => setSheet(null)}
-          onPaid={async (method) => {
-            await update({ pay_state: 'paid', pay_method: method, paid_at: new Date().toISOString(), status: 'Paid' }, `Payment recorded — ${money(job.price)}`)
-            setSheet(null)
+          onPaid={async (p) => {
+            const ok = await run(async () => {
+              must(await supabase.from('payments').insert({ business_id: job.business_id, job_id: job.id, ...p }))
+              await refresh()
+            }, `${money(p.amount)} recorded`)
+            if (ok) setSheet(null)
+          }}
+        />
+      )}
+
+      {sheet === 'unpay' && (
+        <Confirm
+          title={`Move back to ${unpayTo}?`}
+          body={`This removes ${data.payments.length === 1 ? 'the recorded payment' : `all ${data.payments.length} recorded payments`} (${money(job.amount_paid)}) from ${job.num}.`}
+          confirmLabel="Remove payments & move"
+          danger
+          onClose={() => setSheet(null)}
+          onConfirm={async () => {
+            await run(async () => {
+              must(await supabase.from('payments').delete().eq('job_id', job.id))
+              must(await supabase.from('jobs').update({ status: unpayTo }).eq('id', job.id))
+              await refresh()
+            }, `Moved to ${unpayTo}`)
           }}
         />
       )}
@@ -488,9 +561,10 @@ export function JobDetailPage() {
         />
       )}
 
-      {sheet === 'edit' && (
+      {(sheet === 'edit' || sheet === 'book') && (
         <JobFormSheet
           job={job}
+          bookOnSave={sheet === 'book'}
           onClose={() => setSheet(null)}
           onSaved={(next) => {
             setData({ ...data, job: next })
@@ -502,21 +576,34 @@ export function JobDetailPage() {
   )
 }
 
+interface NewPayment {
+  amount: number
+  method: PayMethod
+  paid_at: string
+  note: string | null
+}
+
 function PaymentSheet({
   job,
+  balance,
   methods,
   bank,
   onClose,
   onPaid,
 }: {
   job: Job
+  balance: number
   methods: PayMethod[]
   bank: { bank_account_name: string | null; bank_bsb: string | null; bank_account_number: string | null; online_payment_url: string | null } | null
   onClose: () => void
-  onPaid: (m: PayMethod) => Promise<void>
+  onPaid: (p: NewPayment) => Promise<void>
 }) {
   const [method, setMethod] = useState<PayMethod>(methods[0])
+  const [amount, setAmount] = useState(balance)
+  const [date, setDate] = useState(isoDate())
+  const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const part = amount > 0 && amount < balance
   return (
     <Sheet
       title="Record payment"
@@ -524,25 +611,28 @@ function PaymentSheet({
       footer={
         <button
           className="btn btn-primary btn-lg btn-block"
-          disabled={busy}
+          disabled={busy || amount <= 0}
           onClick={async () => {
             setBusy(true)
-            await onPaid(method)
+            // Today → now (keeps ordering); earlier dates → midday local so the day never shifts.
+            const paid_at = date === isoDate() ? new Date().toISOString() : new Date(`${date}T12:00:00`).toISOString()
+            await onPaid({ amount, method, paid_at, note: note.trim() || null })
             setBusy(false)
           }}
         >
-          {busy ? <Spinner /> : `Mark ${money(job.price)} paid`}
+          {busy ? <Spinner /> : part ? `Record ${money(amount)} part-payment` : `Record ${money(amount)} paid`}
         </button>
       }
     >
       <div className="stack">
         <div className="center" style={{ padding: '6px 0 4px' }}>
-          <div className="section-label">Amount due</div>
+          <div className="section-label">{Number(job.amount_paid) > 0 ? 'Balance due' : 'Amount due'}</div>
           <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }} className="num">
-            {money(job.price)}
+            {money(balance)}
           </div>
           <div className="muted" style={{ fontSize: 12 }}>
             {job.customer} · {job.num}
+            {Number(job.amount_paid) > 0 ? ` · ${money(job.amount_paid)} of ${money(job.price)} paid` : ''}
           </div>
         </div>
         <div className="tabs">
@@ -552,7 +642,17 @@ function PaymentSheet({
             </button>
           ))}
         </div>
-        {method === 'cash' && <div className="note">Collected cash on site? Mark it paid and we’ll log it against today.</div>}
+        <div className="form-grid cols-2">
+          <Field label="Amount received">
+            <MoneyInput value={amount} onChange={setAmount} />
+          </Field>
+          <Field label="Date received">
+            <input className="input" type="date" max={isoDate()} value={date} onChange={(e) => setDate(e.target.value)} />
+          </Field>
+          <Field label="Note (optional)" className="span-2">
+            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Receipt #, deposit, etc." />
+          </Field>
+        </div>
         {method === 'bank' && (
           <div className="card" style={{ background: 'var(--blue-tint-2)' }}>
             <div className="kv">
@@ -578,19 +678,8 @@ function PaymentSheet({
             )}
           </div>
         )}
-        {method === 'online' && (
-          <div className="note">
-            {bank?.online_payment_url ? (
-              <>
-                Customers can pay by card from the invoice link. Payment page:{' '}
-                <a href={bank.online_payment_url} target="_blank" rel="noreferrer">
-                  {bank.online_payment_url}
-                </a>
-              </>
-            ) : (
-              'Add a payment link (Stripe, Square…) in Settings → Payments to show a Pay now button on invoices.'
-            )}
-          </div>
+        {method === 'card' && !bank?.online_payment_url && (
+          <div className="note">Took card on a terminal? Record it here. Add a payment link in Settings → Payments to show a “Pay by card” button on invoices.</div>
         )}
       </div>
     </Sheet>

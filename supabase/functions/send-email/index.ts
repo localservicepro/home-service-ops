@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
     subject = paid ? `Receipt from ${b.name} — ${aud(j.price)} paid` : `Invoice from ${b.name} — ${aud(j.price)}`
     html = layout(
       b.name,
-      paid ? `Thanks — ${aud(j.price)} received` : `Invoice INV-${String(j.num).replace(/^J-/, '')} · ${aud(j.price)}`,
+      paid ? `Thanks — ${aud(j.price)} received` : `Invoice INV-${String(j.num).replace(/^[A-Z]+-/, '')} · ${aud(j.price)}`,
       `<p style="margin:0 0 10px">Hi ${esc(String(j.customer).split(' ')[0])},</p>
        <p style="margin:0;color:#16374F;line-height:1.5">${paid ? 'Here is your receipt' : 'Here is your invoice'} for <b>${esc(j.service || 'your recent job')}</b>${j.address ? ` at ${esc(j.address)}` : ''}.</p>`,
       { label: paid ? 'View receipt' : 'View & pay invoice', url: link },

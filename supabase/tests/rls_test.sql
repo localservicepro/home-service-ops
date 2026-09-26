@@ -11,7 +11,8 @@ set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000a';
 set request.jwt.claim.email = 'alice@a.com';
 select id as bid_a from businesses \gset
-insert into staff (business_id,name,email) values (:'bid_a','Marcus','marcus@a.com') returning id as sid \gset
+insert into staff (business_id,name,email,pay_rate) values (:'bid_a','Marcus','marcus@a.com',42) returning id as sid \gset
+insert into staff (business_id,name,pay_rate) values (:'bid_a','Priya',55);
 insert into invites (business_id,email,role,staff_id,invited_by) values (:'bid_a','Marcus@a.com','crew',:'sid',auth.uid()) returning token as tok \gset
 insert into jobs (business_id,customer,staff_id,line_items,discount) values (:'bid_a','Nina',:'sid','[{"name":"Mow","qty":1,"unit_price":100},{"name":"Edge","qty":2,"unit_price":10}]',20) returning num, price;
 insert into jobs (business_id,customer) values (:'bid_a','Unassigned Ursula') returning num;
@@ -31,6 +32,9 @@ set request.jwt.claim.email = 'marcus@a.com';
 select customer as crew_sees from jobs;
 select count(*) as crew_quotes from quotes;
 select count(*) as crew_clients from clients;
+select case when (select count(*) from staff) = 1 and (select name from staff) = 'Marcus' then 'ok' else 'FAIL' end as crew_sees_only_self;
+select case when (select count(*) from settings) = 0 then 'ok' else 'FAIL' end as crew_no_settings;
+select case when (select count(*) from payments) = 0 then 'ok' else 'FAIL' end as crew_no_payments;
 update jobs set work_state='running', status='In Progress', work_started_at=now() where customer='Nina';
 -- expected failures: crew can't touch price or mark jobs paid
 do $$ begin
@@ -51,6 +55,14 @@ do $$ begin
   exception when raise_exception then if sqlerrm like 'FAIL%' then raise; end if; end;
 end $$;
 update businesses set name = 'Alice Lawns Co';
+-- part-payment then balance → job flips to Paid; deleting a payment flips it back to Done
+update jobs set status = 'Done' where customer = 'Nina';
+insert into payments (business_id, job_id, amount, method) select business_id, id, 50, 'cash' from jobs where customer = 'Nina';
+select case when (select pay_state::text || status::text || amount_paid from jobs where customer = 'Nina') = 'awaitingDone50.00' then 'ok' else 'FAIL' end as part_payment;
+insert into payments (business_id, job_id, amount, method) select business_id, id, 60, 'card' from jobs where customer = 'Nina';
+select case when (select pay_state::text || status::text || pay_method::text from jobs where customer = 'Nina') = 'paidPaidcard' then 'ok' else 'FAIL' end as full_payment;
+delete from payments where amount = 60;
+select case when (select pay_state::text || status::text from jobs where customer = 'Nina') = 'awaitingDone' then 'ok' else 'FAIL' end as payment_removed;
 reset role;
 
 -- as bob: sees nothing of Alice
@@ -76,5 +88,7 @@ select count(*) as anon_jobs from jobs;
 select respond_to_quote(:'qtok', true, null, '2026-10-01');
 reset role;
 select num, status, source, scheduled_date, price from jobs order by num;
+select case when (select status::text from quotes limit 1) = 'Accepted'
+             and exists (select 1 from jobs where source = 'quote' and status = 'Quote Sent' and num like 'LC-%') then 'ok' else 'FAIL' end as quote_accept_ready_to_book;
 select kind, message from activity order by created_at;
 select duty from staff;

@@ -5,7 +5,7 @@ import { useLoad } from '../hooks/useLoad'
 import { loadAddons, loadServices, loadStaff } from '../lib/data'
 import { copy, inviteLink, sendEmail, uploadLogo } from '../lib/api'
 import { dateLong, money, relTime } from '../lib/format'
-import { FREQUENCIES, PAY_METHOD_LABEL } from '../lib/status'
+import { FREQUENCIES, PAY_METHODS, PAY_METHOD_LABEL } from '../lib/status'
 import { tradeByKey } from '../lib/starterPacks'
 import { must, supabase } from '../lib/supabase'
 import type { Addon, Invite, Membership, PayMethod, Role, Service, Settings } from '../lib/types'
@@ -229,7 +229,7 @@ function PaymentsSection() {
   return (
     <div className="stack">
       <Card title="Accepted payment methods" sub="Offered when recording payment and shown on invoices.">
-        {(['cash', 'bank', 'online'] as const).map((m) => (
+        {PAY_METHODS.map((m) => (
           <div key={m} className="int-row">
             <div className="grow" style={{ fontWeight: 700 }}>
               {PAY_METHOD_LABEL[m]}

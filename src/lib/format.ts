@@ -80,7 +80,7 @@ export function hoursLabel(ms: number) {
 export function initials(name: string | null | undefined) {
   return (name || '?')
     .split(/\s+/)
-    .filter(Boolean)
+    .filter((w) => /^[\p{L}\p{N}]/u.test(w))
     .map((w) => w[0])
     .slice(0, 2)
     .join('')

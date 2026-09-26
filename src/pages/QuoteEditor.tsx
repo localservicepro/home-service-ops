@@ -2,17 +2,17 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useBiz } from '../context/AuthContext'
 import { useLoad } from '../hooks/useLoad'
-import { loadAddons, loadClients, loadServices, upsertClientFrom } from '../lib/data'
+import { loadAddons, loadClients, loadServices, loadStaff, upsertClientFrom } from '../lib/data'
 import { copy, quoteLink, sendEmail } from '../lib/api'
-import { dateLong, isoDate, relTime } from '../lib/format'
-import { QUOTE_STATUS } from '../lib/status'
+import { dateLong, dateShort, isoDate, relTime, timeLabel } from '../lib/format'
+import { FREQUENCIES, QUOTE_STATUS } from '../lib/status'
 import { must, supabase } from '../lib/supabase'
-import type { Client, Job, LineItem, Quote } from '../lib/types'
+import type { Client, Job, LineItem, Quote, Staff } from '../lib/types'
 import { Icon } from '../components/Icon'
 import { InvoiceLines } from '../components/job'
 import { LineBuilder } from '../components/LineBuilder'
 import { serviceSummary } from '../components/JobForm'
-import { Confirm, Field, LoadingPage, MoneyInput, Spinner, Switch, useAction, useToast } from '../components/ui'
+import { Avatar, Confirm, Field, LoadingPage, MoneyInput, Sheet, Spinner, Switch, useAction, useToast } from '../components/ui'
 
 interface Draft {
   customer: string
@@ -43,10 +43,10 @@ export function QuoteEditorPage() {
   const toast = useToast()
   const { busy, run } = useAction()
   const [draft, setDraft] = useState<Draft | null>(null)
-  const [confirm, setConfirm] = useState<null | 'delete' | 'convert'>(null)
+  const [confirm, setConfirm] = useState<null | 'delete' | 'book'>(null)
 
   const { data, setData, loading, error } = useLoad(async () => {
-    const [services, addons, clients] = await Promise.all([loadServices(bid), loadAddons(bid), loadClients(bid)])
+    const [services, addons, clients, staff] = await Promise.all([loadServices(bid), loadAddons(bid), loadClients(bid), loadStaff(bid)])
     let quote: Quote | null = null
     let seed: Partial<Draft> = {}
     if (id) {
@@ -88,14 +88,23 @@ export function QuoteEditorPage() {
       ...seed,
     }
     setDraft(base)
-    return { services, addons, clients, quote }
+    const linkedJob = quote?.request_job_id
+      ? ((await supabase.from('jobs').select('id,num,status,scheduled_date,scheduled_time,staff_id,frequency').eq('id', quote.request_job_id).maybeSingle()).data as Pick<
+          Job,
+          'id' | 'num' | 'status' | 'scheduled_date' | 'scheduled_time' | 'staff_id' | 'frequency'
+        > | null)
+      : null
+    return { services, addons, clients, staff, quote, linkedJob }
   }, [bid, id])
 
   if (loading || !draft) return <LoadingPage />
   if (error || !data) return <div className="page"><div className="empty"><b>Quote not found</b></div></div>
 
   const quote = data.quote
-  const editable = !quote || quote.status === 'Awaiting'
+  const editable = !quote || quote.status === 'Draft' || quote.status === 'Sent'
+  const linked = data.linkedJob
+  const booked = Boolean(linked && !['New', 'Quote Sent', 'Cancelled'].includes(linked.status))
+  const canBook = Boolean(quote && quote.status !== 'Declined' && !booked)
   const set = (p: Partial<Draft>) => setDraft({ ...draft, ...p })
   const client = data.clients.find((c) => c.id === draft.client_id)
 
@@ -136,14 +145,14 @@ export function QuoteEditorPage() {
       if (!q.email && !draft.email) toast('No customer email — link copied so you can text it')
       const r = await sendEmail('quote', q.id, quoteLink(q.public_token))
       if (q.request_job_id) await supabase.from('jobs').update({ status: 'Quote Sent' }).eq('id', q.request_job_id).eq('status', 'New')
-      setData({ ...data, quote: { ...q, sent_at: new Date().toISOString() } })
+      setData({ ...data, quote: { ...q, sent_at: new Date().toISOString(), status: q.status === 'Draft' ? 'Sent' : q.status } })
       toast(r.message)
       if (isNew) navigate(`/quotes/${q.id}`, { replace: true })
     })
 
-  const convert = async () => {
+  const book = async (d: BookDetails) => {
     if (!quote) return
-    await run(async () => {
+    const ok = await run(async () => {
       let jobId = quote.request_job_id
       const patch = {
         status: 'Job Scheduled' as const,
@@ -152,6 +161,10 @@ export function QuoteEditorPage() {
         discount: quote.discount,
         service: serviceSummary(quote.line_items),
         quote_id: quote.id,
+        scheduled_date: d.date,
+        scheduled_time: d.time || null,
+        staff_id: d.staff_id,
+        frequency: d.frequency,
       }
       if (jobId) {
         must(await supabase.from('jobs').update(patch).eq('id', jobId))
@@ -175,10 +188,12 @@ export function QuoteEditorPage() {
         ) as { id: string }
         jobId = j.id
       }
-      must(await supabase.from('quotes').update({ status: 'Converted', request_job_id: jobId, responded_at: new Date().toISOString() }).eq('id', quote.id))
-      toast('Converted to a job — pick a date and crew')
+      const qp: Partial<Quote> = { request_job_id: jobId }
+      if (quote.status !== 'Accepted') Object.assign(qp, { status: 'Accepted', responded_at: new Date().toISOString() })
+      must(await supabase.from('quotes').update(qp).eq('id', quote.id))
       navigate(`/jobs/${jobId}`)
-    })
+    }, 'Job booked')
+    if (ok) setConfirm(null)
   }
 
   const tone = quote ? QUOTE_STATUS[quote.status] : null
@@ -213,10 +228,20 @@ export function QuoteEditorPage() {
           <b>Declined.</b> {quote.decline_reason ? `“${quote.decline_reason}”` : 'No reason given.'}
         </div>
       )}
-      {(quote?.status === 'Accepted' || quote?.status === 'Converted') && quote.request_job_id && (
+      {booked && linked && (
         <div className="note" style={{ marginBottom: 14 }}>
-          {quote.status === 'Accepted' ? 'Customer accepted — the job is booked.' : 'Converted to a job.'}{' '}
-          <Link to={`/jobs/${quote.request_job_id}`}>Open job →</Link>
+          Booked as <b>{linked.num}</b> for {dateShort(linked.scheduled_date)}
+          {linked.scheduled_time ? ` at ${timeLabel(linked.scheduled_time)}` : ''}. <Link to={`/jobs/${linked.id}`}>Open job →</Link>
+        </div>
+      )}
+      {quote?.status === 'Accepted' && !booked && (
+        <div className="note" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span className="grow">
+            <b>Accepted{quote.responded_at ? ` ${relTime(quote.responded_at)}` : ''}.</b> Pick a day and crew to book it in.
+          </span>
+          <button className="btn btn-primary btn-sm" onClick={() => setConfirm('book')}>
+            Book job
+          </button>
         </div>
       )}
 
@@ -337,9 +362,9 @@ export function QuoteEditorPage() {
           <button className="btn btn-ghost btn-sm" onClick={async () => (await copy(quoteLink(quote.public_token))) && toast('Quote link copied')}>
             <Icon name="copy" /> Copy link
           </button>
-          {(quote.status === 'Awaiting' || quote.status === 'Accepted') && !(quote.status === 'Accepted' && quote.request_job_id) && (
-            <button className="btn btn-soft btn-sm" onClick={() => setConfirm('convert')}>
-              <Icon name="swap" /> Convert to job
+          {canBook && quote.status !== 'Accepted' && (
+            <button className="btn btn-soft btn-sm" onClick={() => setConfirm('book')}>
+              <Icon name="calendar" /> Accepted by phone? Book job
             </button>
           )}
           <button className="btn btn-danger btn-sm" onClick={() => setConfirm('delete')}>
@@ -363,13 +388,13 @@ export function QuoteEditorPage() {
         </div>
       )}
 
-      {confirm === 'convert' && (
-        <Confirm
-          title="Convert to a job?"
-          body="Books this quote in as a scheduled job (use this when the customer said yes by phone)."
-          confirmLabel="Convert"
+      {confirm === 'book' && quote && (
+        <BookSheet
+          staff={data.staff}
+          initial={linked}
+          busy={busy}
           onClose={() => setConfirm(null)}
-          onConfirm={convert}
+          onBook={book}
         />
       )}
       {confirm === 'delete' && quote && (
@@ -387,5 +412,78 @@ export function QuoteEditorPage() {
         />
       )}
     </div>
+  )
+}
+
+interface BookDetails {
+  date: string
+  time: string
+  staff_id: string | null
+  frequency: string
+}
+
+function BookSheet({
+  staff,
+  initial,
+  busy,
+  onClose,
+  onBook,
+}: {
+  staff: Staff[]
+  initial: Pick<Job, 'scheduled_date' | 'scheduled_time' | 'staff_id' | 'frequency'> | null
+  busy: boolean
+  onClose: () => void
+  onBook: (d: BookDetails) => void
+}) {
+  const [d, setD] = useState<BookDetails>({
+    date: initial?.scheduled_date || '',
+    time: initial?.scheduled_time?.slice(0, 5) || '',
+    staff_id: initial?.staff_id || null,
+    frequency: initial?.frequency || 'One-off',
+  })
+  return (
+    <Sheet
+      title="Book job"
+      onClose={onClose}
+      footer={
+        <button className="btn btn-primary btn-lg btn-block" disabled={!d.date || busy} onClick={() => onBook(d)}>
+          {busy ? <Spinner /> : 'Book as scheduled job'}
+        </button>
+      }
+    >
+      <div className="stack">
+        {initial?.scheduled_date && <div className="note">The customer asked for {dateLong(initial.scheduled_date)}.</div>}
+        <div className="form-grid cols-2">
+          <Field label="Date">
+            <input className="input" type="date" min={isoDate()} value={d.date} onChange={(e) => setD({ ...d, date: e.target.value })} />
+          </Field>
+          <Field label="Time">
+            <input className="input" type="time" value={d.time} onChange={(e) => setD({ ...d, time: e.target.value })} />
+          </Field>
+          <Field label="Frequency" className="span-2">
+            <select className="select" value={d.frequency} onChange={(e) => setD({ ...d, frequency: e.target.value })}>
+              {FREQUENCIES.map((f) => (
+                <option key={f}>{f}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <div className="field">
+          <span>Crew</span>
+          <div className="seg wrap" style={{ overflow: 'visible' }}>
+            <button type="button" className={`chip soft ${!d.staff_id ? 'on' : ''}`} onClick={() => setD({ ...d, staff_id: null })}>
+              Unassigned
+            </button>
+            {staff
+              .filter((s) => s.active)
+              .map((s) => (
+                <button key={s.id} type="button" className={`chip soft ${d.staff_id === s.id ? 'on' : ''}`} onClick={() => setD({ ...d, staff_id: s.id })}>
+                  <Avatar name={s.name} colour={s.colour} /> {s.name}
+                </button>
+              ))}
+          </div>
+        </div>
+      </div>
+    </Sheet>
   )
 }

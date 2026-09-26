@@ -16,6 +16,7 @@ const ACT_ICON: Record<string, { icon: string; c: string; bg: string }> = {
   booked: { icon: '★', c: '#2C9E73', bg: '#E3F5EC' },
   status: { icon: '↻', c: '#5A7189', bg: '#EEF3F8' },
   invoice: { icon: '$', c: '#0C9BD6', bg: '#E2F6FD' },
+  payment: { icon: '$', c: '#1C7F5B', bg: '#E1F1EA' },
   quote_sent: { icon: '➚', c: '#0C9BD6', bg: '#E2F6FD' },
   quote_viewed: { icon: '◉', c: '#0C9BD6', bg: '#E2F6FD' },
   quote_accepted: { icon: '✓', c: '#2C9E73', bg: '#E3F5EC' },
@@ -33,16 +34,19 @@ export function DashboardPage() {
   const { bid, business, settings, user } = useBiz()
   const navigate = useNavigate()
   const { data, loading } = useLoad(async () => {
-    const [jobs, staff, activity] = await Promise.all([
+    const [jobs, staff, activity, toBook] = await Promise.all([
       loadJobs(bid),
       loadStaff(bid),
       supabase.from('activity').select('*').eq('business_id', bid).order('created_at', { ascending: false }).limit(12).then(must),
+      supabase.from('quotes').select('id,num,customer,price').eq('business_id', bid).eq('status', 'Accepted').then(must),
     ])
-    return { jobs, staff, activity: activity as Activity[] }
+    return { jobs, staff, activity: activity as Activity[], toBook: toBook as { id: string; num: string; customer: string; price: number }[] }
   }, [bid])
 
   if (loading || !data) return <LoadingPage />
   const { jobs, staff, activity } = data
+  // Accepted quotes whose job isn't scheduled yet.
+  const unbooked = jobs.filter((j) => j.quote_id && j.status === 'Quote Sent' && data.toBook.some((q) => q.id === j.quote_id))
   const staffById = byId(staff)
   const today = isoDate()
   const [wkStart, wkEnd] = weekRange()
@@ -103,20 +107,35 @@ export function DashboardPage() {
         </div>
       </section>
 
+      {unbooked.length > 0 && (
+        <Link to={`/jobs/${unbooked[0].id}`} className="item press" style={{ marginBottom: 18, borderColor: '#bfe3c9', background: '#F3FBF6' }}>
+          <span className="avatar sq lg" style={{ background: 'var(--green-tint)', color: 'var(--green)' }}>
+            <Icon name="check" />
+          </span>
+          <div className="grow">
+            <div className="item-title">
+              {unbooked.length} accepted quote{unbooked.length > 1 ? 's' : ''} to book
+            </div>
+            <div className="item-sub ellipsis">{unbooked.map((j) => j.customer).join(', ')} — pick a day and crew</div>
+          </div>
+          <Icon name="chevron" style={{ color: 'var(--faint)' }} />
+        </Link>
+      )}
+
       <div className="section-label" style={{ marginBottom: 10 }}>
         Pipeline
       </div>
-      <div className="row" style={{ gap: 7, marginBottom: 22 }}>
+      <div className="row" style={{ gap: 6, marginBottom: 22, alignItems: 'stretch' }}>
         {PIPELINE.map((s) => (
           <Link
             key={s}
             to={`/jobs?filter=all&status=${encodeURIComponent(s)}`}
-            className="card grow center"
-            style={{ padding: '10px 4px', borderRadius: 12, color: 'inherit' }}
+            className="card grow center press"
+            style={{ padding: '10px 2px', borderRadius: 12, color: 'inherit', minWidth: 0 }}
           >
             <div style={{ width: 8, height: 8, borderRadius: '50%', margin: '0 auto 6px', background: JOB_STATUS[s].c }} />
             <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{jobs.filter((j) => j.status === s).length}</div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--muted)', marginTop: 4 }}>{PIPE_LABEL[s]}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 600, color: 'var(--muted)', marginTop: 4, lineHeight: 1.15 }}>{PIPE_LABEL[s]}</div>
           </Link>
         ))}
       </div>
@@ -148,7 +167,7 @@ export function DashboardPage() {
               <Empty title="No crew yet" action={<Link className="btn btn-soft btn-sm" to="/crew">Add crew</Link>} />
             )}
             {activeStaff.map((s) => (
-              <Link key={s.id} to={`/crew/${s.id}`} className="card center" style={{ flex: 'none', width: 120, padding: '14px 10px', color: 'inherit' }}>
+              <Link key={s.id} to={`/crew/${s.id}`} className="card center press" style={{ flex: 'none', width: 120, padding: '14px 10px', color: 'inherit' }}>
                 <Avatar name={s.name} colour={s.colour} size="lg" />
                 <div className="ellipsis" style={{ fontSize: 13, fontWeight: 700, marginTop: 8 }}>
                   {firstName(s.name)}
