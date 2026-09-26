@@ -1,0 +1,27 @@
+# Supabase CLI config for local development (`supabase start`).
+project_id = "home-service-ops"
+
+[api]
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/reset", "http://localhost:5173/onboarding"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[storage]
+file_size_limit = "15MiB"
+
+[functions.send-email]
+verify_jwt = true
