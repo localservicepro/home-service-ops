@@ -187,6 +187,7 @@ export interface Quote {
   viewed_at: string | null
   responded_at: string | null
   decline_reason: string | null
+  response_notified_at: string | null
   request_job_id: string | null
   created_at: string
   updated_at: string

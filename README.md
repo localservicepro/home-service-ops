@@ -17,13 +17,31 @@ npm run dev
    `supabase link --project-ref <ref> && supabase db push`
    (or paste `supabase/migrations/20260926000000_init.sql` into the SQL editor).
    This creates the tables, RLS policies, triggers, public RPCs and the `job-photos` (private) and `logos` (public) storage buckets.
-2. Auth → URL configuration: set the Site URL to your app URL, and add `/reset` and `/onboarding` as redirect URLs.
-3. Email (optional but recommended). Deploy the function and set its secrets:
+2. Auth → URL Configuration: set the Site URL to your app URL, and add `https://<app>/**` as a redirect URL. Password reset uses our own `/reset/:token` email: single use, and it expires after Supabase's Email OTP expiry, which defaults to 1 hour.
+3. Email. Deploy the function and set its secrets (Dashboard → Edge Functions → Secrets):
    ```bash
    supabase functions deploy send-email
-   supabase secrets set RESEND_API_KEY=re_xxx EMAIL_FROM="Coastal Lawn Co <jobs@yourdomain.com.au>" APP_URL=https://app.example.com.au
+   supabase secrets set RESEND_API_KEY=re_xxx EMAIL_DOMAIN=localservicepro.com.au APP_URL=https://home-service-ops.vercel.app
    ```
-   Without `RESEND_API_KEY`, "send" still stamps the quote, invoice or invite as sent and copies the customer link to the clipboard, so you can text it instead.
+   - Emails come from `"<Business name>" <hello@EMAIL_DOMAIN>`, with the business's own email as reply-to. Each one has an HTML version and a plain-text version.
+   - Every link uses `APP_URL`, never the browser's address, so a preview build can't leak into a customer email. The frontend also needs `VITE_APP_URL` for the same reason.
+   - Without `RESEND_API_KEY`, "send" still marks the quote, invoice or invite as sent and copies the link to the clipboard. Password reset falls back to Supabase's built-in email.
+
+### Verifying the sending domain (so emails reach real inboxes)
+
+1. In Resend, go to **Domains → Add domain** and enter `localservicepro.com.au`. Pick the Tokyo (ap-northeast-1) region, the closest to Australia.
+2. Add the records Resend shows at your DNS host. Copy the values exactly as Resend gives them:
+
+   | Type | Name | Value |
+   | --- | --- | --- |
+   | MX | `send` | `feedback-smtp.<region>.amazonses.com` (priority 10) |
+   | TXT (SPF) | `send` | `v=spf1 include:amazonses.com ~all` |
+   | TXT (DKIM) | `resend._domainkey` | the long `p=MIGf…` key Resend gives you |
+   | TXT (DMARC, recommended) | `_dmarc` | `v=DMARC1; p=none; rua=mailto:info@localservicepro.com.au` |
+
+   These go on a `send.` subdomain and a DKIM selector, so they don't touch the domain's existing mail (Google Workspace, Microsoft 365 and so on). If you already have a DMARC record, keep it.
+3. Click **Verify** in Resend. DNS usually takes minutes, occasionally a few hours.
+4. Test: send a quote to a Gmail address, then open the button link in a private window. It should load `https://home-service-ops.vercel.app/q/…` signed out.
 
 Deploying the frontend: `npm run build` outputs a static SPA in `dist/`. SPA rewrites are included for Vercel (`vercel.json`) and Netlify (`public/_redirects`).
 

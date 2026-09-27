@@ -60,6 +60,7 @@ export function JobDetailPage() {
   }
 
   const staff = data.staff.find((s) => s.id === job.staff_id) || null
+  const invoiceReady = job.status === 'Done' || job.status === 'Paid'
   const balance = Math.max(0, Math.round((Number(job.price) - Number(job.amount_paid)) * 100) / 100)
 
   const refresh = async () => {
@@ -156,7 +157,9 @@ export function JobDetailPage() {
       case 'In Progress':
         return { label: 'Finish job', act: finishWork }
       case 'Done':
-        return { label: 'Record payment', act: () => setSheet('pay') }
+        return job.invoice_sent_at || !job.line_items.length
+          ? { label: 'Record payment', act: () => setSheet('pay') }
+          : { label: 'Send invoice', act: sendInvoice }
       case 'Paid':
         return { label: job.invoice_sent_at ? 'Resend receipt' : 'Send receipt', act: sendInvoice }
       default:
@@ -397,7 +400,12 @@ export function JobDetailPage() {
             }
           />
           <div className="row wrap" style={{ marginTop: 14 }}>
-            <button className="btn btn-ghost btn-sm" onClick={sendInvoice} disabled={busy || job.line_items.length === 0}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={sendInvoice}
+              disabled={busy || job.line_items.length === 0 || !invoiceReady}
+              title={invoiceReady ? undefined : 'Finish the job before sending the invoice'}
+            >
               <Icon name="send" /> {job.invoice_sent_at ? 'Resend invoice' : 'Send invoice'}
             </button>
             <a className="btn btn-ghost btn-sm" href={invoiceLink(job.public_token)} target="_blank" rel="noreferrer">

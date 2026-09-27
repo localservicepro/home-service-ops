@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useBiz } from '../context/AuthContext'
 import { useLoad } from '../hooks/useLoad'
 import { loadAddons, loadServices, loadStaff } from '../lib/data'
-import { copy, inviteLink, sendEmail, uploadLogo } from '../lib/api'
+import { copy, inviteLink, requestPasswordReset, sendEmail, uploadLogo } from '../lib/api'
 import { dateLong, money, relTime } from '../lib/format'
 import { FREQUENCIES, PAY_METHODS, PAY_METHOD_LABEL } from '../lib/status'
 import { tradeByKey } from '../lib/starterPacks'
@@ -204,8 +204,8 @@ function OwnerSection() {
         <button
           className="btn btn-ghost"
           onClick={async () => {
-            const { error } = await supabase.auth.resetPasswordForEmail(user!.email!, { redirectTo: `${window.location.origin}/reset` })
-            toast(error ? error.message : 'Password reset link sent to your email', Boolean(error))
+            await requestPasswordReset(user!.email!)
+            toast('Password reset link sent to your email')
           }}
         >
           Send password reset email

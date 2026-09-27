@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { requestPasswordReset } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { BrandMark } from '../components/Icon'
 import { Field, LoadingPage, Spinner } from '../components/ui'
@@ -123,14 +124,16 @@ export function LoginPage() {
 export function ForgotPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   return (
     <AuthFrame>
       {sent ? (
         <div className="stack">
           <h2>Check your email</h2>
-          <p className="muted">If an account exists for {email}, we’ve sent a link to reset your password.</p>
+          <p className="muted">
+            If <b>{email}</b> has an account, we’ve sent a link to reset your password. It works once and expires in 1 hour.
+          </p>
+          <p className="faint" style={{ fontSize: 12.5 }}>Nothing after a few minutes? Check spam, or try again.</p>
           <Link to="/login" className="btn btn-ghost">
             Back to sign in
           </Link>
@@ -141,20 +144,23 @@ export function ForgotPage() {
           onSubmit={async (e) => {
             e.preventDefault()
             setBusy(true)
-            const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset` })
+            // Same outcome whether or not the account exists, and errors are never shown.
+            try {
+              await requestPasswordReset(email.trim())
+            } catch {
+              /* swallow */
+            }
             setBusy(false)
-            if (error) setErr(error.message)
-            else setSent(true)
+            setSent(true)
           }}
         >
-          <h2>Reset password</h2>
-          <p className="muted">We’ll email you a secure link.</p>
+          <h2>Forgot your password?</h2>
+          <p className="muted">Enter your email and we’ll send you a secure link to set a new one.</p>
           <Field label="Email">
-            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" autoFocus />
           </Field>
-          {err && <div className="error-text">{err}</div>}
           <button className="btn btn-primary btn-lg" disabled={busy}>
-            Send reset link
+            {busy ? <Spinner /> : 'Send reset link'}
           </button>
           <Link to="/login" className="center" style={{ fontSize: 13, fontWeight: 700 }}>
             Back to sign in
@@ -165,49 +171,111 @@ export function ForgotPage() {
   )
 }
 
-export function ResetPage() {
-  const { session, loading } = useAuth()
+function NewPasswordForm({ onSubmit, busy, err }: { onSubmit: (pw: string) => void; busy: boolean; err: string | null }) {
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
-  const [err, setErr] = useState<string | null>(null)
+  const [local, setLocal] = useState<string | null>(null)
+  return (
+    <form
+      className="stack"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (pw.length < 8) return setLocal('Use at least 8 characters')
+        if (pw !== pw2) return setLocal('Passwords don’t match')
+        setLocal(null)
+        onSubmit(pw)
+      }}
+    >
+      <h2>Choose a new password</h2>
+      <Field label="New password">
+        <input className="input" type="password" minLength={8} value={pw} onChange={(e) => setPw(e.target.value)} required autoComplete="new-password" autoFocus />
+      </Field>
+      <Field label="Confirm password">
+        <input className="input" type="password" minLength={8} value={pw2} onChange={(e) => setPw2(e.target.value)} required autoComplete="new-password" />
+      </Field>
+      {(local || err) && <div className="error-text">{local || err}</div>}
+      <button className="btn btn-primary btn-lg" disabled={busy}>
+        {busy ? <Spinner /> : 'Save & sign in'}
+      </button>
+    </form>
+  )
+}
+
+function ResetLinkProblem() {
+  return (
+    <div className="stack">
+      <h2>This reset link has expired</h2>
+      <p className="muted">Reset links work once and expire after 1 hour. Request a new one and use the latest email.</p>
+      <Link to="/forgot" className="btn btn-primary">
+        Send a new link
+      </Link>
+      <Link to="/login" className="center" style={{ fontSize: 13, fontWeight: 700 }}>
+        Back to sign in
+      </Link>
+    </div>
+  )
+}
+
+/**
+ * /reset/:token — our emailed link. The token is only redeemed when the new password is submitted,
+ * so email link-scanners that pre-open links can't burn it.
+ */
+export function ResetTokenPage() {
+  const { token = '' } = useParams()
+  const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [expired, setExpired] = useState(false)
+  return (
+    <AuthFrame>
+      {expired ? (
+        <ResetLinkProblem />
+      ) : (
+        <NewPasswordForm
+          busy={busy}
+          err={err}
+          onSubmit={async (pw) => {
+            setBusy(true)
+            setErr(null)
+            const { error: vErr } = await supabase.auth.verifyOtp({ token_hash: token, type: 'recovery' })
+            if (vErr) {
+              setBusy(false)
+              return setExpired(true)
+            }
+            const { error } = await supabase.auth.updateUser({ password: pw })
+            setBusy(false)
+            if (error) return setErr(error.message)
+            navigate('/', { replace: true })
+          }}
+        />
+      )}
+    </AuthFrame>
+  )
+}
+
+/** /reset — fallback for Supabase's built-in reset email (session arrives in the URL). */
+export function ResetPage() {
+  const { session, loading } = useAuth()
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
   const navigate = useNavigate()
   if (loading) return <LoadingPage />
   return (
     <AuthFrame>
       {!session ? (
-        <div className="stack">
-          <h2>Link expired</h2>
-          <p className="muted">Open the reset link from your email again, or request a new one.</p>
-          <Link to="/forgot" className="btn btn-primary">
-            Request a new link
-          </Link>
-        </div>
+        <ResetLinkProblem />
       ) : (
-        <form
-          className="stack"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            if (pw !== pw2) return setErr('Passwords don’t match')
+        <NewPasswordForm
+          busy={busy}
+          err={err}
+          onSubmit={async (pw) => {
             setBusy(true)
             const { error } = await supabase.auth.updateUser({ password: pw })
             setBusy(false)
             if (error) setErr(error.message)
             else navigate('/', { replace: true })
           }}
-        >
-          <h2>Choose a new password</h2>
-          <Field label="New password">
-            <input className="input" type="password" minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} required autoComplete="new-password" />
-          </Field>
-          <Field label="Confirm password">
-            <input className="input" type="password" minLength={6} value={pw2} onChange={(e) => setPw2(e.target.value)} required autoComplete="new-password" />
-          </Field>
-          {err && <div className="error-text">{err}</div>}
-          <button className="btn btn-primary btn-lg" disabled={busy}>
-            Save password
-          </button>
-        </form>
+        />
       )}
     </AuthFrame>
   )

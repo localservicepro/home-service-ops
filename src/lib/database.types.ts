@@ -127,6 +127,7 @@ export type Database = {
           public_token: string
           request_job_id: string | null
           responded_at: string | null
+          response_notified_at: string | null
           sent_at: string | null
           status: Database['public']['Enums']['quote_status']
           updated_at: string

@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { AppShell } from './components/AppShell'
 import { RequireBusiness, RequireOffice } from './components/Guards'
-import { ForgotPage, JoinPage, LoginPage, ResetPage } from './pages/Auth'
+import { ForgotPage, JoinPage, LoginPage, ResetPage, ResetTokenPage } from './pages/Auth'
 import { OnboardingPage } from './pages/Onboarding'
 import { DashboardPage } from './pages/Dashboard'
 import { JobsPage } from './pages/Jobs'
@@ -29,6 +29,7 @@ export default function App() {
       <Route path="/signup" element={<LoginPage />} />
       <Route path="/forgot" element={<ForgotPage />} />
       <Route path="/reset" element={<ResetPage />} />
+      <Route path="/reset/:token" element={<ResetTokenPage />} />
       <Route path="/join/:token" element={<JoinPage />} />
       <Route path="/q/:token" element={<PublicQuotePage />} />
       <Route path="/i/:token" element={<PublicInvoicePage />} />

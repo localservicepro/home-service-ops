@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { notifyQuoteResponse } from '../lib/api'
 import { abn, dateLong, isoDate, money } from '../lib/format'
 import { PAY_METHOD_LABEL, QUOTE_STATUS, invoiceNum } from '../lib/status'
 import type { JobStatus, LineItem, PayMethod, PayState, PublicBusiness, QuoteStatus } from '../lib/types'
@@ -146,6 +147,7 @@ export function PublicQuotePage() {
     setBusy(false)
     if (error) return setErr(error.message)
     setMode(null)
+    notifyQuoteResponse(token)
     load()
   }
   const open = q.status === 'Draft' || q.status === 'Sent'
@@ -277,7 +279,13 @@ export function PublicInvoicePage() {
       title={money(inv.price)}
       right={paid ? <Pill c="var(--green)" bg="var(--green-tint)">Paid</Pill> : <Pill c="var(--amber)" bg="var(--amber-tint)">Due {dateLong(isoDate(due))}</Pill>}
     >
-      <div className="card rise">
+      <div className="card rise" style={{ position: 'relative', overflow: 'hidden' }}>
+        {paid && (
+          <div className="paid-stamp" aria-label="Paid">
+            PAID
+            <small>{dateLong(inv.paid_at)}</small>
+          </div>
+        )}
         <BizBlock
           biz={b}
           customer={inv.customer}

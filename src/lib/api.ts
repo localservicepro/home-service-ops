@@ -1,7 +1,8 @@
 import { supabase } from './supabase'
 import type { Job, Photo } from './types'
 
-export const appUrl = () => window.location.origin
+/** The live app address used in every customer link. Set VITE_APP_URL so preview deploys never leak into emails. */
+export const appUrl = () => ((import.meta.env.VITE_APP_URL as string | undefined) || window.location.origin).replace(/\/+$/, '')
 
 export const quoteLink = (token: string) => `${appUrl()}/q/${token}`
 export const invoiceLink = (token: string) => `${appUrl()}/i/${token}`
@@ -22,7 +23,7 @@ export interface SendResult {
  * can share it by SMS instead.
  */
 export async function sendEmail(kind: EmailKind, id: string, link: string): Promise<SendResult> {
-  const { data, error } = await supabase.functions.invoke('send-email', { body: { kind, id, origin: appUrl() } })
+  const { data, error } = await supabase.functions.invoke('send-email', { body: { kind, id } })
   if (error || !data) {
     // Function not deployed / offline: stamp locally so the flow still works.
     const table = kind === 'quote' ? 'quotes' : kind === 'invoice' ? 'jobs' : 'invites'
@@ -37,6 +38,26 @@ export async function sendEmail(kind: EmailKind, id: string, link: string): Prom
     emailed: Boolean(data.emailed),
     link,
     message: data.emailed ? `Emailed to ${data.to}` : data.message || 'Link copied to clipboard',
+  }
+}
+
+/**
+ * Always resolves the same way whether or not the account exists (no account discovery).
+ * Uses our branded /reset/:token email; falls back to Supabase's built-in email if ours isn't set up.
+ */
+export async function requestPasswordReset(email: string) {
+  const { data, error } = await supabase.functions.invoke('send-email', { body: { kind: 'password_reset', email } })
+  if (error || data?.fallback) {
+    await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${appUrl()}/reset` })
+  }
+}
+
+/** Lets the business know a customer accepted/declined. Best-effort: the app also shows it in activity. */
+export async function notifyQuoteResponse(token: string) {
+  try {
+    await supabase.functions.invoke('send-email', { body: { kind: 'quote_response', token } })
+  } catch {
+    /* non-blocking */
   }
 }
 
