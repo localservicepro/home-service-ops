@@ -34,10 +34,14 @@ const result = await build({
       'import { createRequire as __hsoCreateRequire } from "node:module";',
       'import __hsoProcess from "node:process";',
       'import { Buffer as __hsoBuffer } from "node:buffer";',
+      'import { setImmediate as __hsoSetImmediate, clearImmediate as __hsoClearImmediate } from "node:timers";',
       // import.meta.url is https:// when the bundle is imported remotely; createRequire needs a file URL.
       "const require = __hsoCreateRequire(\"file:///hso-api.js\");",
       "globalThis.process ??= __hsoProcess;",
       "globalThis.Buffer ??= __hsoBuffer;",
+      // Supabase's Edge Runtime has no global setImmediate; the postgres driver uses it.
+      "globalThis.setImmediate ??= __hsoSetImmediate;",
+      "globalThis.clearImmediate ??= __hsoClearImmediate;",
     ].join("\n"),
   },
   plugins: [
