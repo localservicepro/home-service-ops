@@ -1,0 +1,20 @@
+.empty {
+  text-align: center;
+  padding: var(--spacing-8) var(--spacing-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+.title {
+  font-weight: 700;
+  color: var(--foreground);
+  font-size: 14px;
+}
+.body {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.action {
+  margin-top: var(--spacing-4);
+}

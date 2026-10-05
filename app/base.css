@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Overlay layers */
+  --z-overlay: 400;
+
+  --z-spotlight: 1000; /* Tutorial spotlights/guided help */
+
+  /* System layers */
+  --z-critical: 2000; /* Critical system notifications */
+
+  /* spacing */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-20: 5rem;
+}
+
+:root {
+  --background: #F4F8FC;
+  --foreground: #08172B;
+  --surface: #EEF3F8;
+  --surface-foreground: #16374F;
+  --sidebar: #08172B;
+  --sidebar-foreground: #FFFFFF;
+  --card: #FFFFFF;
+  --card-foreground: #08172B;
+  --popup: #FFFFFF;
+  --popup-foreground: #08172B;
+
+  --primary: #0C6FD0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EAF3FC;
+  --secondary-foreground: #0C6FD0;
+  --accent: #35C6F4;
+  --accent-foreground: #08172B;
+  --muted: #EEF3F8;
+  --muted-foreground: #5A7189;
+
+  --success: #2C9E73;
+  --success-foreground: #FFFFFF;
+  --error: #C4453C;
+  --error-foreground: #FFFFFF;
+  --warning: #D98A1F;
+  --warning-foreground: #FFFFFF;
+  --info: #0C9BD6;
+  --info-foreground: #FFFFFF;
+  --info-hover: #0A89BE;
+  --info-active: #0877A6;
+
+  --border: #DCE7F1;
+
+  /* product tokens */
+  --navy-900: #08172B;
+  --navy-800: #0E2942;
+  --navy-700: #16374F;
+  --navy-muted: #8FB2D8;
+  --faint: #B7C7DA;
+  --signal-gradient: linear-gradient(135deg, #0C6FD0, #35C6F4);
+  --hero-gradient: linear-gradient(150deg, #08172B, #0E2942 70%);
+  --status-new: #5A7189;        --status-new-bg: #EEF3F8;
+  --status-quote: #0C9BD6;      --status-quote-bg: #E2F6FD;
+  --status-scheduled: #0C6FD0;  --status-scheduled-bg: #E7F1FB;
+  --status-progress: #D98A1F;   --status-progress-bg: #FBF1E1;
+  --status-done: #2C9E73;       --status-done-bg: #E3F5EC;
+  --status-paid: #1C7F5B;       --status-paid-bg: #E1F1EA;
+  --status-cancelled: #C4453C;  --status-cancelled-bg: #FBEDEB;
+
+  --font-family-base: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-family-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-family-monospace: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-family-cursive: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --shadow: 0 1px 2px rgba(8, 23, 43, 0.06);
+  --shadow-md: 0 6px 18px rgba(8, 23, 43, 0.08);
+  --shadow-lg: 0 24px 60px -18px rgba(8, 23, 43, 0.35);
+  --shadow-focus: 0 0 0 3px rgba(12, 111, 208, 0.25);
+  --shadow-glow: 0 6px 18px rgba(12, 111, 208, 0.3);
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  --animation-duration-fast: 120ms;
+  --animation-duration-normal: 220ms;
+  --animation-duration-slow: 400ms;
+
+  --chart-color-1: #0C6FD0;
+  --chart-color-2: #35C6F4;
+  --chart-color-3: #2C9E73;
+  --chart-color-4: #D98A1F;
+  --chart-color-5: #5A7189;
+}
+
+.dark {
+}

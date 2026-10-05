@@ -1,0 +1,145 @@
+/* Tablet and desktop: the app shell provides the side margins. */
+@media (min-width: 768px) {
+  .pad.pad {
+    padding: var(--spacing-2) 0 var(--spacing-8);
+  }
+  .list.list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+  .list.list > .muted {
+    grid-column: 1 / -1;
+  }
+}
+.pad {
+  padding: var(--spacing-4) var(--spacing-6) var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+.skel {
+  height: 160px;
+  border-radius: 20px;
+}
+.hero {
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--hero-gradient);
+  color: #fff;
+  box-shadow: var(--shadow-glow);
+}
+.heroTop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.heroText {
+  flex: 1;
+}
+.rate {
+  font-size: 24px;
+  font-weight: 800;
+}
+.rate span {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.heroSub {
+  font-size: 12.5px;
+  opacity: 0.75;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+.stats > div {
+  display: flex;
+  flex-direction: column;
+}
+.stats b {
+  font-size: 17px;
+  font-weight: 800;
+}
+.stats span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.contact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.contactBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+.duty,
+.filters {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: var(--spacing-2);
+}
+.earned {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--status-paid-bg);
+  color: var(--status-paid);
+  font-size: 13px;
+  font-weight: 600;
+}
+.earned b {
+  font-size: 15px;
+  font-weight: 800;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.muted {
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.danger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: var(--spacing-4);
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
+  background: transparent;
+  color: var(--error);
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+}

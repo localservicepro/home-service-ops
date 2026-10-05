@@ -1,0 +1,145 @@
+.grid {
+  display: grid;
+  gap: 8px;
+}
+.sm {
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+}
+.md {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+}
+.lg {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+.thumb {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--muted);
+  cursor: zoom-in;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s;
+}
+.thumb:hover img {
+  transform: scale(1.04);
+}
+.thumb:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 12px 96px;
+  background: rgba(5, 12, 22, 0.94);
+  animation: fade 0.15s ease-out;
+}
+.bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  color: #fff;
+  font: 700 13px var(--font-family-base);
+}
+.barBtns {
+  display: flex;
+  gap: 6px;
+}
+.iconBtn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+}
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.big {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  user-select: none;
+}
+.nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+.nav:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+.prev {
+  left: 12px;
+}
+.next {
+  right: 12px;
+}
+.strip {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  overflow-x: auto;
+}
+.mini {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  opacity: 0.55;
+  cursor: pointer;
+  background: none;
+}
+.mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.miniOn {
+  opacity: 1;
+  border-color: #fff;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}

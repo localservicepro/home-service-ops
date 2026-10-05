@@ -1,0 +1,601 @@
+.pad {
+  padding: var(--spacing-4) var(--spacing-6) var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.skelHero {
+  height: 190px;
+  border-radius: 22px;
+}
+.skel {
+  height: 220px;
+  border-radius: 18px;
+}
+.cardSkel {
+  height: 52px;
+  border-radius: 12px;
+}
+.formSkel {
+  height: 200px;
+  border-radius: 12px;
+}
+
+/* ---------- hero ---------- */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 22px;
+  background: var(--hero-gradient);
+  color: #fff;
+  box-shadow: var(--shadow-glow);
+}
+.heroMain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.pill {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.pill_active {
+  background: rgba(44, 158, 115, 0.25);
+  color: #7ee2b5;
+}
+.pill_trial {
+  background: rgba(53, 198, 244, 0.2);
+  color: var(--accent);
+}
+.pill_past_due,
+.pill_expired {
+  background: rgba(217, 138, 31, 0.25);
+  color: #ffc46b;
+}
+.heroTitle {
+  margin: 4px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.heroNote {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #b8c8dc;
+  max-width: 560px;
+}
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.heroSide {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.heroPrice {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.heroPrice span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy-muted);
+  margin-left: 4px;
+}
+.heroNext {
+  font-size: 13px;
+  color: #b8c8dc;
+}
+.heroNext b {
+  color: #fff;
+}
+.heroCount {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.heroCount b {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+.heroCount span {
+  font-size: 13px;
+  color: var(--navy-muted);
+}
+
+/* ---------- cards ---------- */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.meterTop {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--navy-700);
+  font-weight: 600;
+}
+.meterTop b {
+  color: var(--foreground);
+  font-weight: 800;
+}
+.meterTop small {
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+.bar {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--muted);
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--signal-gradient);
+  transition: width var(--animation-duration-slow);
+}
+.bar .warn {
+  background: var(--status-progress);
+}
+.bar .full {
+  background: var(--error);
+}
+.cc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+.ccIcon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--navy-900);
+  color: #fff;
+  flex: none;
+}
+.ccText {
+  display: flex;
+  flex-direction: column;
+}
+.ccText b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+  text-transform: capitalize;
+}
+.ccText small {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+/* ---------- plans ---------- */
+.plansWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 16px;
+}
+.plans {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.plan > button {
+  margin-top: auto;
+}
+.featured {
+  border: 2px solid var(--primary);
+  box-shadow: var(--shadow-glow);
+}
+.planCurrent {
+  border: 2px solid var(--status-paid);
+}
+.tag {
+  position: absolute;
+  top: -11px;
+  right: 16px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--signal-gradient);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.tagCurrent {
+  background: var(--status-paid);
+}
+.planHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.planHead b {
+  font-size: 19px;
+  color: var(--foreground);
+}
+.planPrice {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+.planPrice small {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.plan ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plan li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--foreground);
+}
+.plan li svg {
+  color: var(--status-paid);
+  flex-shrink: 0;
+}
+
+/* ---------- billing details form ---------- */
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 10px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.field > span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.full {
+  grid-column: 1 / -1;
+}
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ---------- invoices ---------- */
+.invoices {
+  display: flex;
+  flex-direction: column;
+}
+.inv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.inv:last-child {
+  border-bottom: 0;
+}
+.invIcon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--secondary);
+  color: var(--primary);
+  flex: none;
+}
+.invText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.invText b {
+  font-size: 13.5px;
+  color: var(--foreground);
+}
+.invText small {
+  font-family: var(--font-family-monospace);
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.invStatus {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  text-transform: capitalize;
+}
+.inv_paid {
+  background: var(--status-paid-bg);
+  color: var(--status-paid);
+}
+.inv_open {
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+.invAmt {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--foreground);
+  min-width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.invLinks {
+  display: flex;
+  gap: 4px;
+}
+.invLinks a {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--primary);
+}
+.invLinks a:hover {
+  background: var(--secondary);
+}
+
+/* ---------- cancel + misc ---------- */
+.cancelRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--error) 22%, var(--border));
+  background: var(--card);
+}
+.cancelRow div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cancelRow b {
+  font-size: 14px;
+  color: var(--foreground);
+}
+.cancelRow small {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  line-height: 1.45;
+}
+.cancelBtn {
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 30%, transparent);
+}
+.portalLink {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: none;
+  color: var(--muted-foreground);
+  font: 600 12.5px var(--font-family-base);
+  cursor: pointer;
+  padding: 6px;
+}
+.portalLink:hover {
+  color: var(--primary);
+}
+.muted {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.warnNote {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+
+/* ---------- confirm sheet ---------- */
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--navy-700);
+}
+.sheetBody p {
+  margin: 0;
+}
+.sheetBtns {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+.sheetBtns > * {
+  flex: 1;
+}
+.compare {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.compare > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+.compare small {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.compare b {
+  font-size: 17px;
+  color: var(--foreground);
+}
+.compare span {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.compare .compareNew {
+  background: var(--secondary);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.compareArrow {
+  color: var(--primary);
+  font-weight: 800;
+  flex: none;
+}
+.blocker {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+.blocker b {
+  display: block;
+  margin-bottom: 4px;
+}
+.blocker ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+/* ---------- tablet + desktop ---------- */
+@media (min-width: 768px) {
+  .pad.pad {
+    padding: var(--spacing-2) 0 var(--spacing-8);
+    gap: 18px;
+  }
+  .hero {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 26px 28px;
+    border-radius: 24px;
+  }
+  .heroSide {
+    align-items: flex-end;
+    text-align: right;
+    padding-top: 26px;
+  }
+  .heroTitle {
+    font-size: 30px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    gap: 18px;
+  }
+  .grid > :only-child {
+    grid-column: 1 / -1;
+  }
+  .card {
+    padding: 20px 22px;
+  }
+  .plans {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .plan {
+    padding: 22px 24px;
+  }
+  .cancelRow {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+  }
+  .cancelBtn {
+    flex: none;
+  }
+}
+

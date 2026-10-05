@@ -1,0 +1,81 @@
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.iconOn {
+  background: var(--status-scheduled-bg);
+  color: var(--primary);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.text b {
+  font-size: 14.5px;
+  color: var(--foreground);
+}
+.text small {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 1px;
+  overflow-wrap: anywhere;
+}
+.text strong {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.skel {
+  height: 14px;
+  width: 70%;
+  margin-top: 4px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--status-paid-bg);
+  color: var(--status-paid);
+  white-space: nowrap;
+}
+.warn {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+.connect {
+  width: 100%;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}

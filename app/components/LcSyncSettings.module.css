@@ -1,0 +1,129 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.skel {
+  height: 90px;
+  border-radius: 12px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.field > span,
+.stagesHead {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.select {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font: 500 14px var(--font-family-base);
+}
+.stages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+.stageRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.stageText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.stageText b {
+  font-size: 13.5px;
+  color: var(--foreground);
+}
+.stageText small {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.toggle span {
+  display: flex;
+  flex-direction: column;
+}
+.toggle b {
+  font-size: 14px;
+  color: var(--foreground);
+}
+.toggle small {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--background);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.status small {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.error {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+  overflow-wrap: anywhere;
+}
+.muted,
+.upsell {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.upsell a {
+  color: var(--primary);
+  font-weight: 700;
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

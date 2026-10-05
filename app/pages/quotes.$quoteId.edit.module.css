@@ -1,0 +1,13 @@
+/* Tablet and desktop: the app shell provides the side margins. */
+@media (min-width: 768px) {
+  .pad.pad {
+    padding: var(--spacing-2) 0 var(--spacing-8);
+  }
+}
+.pad {
+  padding: var(--spacing-6);
+}
+.skel {
+  height: 160px;
+  border-radius: 18px;
+}

@@ -25,3 +25,10 @@ file_size_limit = "15MiB"
 
 [functions.send-email]
 verify_jwt = true
+
+# The app's API: one function, bundled from app/ by `npm run build:api`.
+# Auth is checked in code (Supabase access token), so public pages, OAuth callbacks and
+# payment webhooks can reach it without a JWT.
+[functions.api]
+verify_jwt = false
+entrypoint = "./functions/api/index.js"

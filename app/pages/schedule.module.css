@@ -1,0 +1,43 @@
+.body {
+  padding: var(--spacing-4) var(--spacing-6) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.calSkel {
+  height: 320px;
+  border-radius: 18px;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cardSkel {
+  height: 66px;
+  border-radius: 16px;
+}
+.meta {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+@media (min-width: 768px) {
+  .body {
+    padding: var(--spacing-2) 0 0;
+  }
+}
+/* Laptop and desktop: calendar on the left, the chosen day's jobs on the right. */
+@media (min-width: 1000px) {
+  .body {
+    display: grid;
+    grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .body > :first-child {
+    position: sticky;
+    top: 0;
+  }
+}
