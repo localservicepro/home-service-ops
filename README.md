@@ -11,7 +11,7 @@ The features, design and business logic come from the original app (exported fro
 | Web app | `app/pages`, `app/components`, `app/base.css` | React 19 + React Router + TanStack Query, CSS modules. Each `pages/<name>.tsx` file is a route (`jobs.$jobId` → `/jobs/:jobId`, `_index` → `/`). `pages/<name>.pageLayout.tsx` lists the shells that wrap it. See `app/main.tsx`. |
 | Sign-in | Supabase Auth | Email + password, Google, password reset. The app profile is `hso.users` (keyed by `auth_id`) and is created on first sign-in. |
 | API | Supabase Edge Function `api` | One function serves every route: `app/endpoints/<route>_<GET\|POST>.ts` answers `…/functions/v1/api/<route>`. `npm run build:api` bundles it into `supabase/functions/api/index.js`. |
-| Data | Supabase Postgres, schema `hso` | `supabase/migrations/20261005000000_hso_schema.sql`. Only the `api` function reaches it; RLS is on with no policies and the API roles have no grants. |
+| Data | Supabase Postgres, schema `hso` | `supabase/migrations/20261005234026_hso_schema.sql`. Only the `api` function reaches it; RLS is on with no policies and the API roles have no grants. |
 | Files | Supabase Storage, bucket `hso-public` | Job photos, form logos and enquiry photos. Uploads go straight from the browser to signed upload URLs. |
 | Email | Resend, called from the `api` function | From `"<Business>" <hello@EMAIL_DOMAIN>`, with replies going to the business. |
 
@@ -26,7 +26,9 @@ Tenancy: every business-data endpoint starts with `requireMember()` (`app/helper
 - `SUPABASE_ACCESS_TOKEN`: create one at supabase.com → Account → Access Tokens.
 - `SUPABASE_DB_PASSWORD`: the database password (Project settings → Database).
 
-To deploy by hand instead:
+Deploying without the Action (how it was first deployed): run `npm run build:api`, copy `supabase/functions/api/index.js` to `supabase/functions/api/bundle.js` and push. Then deploy an `api` function (verify JWT off) whose `index.ts` is one line, `import "https://raw.githubusercontent.com/localservicepro/home-service-ops/<commit>/supabase/functions/api/bundle.js";`, pinned to that commit.
+
+Or with the Supabase CLI:
 
 ```bash
 npm ci && npm run build:api
@@ -94,7 +96,7 @@ The whole stack runs without Docker: Postgres, the Supabase Auth server (`auth` 
 
 ```bash
 # Postgres: create a database, an `auth` schema, and anon / authenticated / service_role roles, then run `auth migrate`
-psql "$DB" -f supabase/migrations/20261005000000_hso_schema.sql
+psql "$DB" -f supabase/migrations/20261005234026_hso_schema.sql
 node scripts/build-api.mjs --dev /tmp/hso-api-dev.js
 SUPABASE_DB_URL=$DB SUPABASE_URL=http://localhost:5173 AUTH_URL=http://localhost:9999 \
   STORAGE_URL=http://localhost:5173/storage/v1 APP_URL=http://localhost:5173 EMAIL_DEV_LOG=1 \

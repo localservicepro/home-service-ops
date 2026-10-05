@@ -6,7 +6,7 @@ import { ensureLinked } from "../../helpers/accountSetup";
 
 // The signed-in user's profile. On first sign-in this also links them to their business:
 // email sign-ups carry business_name / invite_token in Supabase user metadata; Google sign-ups
-// pass mode / invite / business in the query string.
+// pass mode / invite / business in the query string. Anyone else gets a new business.
 export async function handle(request: Request) {
   try {
     const { user, authUser } = await getServerUserSession(request);
@@ -17,7 +17,9 @@ export async function handle(request: Request) {
     const first = user.displayName.trim().split(/\s+/)[0] || "My";
     const businessName = inviteToken
       ? undefined
-      : (s(meta.business_name) ?? s(q.get("business")) ?? (q.get("mode") === "signup" ? `${first}'s business` : undefined));
+      : // No invite: their own business. Accounts made before this app (or via Google sign-in) get a
+        // placeholder name that onboarding asks them to replace.
+        (s(meta.business_name) ?? s(q.get("business")) ?? `${first}'s business`);
     try {
       await ensureLinked(user, { inviteToken, businessName });
     } catch (e) {
