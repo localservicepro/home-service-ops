@@ -34,7 +34,8 @@ const result = await build({
       'import { createRequire as __hsoCreateRequire } from "node:module";',
       'import __hsoProcess from "node:process";',
       'import { Buffer as __hsoBuffer } from "node:buffer";',
-      "const require = __hsoCreateRequire(import.meta.url);",
+      // import.meta.url is https:// when the bundle is imported remotely; createRequire needs a file URL.
+      "const require = __hsoCreateRequire(\"file:///hso-api.js\");",
       "globalThis.process ??= __hsoProcess;",
       "globalThis.Buffer ??= __hsoBuffer;",
     ].join("\n"),
