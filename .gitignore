@@ -5,3 +5,4 @@ dist
 supabase/.temp
 supabase/.branches
 supabase/functions/api/index.js
+# supabase/functions/api/bundle.js is committed: the deployed function imports it from a pinned commit.

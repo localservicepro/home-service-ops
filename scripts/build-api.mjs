@@ -5,8 +5,14 @@
 import { build } from "esbuild";
 import { builtinModules } from "node:module";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 
 const dev = process.argv.includes("--dev");
+// --npm-external: leave npm packages as npm: imports for Supabase's Deno runtime to fetch,
+// which keeps the uploaded file small (used when deploying through the Supabase API).
+const npmExternal = process.argv.includes("--npm-external");
+const pkgVersion = (name) => JSON.parse(readFileSync(new URL(`../node_modules/${name}/package.json`, import.meta.url))).version;
+const NPM = ["kysely", "kysely-postgres-js", "postgres", "zod", "superjson", "nanoid"];
 const outfile = dev ? process.argv[process.argv.indexOf("--dev") + 1] : "supabase/functions/api/index.js";
 const stub = fileURLToPath(new URL("../app/server/browserOnlyStub.ts", import.meta.url));
 const builtins = new Set(builtinModules.flatMap((m) => [m, `node:${m}`]));
@@ -39,6 +45,11 @@ const result = await build({
       setup(b) {
         // Browser-only modules imported by shared *.schema.ts files.
         b.onResolve({ filter: /helpers\/(apiFetch|supabaseClient)$/ }, () => ({ path: stub }));
+        if (npmExternal)
+          b.onResolve({ filter: /^[a-z@][^:]*$/ }, (args) => {
+            const name = NPM.find((n) => args.path === n || args.path.startsWith(`${n}/`));
+            return name ? { path: `npm:${name}@${pkgVersion(name)}${args.path.slice(name.length)}`, external: true } : undefined;
+          });
         // Deno needs the node: prefix on built-ins.
         b.onResolve({ filter: /^[a-z:_/]+$/ }, (args) =>
           builtins.has(args.path) ? { path: args.path.startsWith("node:") ? args.path : `node:${args.path}`, external: true } : undefined,

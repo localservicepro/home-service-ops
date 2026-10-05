@@ -5,7 +5,7 @@ import { APP_URL, env } from "./serverEnv";
 // business's name as the sender and replies going to the business's own inbox.
 // The domain must be verified in Resend (SPF + DKIM) before mail reaches real inboxes.
 
-export const SEND_DOMAIN = env("EMAIL_DOMAIN") ?? "localservicepro.com.au";
+export const SEND_DOMAIN = env("EMAIL_DOMAIN") ?? "home.localservicepro.com.au";
 
 // Customer-facing links always use the configured app URL, never the request's origin,
 // so a preview build or localhost can't leak into a customer email.

@@ -40,7 +40,7 @@ Then set the function's secrets (Dashboard → Edge Functions → Secrets, or `s
 | Secret | Needed for |
 | --- | --- |
 | `APP_URL` | The web app's URL (default `https://home-service-ops.vercel.app`). Every customer link and post-OAuth redirect uses it. |
-| `RESEND_API_KEY`, `EMAIL_DOMAIN` (default `localservicepro.com.au`) | Quote, invoice, invite, review and reset emails. Without the key, sending fails with a clear message, and password reset falls back to Supabase's built-in email. |
+| `RESEND_API_KEY`, `EMAIL_DOMAIN` (default `home.localservicepro.com.au`) | Quote, invoice, invite, review and reset emails. Without the key, sending fails with a clear message, and password reset falls back to Supabase's built-in email. |
 | `STRIPE_SECRET_KEY`, `STRIPE_CLIENT_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_BILLING_WEBHOOK_SECRET` | Stripe Connect pay links, and Home Service Ops subscriptions |
 | `SQUARE_APP_ID`, `SQUARE_APP_SECRET`, `SQUARE_WEBHOOK_SIGNATURE_KEY` | Square pay links |
 | `GOCARDLESS_CLIENT_ID`, `GOCARDLESS_CLIENT_SECRET`, `GOCARDLESS_ENVIRONMENT`, `GOCARDLESS_WEBHOOK_SECRET` | BECS direct debit |
@@ -80,7 +80,7 @@ Deploy the frontend after the API, because the new web app needs the `api` funct
 
 ## Email domain (so mail reaches inboxes)
 
-In Resend, go to **Domains → Add domain** and enter `localservicepro.com.au`. Add the records it shows at your DNS host:
+In Resend, go to **Domains → Add domain** and enter `home.localservicepro.com.au`. Add the records it shows at your DNS host:
 - MX `send`
 - TXT (SPF) `send` → `v=spf1 include:amazonses.com ~all`
 - TXT (DKIM) `resend._domainkey`

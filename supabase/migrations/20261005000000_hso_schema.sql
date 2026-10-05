@@ -17,7 +17,7 @@ do $$ begin
   create type hso.work_state as enum ('done', 'idle', 'running');
 exception when duplicate_object then null; end $$;
 
-create or replace function hso.new_token() returns text language sql volatile as $$
+create or replace function hso.new_token() returns text language sql volatile set search_path = '' as $$
   select replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')
 $$;
 
@@ -252,20 +252,20 @@ create table hso.counters (
 );
 
 create or replace function hso.next_num(p_business int, p_kind text, p_start int) returns int
-language sql volatile as $$
+language sql volatile set search_path = '' as $$
   insert into hso.counters as c (business_id, kind, last) values (p_business, p_kind, p_start)
   on conflict (business_id, kind) do update set last = c.last + 1
   returning last
 $$;
 
-create or replace function hso.tg_job_num() returns trigger language plpgsql as $$
+create or replace function hso.tg_job_num() returns trigger language plpgsql set search_path = '' as $$
 begin
   if new.num is null or new.num = '' then new.num := 'LC-' || hso.next_num(new.business_id, 'job', 1001); end if;
   return new;
 end $$;
 create trigger job_num before insert on hso.jobs for each row execute function hso.tg_job_num();
 
-create or replace function hso.tg_quote_num() returns trigger language plpgsql as $$
+create or replace function hso.tg_quote_num() returns trigger language plpgsql set search_path = '' as $$
 begin
   if new.num is null or new.num = '' then new.num := 'Q-' || hso.next_num(new.business_id, 'quote', 2001); end if;
   return new;
