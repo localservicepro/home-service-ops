@@ -700,9 +700,8 @@ function IntegrationsSection() {
 }
 
 const PLANS = [
-  { key: 'solo', name: 'Solo', price: 29, blurb: '1 user, unlimited jobs & quotes' },
-  { key: 'crew', name: 'Crew', price: 59, blurb: 'Up to 5 crew logins, photos, timers' },
-  { key: 'fleet', name: 'Fleet', price: 119, blurb: 'Unlimited crew, integrations, priority support' },
+  { key: 'solo', name: 'Solo', price: 49, blurb: '1 login, unlimited jobs, quotes & invoices' },
+  { key: 'team', name: 'Team', price: 129, blurb: 'Unlimited crew & admin logins, crew app, priority support' },
 ]
 
 function PlanSection() {

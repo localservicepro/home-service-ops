@@ -1,12 +1,21 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { LoadingPage } from './ui'
+
+const LandingPage = lazy(() => import('../pages/Landing').then((m) => ({ default: m.LandingPage })))
 
 /** Signed-in user with a business. Owners who haven't onboarded go to /onboarding. */
 export function RequireBusiness() {
   const { loading, session, membership, business } = useAuth()
   const loc = useLocation()
   if (loading) return <LoadingPage />
+  if (!session && loc.pathname === '/')
+    return (
+      <Suspense fallback={<LoadingPage />}>
+        <LandingPage />
+      </Suspense>
+    )
   if (!session) return <Navigate to="/login" replace state={{ from: loc.pathname }} />
   if (!membership || !business) return <NoBusiness />
   if (membership.role === 'owner' && !business.onboarded_at && loc.pathname !== '/onboarding') return <Navigate to="/onboarding" replace />
