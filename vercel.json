@@ -1,9 +1,15 @@
 {
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/",
       "has": [{ "type": "host", "value": "home-service-ops.vercel.app" }],
-      "destination": "https://home.localservicepro.com.au/:path*",
+      "destination": "https://home.localservicepro.com.au/",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [{ "type": "host", "value": "home-service-ops.vercel.app" }],
+      "destination": "https://home.localservicepro.com.au/:path+",
       "permanent": true
     }
   ],
