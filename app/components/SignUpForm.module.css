@@ -35,3 +35,14 @@
   font-size: 15px;
   color: var(--success, #1c7f5b);
 }
+.legal {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+.legal a {
+  color: var(--primary);
+  font-weight: 600;
+}

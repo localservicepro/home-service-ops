@@ -574,7 +574,14 @@ export function LandingPage() {
             <button onClick={go("pricing")}>Pricing</button>
             <Link to={LOGIN}>Log in</Link>
           </nav>
-          <small>© {new Date().getFullYear()} Local Service Pro. Made in Australia for home service businesses.</small>
+          <div className={styles.footerLegal}>
+            <small>© {new Date().getFullYear()} Local Service Pro. Made in Australia for home service businesses.</small>
+            <span>
+              <Link to="/privacy">Privacy Policy</Link>
+              <Link to="/terms">Terms of Service</Link>
+              <a href="mailto:info@localservicepro.com.au">Contact</a>
+            </span>
+          </div>
         </div>
       </footer>
     </div>

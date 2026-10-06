@@ -904,6 +904,29 @@
 .footer small {
   font-size: 12.5px;
 }
+.footerLegal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(143, 178, 216, 0.12);
+}
+.footerLegal span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.footerLegal a {
+  color: #b8c8dc;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.footerLegal a:hover {
+  color: #fff;
+}
 
 @keyframes up {
   from {

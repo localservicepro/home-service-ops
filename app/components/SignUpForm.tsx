@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ConfirmEmailError, postRegister } from "../endpoints/auth/register_with_password_POST.schema";
 import { useAuth } from "../helpers/useAuth";
 import { Input } from "./Input";
@@ -78,6 +78,9 @@ export function SignUpForm({ inviteToken, defaultEmail, className }: { inviteTok
       <Button type="submit" size="lg" disabled={!valid || busy}>
         {busy ? <><Spinner size="sm" /> Creating account…</> : inviteToken ? "Join and sign in" : "Create account"}
       </Button>
+      <p className={styles.legal}>
+        By continuing you agree to our <Link to="/terms">Terms of Service</Link> and <Link to="/privacy">Privacy Policy</Link>.
+      </p>
     </form>
   );
 }
