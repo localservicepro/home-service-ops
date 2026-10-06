@@ -1,0 +1,282 @@
+.reqNotes {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--background);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--foreground);
+  white-space: pre-line;
+}
+.wrap {
+  padding: var(--spacing-4) var(--spacing-6) 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 15px 16px;
+}
+.picked {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.pickedText {
+  flex: 1;
+  min-width: 0;
+}
+.pickedName {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--foreground);
+}
+.pickedMeta {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.textBtn {
+  border: none;
+  background: none;
+  color: var(--primary);
+  font: 700 12px var(--font-family-base);
+  cursor: pointer;
+}
+.suggest {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.suggestRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-family-base);
+}
+.suggestRow:last-child {
+  border-bottom: none;
+}
+.suggestRow:hover {
+  background: var(--secondary);
+}
+.suggestName {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.suggestMeta {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.plus {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--secondary);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.addr {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.subLbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.chipPrice {
+  font-weight: 800;
+  color: var(--primary);
+}
+.lines {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lineBlock {
+  padding-top: 6px;
+  border-top: 1px solid var(--muted);
+}
+.addonLine {
+  padding-left: 14px;
+}
+.line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.lineName {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.addonLine .lineName {
+  font-weight: 500;
+  color: var(--navy-700);
+  font-size: 12.5px;
+}
+.lineNameInput {
+  flex: 1;
+  min-width: 0;
+}
+.qty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.qty button {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 7px;
+  background: var(--muted);
+  color: var(--navy-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.qty span {
+  min-width: 16px;
+  text-align: center;
+}
+.priceInput {
+  width: 84px;
+  flex: none;
+}
+.x {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.addonChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 7px 0 3px 14px;
+}
+.addonChip {
+  border: 1px dashed #bcd3ea;
+  background: transparent;
+  border-radius: 9px;
+  padding: 5px 9px;
+  font: 600 11.5px var(--font-family-base);
+  color: var(--navy-700);
+  cursor: pointer;
+}
+.addonChip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.addonChip b {
+  color: var(--primary);
+}
+.custom {
+  display: flex;
+  gap: 7px;
+  margin-top: 14px;
+}
+.tRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13.5px;
+  color: var(--navy-700);
+  font-weight: 600;
+}
+.gst {
+  font-style: normal;
+  color: var(--muted-foreground);
+  margin-left: 6px;
+}
+.total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.sendBar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  max-width: 560px;
+  z-index: 34;
+  padding: 10px var(--spacing-6);
+  background: linear-gradient(to top, var(--background) 70%, transparent);
+}
+.send {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .wrap {
+    padding: var(--spacing-2) 0 0;
+    gap: 14px;
+  }
+  .card {
+    padding: 18px 20px;
+  }
+  .priceInput {
+    width: 110px;
+  }
+  .sendBar {
+    position: sticky;
+    left: auto;
+    bottom: 0;
+    transform: none;
+    max-width: none;
+    margin-top: var(--spacing-2);
+    padding: 14px 0 18px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .send {
+    width: auto;
+    min-width: 280px;
+  }
+}

@@ -1,0 +1,151 @@
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.iconOn {
+  background: var(--status-scheduled-bg);
+  color: var(--primary);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.text b {
+  font-size: 14.5px;
+  color: var(--foreground);
+}
+.text small {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-top: 1px;
+  overflow-wrap: anywhere;
+}
+.text strong {
+  color: var(--foreground);
+  font-weight: 700;
+}
+.skel {
+  height: 14px;
+  width: 70%;
+  margin-top: 4px;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--status-paid-bg);
+  color: var(--status-paid);
+  white-space: nowrap;
+}
+.warn {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  overflow-wrap: anywhere;
+}
+.syncInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--background);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.syncSub {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.connect {
+  width: 100%;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.setup {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.setup summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.setup p {
+  margin: 8px 0;
+  line-height: 1.45;
+}
+.uriRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.uri {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  font-family: var(--font-family-monospace, monospace);
+  font-size: 11px;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+.copy {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}

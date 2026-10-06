@@ -1,0 +1,61 @@
+.wrap {
+  padding: var(--spacing-3) var(--spacing-5, 20px) var(--spacing-8);
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.tab,
+.tabOn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font: 700 12.5px var(--font-family-base);
+  color: var(--navy-700);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  border-color: #bcd3ea;
+}
+.tabOn {
+  background: var(--navy-900);
+  border-color: var(--navy-900);
+  color: #fff;
+}
+.blurb {
+  margin: 10px 0 12px;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+/* Cards stack in columns without uneven gaps, whatever their height. */
+.cards {
+  columns: 1;
+  column-gap: 12px;
+}
+.cards > * {
+  break-inside: avoid;
+  margin-bottom: 12px;
+  width: 100%;
+}
+.cards > *:empty {
+  display: none;
+}
+@media (min-width: 768px) {
+  .wrap {
+    padding: 0 0 var(--spacing-8);
+  }
+}
+@media (min-width: 1000px) {
+  .cards {
+    columns: 2;
+  }
+}

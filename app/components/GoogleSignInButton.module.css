@@ -1,0 +1,52 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font: 700 14.5px var(--font-family-base);
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: border-color var(--animation-duration-fast), background var(--animation-duration-fast);
+}
+.btn:hover {
+  border-color: #bcd3ea;
+  background: #fbfdff;
+}
+.btn:active {
+  transform: scale(0.99);
+}
+.or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.or::before,
+.or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.btn {
+  cursor: pointer;
+  width: 100%;
+}
+.error {
+  margin: -6px 0 0;
+  font-size: 12.5px;
+  color: var(--error);
+}

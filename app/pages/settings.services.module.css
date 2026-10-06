@@ -1,0 +1,67 @@
+/* Tablet and desktop: the app shell provides the side margins. */
+@media (min-width: 768px) {
+  .pad.pad {
+    padding: var(--spacing-2) 0 var(--spacing-8);
+  }
+}
+.pad {
+  padding: var(--spacing-4) var(--spacing-6) var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+.tabs {
+  display: flex;
+  gap: 7px;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.skel {
+  height: 62px;
+  border-radius: 16px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+.inactive .name {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.meta {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+}
+.chev {
+  color: var(--faint);
+}
