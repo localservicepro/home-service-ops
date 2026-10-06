@@ -6,6 +6,7 @@ import { AuthScreen } from "../components/AuthScreen";
 import { PasswordLoginForm } from "../components/PasswordLoginForm";
 import { SignUpForm } from "../components/SignUpForm";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
+import { readOAuthError } from "../helpers/oauthError";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
@@ -13,7 +14,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"signin" | "signup">(() =>
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin",
   );
-  const [googleError] = useState(() => (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("error") : null));
+  const [googleError] = useState(readOAuthError);
   if (authState.type === "authenticated") return <Navigate to="/" replace />;
 
   return (

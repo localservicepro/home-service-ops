@@ -9,12 +9,13 @@ import { SignUpForm } from "../components/SignUpForm";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
 import { Skeleton } from "../components/Skeleton";
 import { Button } from "../components/Button";
+import { readOAuthError } from "../helpers/oauthError";
 import styles from "./join.$token.module.css";
 
 export default function JoinPage() {
   const { token = "" } = useParams();
   const { authState } = useAuth();
-  const googleError = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("error") : null;
+  const googleError = readOAuthError();
   const { data, isLoading, error } = useQuery({
     queryKey: ["invite", token],
     queryFn: () => getInviteInfo({ token }),
