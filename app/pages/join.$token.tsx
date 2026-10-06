@@ -5,6 +5,7 @@ import { getInviteInfo } from "../endpoints/invites/info_GET.schema";
 import { useAuth } from "../helpers/useAuth";
 import { roleLabel } from "../helpers/useMe";
 import { AuthScreen } from "../components/AuthScreen";
+import { AuthLoadingState } from "../components/AuthLoadingState";
 import { SignUpForm } from "../components/SignUpForm";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
 import { Skeleton } from "../components/Skeleton";
@@ -24,6 +25,9 @@ export default function JoinPage() {
   });
 
   if (authState.type === "authenticated") return <Navigate to="/" replace />;
+  // Coming back from Google: keep the splash up while the session is exchanged.
+  if (authState.type === "loading" && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("code"))
+    return <AuthLoadingState title="Signing you in with Google" />;
 
   if (isLoading) {
     return (

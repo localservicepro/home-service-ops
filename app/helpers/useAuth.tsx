@@ -59,6 +59,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (result.error === "Not authenticated") return null;
         throw new Error(result.error);
       }
+      // The session reply carries the business/role summary too: seed it so useMe() doesn't
+      // need its own round trip before the app can render.
+      if (result.me) queryClient.setQueryData(["account", "me", result.user.id], result.me);
       return result.user;
     },
     retry: 1,

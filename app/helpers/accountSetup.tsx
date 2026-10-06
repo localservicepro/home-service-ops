@@ -72,6 +72,9 @@ export async function ensureLinked(
   opts: { inviteToken?: string; businessName?: string },
 ) {
   if (!opts.inviteToken && !opts.businessName) return null;
+  // Fast path: almost every call is for someone who is already linked.
+  const linked = await db.selectFrom("memberships").select("id").where("userId", "=", user.id).executeTakeFirst();
+  if (linked) return null;
   return db.transaction().execute(async (trx) => {
     await sql`select pg_advisory_xact_lock(${user.id})`.execute(trx);
     const existing = await trx.selectFrom("memberships").select("id").where("userId", "=", user.id).executeTakeFirst();

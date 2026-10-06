@@ -14,7 +14,7 @@ export async function startGoogle(opts: { mode: "signin" | "signup"; invite?: st
   } catch {
     /* private mode: the api falls back to sign-in only */
   }
-  const back = opts.invite ? `/join/${opts.invite}` : "/login";
-  const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${back}` } });
+  // Back to one splash page that waits for the session, instead of the sign-in form.
+  const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}/auth/callback` } });
   if (error) throw new Error(error.message);
 }

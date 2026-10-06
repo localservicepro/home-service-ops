@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import { useAuth } from "../helpers/useAuth";
 import { AuthScreen } from "../components/AuthScreen";
+import { AuthLoadingState } from "../components/AuthLoadingState";
 import { PasswordLoginForm } from "../components/PasswordLoginForm";
 import { SignUpForm } from "../components/SignUpForm";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
@@ -16,6 +17,9 @@ export default function LoginPage() {
   );
   const [googleError] = useState(readOAuthError);
   if (authState.type === "authenticated") return <Navigate to="/" replace />;
+  // Coming back from Google: keep the splash up while the session is exchanged.
+  if (authState.type === "loading" && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("code"))
+    return <AuthLoadingState title="Signing you in with Google" />;
 
   return (
     <>

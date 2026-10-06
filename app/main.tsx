@@ -35,7 +35,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <GlobalContextProviders>
-        <Suspense fallback={<AuthLoadingState title="Loading…" />}>
+        <Suspense fallback={<AuthLoadingState title="Loading" />}>
           <Routes>
             {routes.map((r) => (
               <Route key={r.path} path={r.path} element={r.element} />
