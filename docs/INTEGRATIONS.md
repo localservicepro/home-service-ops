@@ -31,7 +31,7 @@ To change a secret, edit it in the same place. Never paste these into Vercel, Gi
 - `RESEND_API_KEY`: the key Claude created ("Home Service Ops (Supabase api function)", send-only, limited to `home.localservicepro.com.au`)
 - `EMAIL_DOMAIN`: optional; the default is already `home.localservicepro.com.au`
 
-**DNS records:** add these where `localservicepro.com.au`'s DNS is managed. If that's Vercel, use Vercel → Domains → localservicepro.com.au → DNS Records. The **Name** is the part before `.localservicepro.com.au`.
+**DNS records:** add these at the DNS host for `localservicepro.com.au`, the same place you added the `home` record that points at Vercel (your domain registrar, Cloudflare and so on; it isn't Vercel). The **Name** is the part before `.localservicepro.com.au`. Some hosts want the full name instead, such as `resend._domainkey.home.localservicepro.com.au`.
 
 | Type | Name | Value | Priority |
 | --- | --- | --- | --- |
