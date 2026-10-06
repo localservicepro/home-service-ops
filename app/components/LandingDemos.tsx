@@ -117,7 +117,7 @@ export function HeroVisual() {
 
   return (
     <div ref={ref} className={styles.hero}>
-      <Frame className={styles.laptop} label="home-service-ops.vercel.app">
+      <Frame className={styles.laptop} label="home.localservicepro.com.au">
         <div className={styles.dash}>
           <aside className={styles.dashSide}>
             <span className={styles.dashLogo}>

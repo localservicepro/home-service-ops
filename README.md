@@ -37,17 +37,17 @@ supabase db push
 supabase functions deploy api --no-verify-jwt
 ```
 
-Then set the function's secrets (Dashboard → Edge Functions → Secrets, or `supabase secrets set …`):
+Then set the function's secrets (Dashboard → Edge Functions → Secrets, or `supabase secrets set …`). **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) walks through each provider step by step.**
 
 | Secret | Needed for |
 | --- | --- |
-| `APP_URL` | The web app's URL (default `https://home-service-ops.vercel.app`). Every customer link and post-OAuth redirect uses it. |
+| `APP_URL` | The web app's URL (default `https://home.localservicepro.com.au`). Every customer link and post-OAuth redirect uses it. |
 | `RESEND_API_KEY`, `EMAIL_DOMAIN` (default `home.localservicepro.com.au`) | Quote, invoice, invite, review and reset emails. Without the key, sending fails with a clear message, and password reset falls back to Supabase's built-in email. |
 | `STRIPE_SECRET_KEY`, `STRIPE_CLIENT_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_BILLING_WEBHOOK_SECRET` | Stripe Connect pay links, and Home Service Ops subscriptions |
 | `SQUARE_APP_ID`, `SQUARE_APP_SECRET`, `SQUARE_WEBHOOK_SIGNATURE_KEY` | Square pay links |
 | `GOCARDLESS_CLIENT_ID`, `GOCARDLESS_CLIENT_SECRET`, `GOCARDLESS_ENVIRONMENT`, `GOCARDLESS_WEBHOOK_SECRET` | BECS direct debit |
 | `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `XERO_WEBHOOK_KEY` | Xero invoices and payments |
-| `LC_CLIENT_ID`, `LC_CLIENT_SECRET`, `GHL_PUBLIC_KEY` | LeadConnector / GoHighLevel |
+| `LC_CLIENT_ID`, `LC_CLIENT_SECRET` | LeadConnector / GoHighLevel |
 | `GCAL_CLIENT_ID`, `GCAL_CLIENT_SECRET` | Google Calendar sync |
 | `GOOGLE_MAPS_API_KEY` | Google Business Profile rating and review requests |
 

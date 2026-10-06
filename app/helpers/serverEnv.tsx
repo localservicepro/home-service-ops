@@ -10,7 +10,7 @@ export const env = (name: string): string | undefined => {
 const trimSlash = (s: string) => s.replace(/\/+$/, "");
 
 /** The web app (customer links, redirects after OAuth). Never taken from the request. */
-export const APP_URL = trimSlash(env("APP_URL") ?? "https://home-service-ops.vercel.app");
+export const APP_URL = trimSlash(env("APP_URL") ?? "https://home.localservicepro.com.au");
 
 export const SUPABASE_URL = trimSlash(env("SUPABASE_URL") ?? "http://localhost:54321");
 
