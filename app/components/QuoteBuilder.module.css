@@ -280,3 +280,31 @@
     min-width: 280px;
   }
 }
+
+.contact {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+.contactField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.contactHint,
+.contactError {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.contactError {
+  color: var(--error);
+}
+@media (min-width: 560px) {
+  .contact {
+    grid-template-columns: 1fr 1fr;
+  }
+}

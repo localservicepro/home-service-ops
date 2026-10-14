@@ -10,7 +10,6 @@ import { pricing } from "../helpers/pricing";
 import { postQuotesSave } from "../endpoints/quotes/save_POST.schema";
 import { PageHeader } from "../components/PageHeader";
 import { PipelineBoard, BoardCard, type BoardColumn } from "../components/PipelineBoard";
-import { JobFormSheet } from "../components/JobFormSheet";
 import { Skeleton } from "../components/Skeleton";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
@@ -22,7 +21,6 @@ export default function QuotesPage() {
   const { data, isFetching } = useOpsData();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
-  const [formOpen, setFormOpen] = useState(false);
   const setStatus = useOpsMutation(postQuotesSave, (_o, i) => `Quote marked ${i.status?.toLowerCase()}`);
 
   const board = useMemo(() => {
@@ -129,16 +127,11 @@ export default function QuotesPage() {
         title="Quotes"
         subtitle={board ? `${board.requests.length} new request${board.requests.length === 1 ? "" : "s"} · ${board.sent.length + board.sentJobs.length} sent` : " "}
         right={
-          <>
-            <Button variant="outline" className={styles.reqBtn} onClick={() => setFormOpen(true)} disabled={!data}>
-              <Plus size={16} /> Request
-            </Button>
-            <Button asChild>
-              <Link to="/quotes/new">
-                <Plus size={17} /> New quote
-              </Link>
-            </Button>
-          </>
+          <Button asChild>
+            <Link to="/quotes/new">
+              <Plus size={17} /> New quote
+            </Link>
+          </Button>
         }
       />
 
@@ -170,7 +163,6 @@ export default function QuotesPage() {
         <p className={styles.tip}>Open a quote to send it, mark it accepted or adjust it. Once a customer accepts, it moves to Jobs → To schedule.</p>
       </div>
 
-      {data && <JobFormSheet open={formOpen} onOpenChange={setFormOpen} data={data} />}
     </div>
   );
 }

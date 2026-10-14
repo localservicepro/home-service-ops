@@ -16,6 +16,8 @@ export const schema = z.object({
   customer: z.string().trim().min(1).max(200).optional(),
   address: z.string().trim().max(300).optional(),
   phone: z.string().trim().max(50).optional(),
+  // Saved to the client (not the job) so invoices can be emailed.
+  email: z.union([z.literal(""), z.string().trim().email("Enter a valid email")]).optional(),
   service: z.string().trim().max(300).optional(),
   scheduledDate: z
     .string()
@@ -36,6 +38,10 @@ export const schema = z.object({
   payMethod: z.enum(PayMethodArrayValues).nullable().optional(),
   payState: z.enum(PayStateArrayValues).nullable().optional(),
   photos: z.array(z.string().max(2000)).max(40).optional(),
+  customFields: z
+    .array(z.object({ label: z.string().trim().min(1).max(100), value: z.string().trim().max(2000) }))
+    .max(50)
+    .optional(),
 });
 
 export type InputType = z.infer<typeof schema>;

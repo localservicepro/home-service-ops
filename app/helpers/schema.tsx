@@ -167,6 +167,7 @@ export interface Jobs {
   crewPay: Numeric | null;
   crewPayType: RateType | null;
   customer: string;
+  customFields: Generated<Json>;
   discount: Generated<Numeric>;
   freq: Generated<string>;
   gcalEventId: string | null;

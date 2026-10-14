@@ -15,3 +15,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+.error {
+  font-size: 12px;
+  color: var(--error);
+}

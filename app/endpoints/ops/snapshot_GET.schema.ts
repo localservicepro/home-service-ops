@@ -50,6 +50,8 @@ export type Job = {
   workStartedAt: Date | null;
   workElapsedMs: number;
   photos: string[];
+  /** Extra details as label/value pairs (entered in the app or synced from LeadConnector). */
+  customFields: { label: string; value: string }[];
   stripeLinkUrl: string | null;
   stripeLinkAmount: number | null;
   /** Which online provider the job's payment went through: stripe | square | gocardless. */

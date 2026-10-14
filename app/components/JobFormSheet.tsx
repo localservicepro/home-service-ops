@@ -13,12 +13,14 @@ import { Button } from "./Button";
 import { MonthCalendar } from "./MonthCalendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
 import { Initials } from "./Initials";
+import { CustomFieldsEditor, type FieldRow } from "./CustomFieldsEditor";
 import styles from "./JobFormSheet.module.css";
 
 type Draft = {
   clientId: number | null;
   customer: string;
   phone: string;
+  email: string;
   address: string;
   service: string;
   serviceRefId: number | null;
@@ -28,12 +30,13 @@ type Draft = {
   staffId: number | null;
   price: string;
   notes: string;
+  customFields: FieldRow[];
 };
 
 function blank(): Draft {
   return {
-    clientId: null, customer: "", phone: "", address: "", service: "", serviceRefId: null,
-    date: opsFormat.todayISO(), time: "9:00 AM", freq: "One-time", staffId: null, price: "", notes: "",
+    clientId: null, customer: "", phone: "", email: "", address: "", service: "", serviceRefId: null,
+    date: opsFormat.todayISO(), time: "9:00 AM", freq: "One-time", staffId: null, price: "", notes: "", customFields: [],
   };
 }
 
@@ -60,9 +63,12 @@ export function JobFormSheet({
     setPickDate(false);
     if (job) {
       setD({
-        clientId: job.clientId, customer: job.customer, phone: job.phone, address: job.address,
+        clientId: job.clientId, customer: job.customer, phone: job.phone,
+        email: (job.clientId ? data.clients.find((c) => c.id === job.clientId)?.email : "") || "",
+        address: job.address,
         service: job.service, serviceRefId: null, date: job.scheduledDate, time: job.scheduledTime || "9:00 AM",
         freq: job.freq, staffId: job.staffId, price: job.price ? String(job.price) : "", notes: job.notes,
+        customFields: job.customFields.map((f) => ({ ...f })),
       });
       setCalMonth(job.scheduledDate ?? opsFormat.todayISO());
     } else {
@@ -90,6 +96,7 @@ export function JobFormSheet({
       clientId: d.clientId,
       customer: d.customer.trim(),
       phone: d.phone.trim(),
+      email: d.email.trim(),
       address: d.address.trim(),
       service: d.service.trim(),
       scheduledDate: d.date,
@@ -97,6 +104,7 @@ export function JobFormSheet({
       freq: d.freq,
       staffId: d.staffId,
       notes: d.notes,
+      customFields: d.customFields.map((f) => ({ label: f.label.trim(), value: f.value.trim() })).filter((f) => f.label),
     };
     // Keep a single-line invoice in step with the service + price on the form.
     const lines = multiLine
@@ -122,7 +130,8 @@ export function JobFormSheet({
     }
   };
 
-  const canSave = d.customer.trim().length > 0 && !save.isPending;
+  const emailInvalid = !!d.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim());
+  const canSave = d.customer.trim().length > 0 && !emailInvalid && !save.isPending;
 
   return (
     <BottomSheet
@@ -154,7 +163,7 @@ export function JobFormSheet({
                 className={styles.suggestRow}
                 onClick={() =>
                   setD((p) => ({
-                    ...p, clientId: c.id, customer: c.name, phone: c.phone || p.phone,
+                    ...p, clientId: c.id, customer: c.name, phone: c.phone || p.phone, email: c.email || p.email,
                     address: c.addresses.length === 1 ? c.addresses[0] : p.address,
                   }))
                 }
@@ -170,8 +179,16 @@ export function JobFormSheet({
         <div className={styles.row2}>
           <label className={styles.field}>
             <span className={styles.lbl}>Phone</span>
-            <Input value={d.phone} onChange={(e) => set("phone", e.target.value)} placeholder="04xx xxx xxx" inputMode="tel" />
+            <Input value={d.phone} onChange={(e) => set("phone", e.target.value)} placeholder="04xx xxx xxx" inputMode="tel" autoComplete="off" />
           </label>
+          <label className={styles.field}>
+            <span className={styles.lbl}>Email</span>
+            <Input value={d.email} onChange={(e) => set("email", e.target.value)} placeholder="For quotes & invoices" type="email" inputMode="email" autoComplete="off" />
+          </label>
+        </div>
+        {emailInvalid && <p className={styles.fieldError}>Check the email address.</p>}
+
+        <div className={styles.row2}>
           <label className={styles.field}>
             <span className={styles.lbl}>Price (AUD)</span>
             <Input
@@ -283,6 +300,11 @@ export function JobFormSheet({
           <span className={styles.lbl}>Job notes</span>
           <Textarea value={d.notes} onChange={(e) => set("notes", e.target.value)} rows={3} placeholder="Gate codes, pets, access, special requests…" />
         </label>
+
+        <div className={styles.field}>
+          <span className={styles.lbl}>Job details</span>
+          <CustomFieldsEditor value={d.customFields} onChange={(rows) => set("customFields", rows)} />
+        </div>
       </div>
     </BottomSheet>
   );

@@ -7,7 +7,7 @@ import type { DB } from "./schema";
 export async function ensureClient(
   trx: Kysely<DB> | Transaction<DB>,
   businessId: number,
-  input: { clientId?: number | null; name: string; address?: string; phone?: string },
+  input: { clientId?: number | null; name: string; address?: string; phone?: string; email?: string; overwriteContact?: boolean },
 ): Promise<number> {
   const name = input.name.trim();
   const address = (input.address || "").trim();
@@ -23,18 +23,22 @@ export async function ensureClient(
   if (!client) {
     const created = await trx
       .insertInto("clients")
-      .values({ businessId, name, phone: (input.phone || "").trim(), addresses: address ? [address] : [] })
+      .values({ businessId, name, phone: (input.phone || "").trim(), email: (input.email || "").trim().toLowerCase(), addresses: address ? [address] : [] })
       .returning("id")
       .executeTakeFirstOrThrow();
     return created.id;
   }
 
   const addrs = Array.isArray(client.addresses) ? (client.addresses as string[]) : [];
-  const patch: { addresses?: string[]; phone?: string } = {};
+  const patch: { addresses?: string[]; phone?: string; email?: string } = {};
   if (address && !addrs.some((a) => a.toLowerCase() === address.toLowerCase())) {
     patch.addresses = [...addrs, address];
   }
-  if (!client.phone && input.phone?.trim()) patch.phone = input.phone.trim();
+  // Fill in missing contact details; the quote and job forms can also correct them.
+  const phone = input.phone?.trim();
+  const email = input.email?.trim().toLowerCase();
+  if (phone && phone !== client.phone && (!client.phone || input.overwriteContact)) patch.phone = phone;
+  if (email && email !== client.email && (!client.email || input.overwriteContact)) patch.email = email;
   if (Object.keys(patch).length) {
     await trx.updateTable("clients").set(patch).where("id", "=", client.id).execute();
   }

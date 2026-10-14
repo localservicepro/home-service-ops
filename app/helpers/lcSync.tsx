@@ -4,6 +4,7 @@ import { lcFetch } from "./leadConnector";
 import { getBilling } from "./billing";
 import { PLANS } from "./plans";
 import { ensureClient } from "./ensureClient";
+import { copyRemoteFile } from "./storage";
 import type { JobStatus, QuoteStatus } from "./schema";
 import { STAGE_KEYS, type StageKey, type StageMap } from "./lcStages";
 
@@ -15,7 +16,7 @@ import { STAGE_KEYS, type StageKey, type StageMap } from "./lcStages";
 const RANK: Record<StageKey, number> = { new: 0, quoted: 1, booked: 2, done: 3, paid: 4, lost: -1 };
 const IMPORT_EVERY_MS = 2 * 60 * 1000;
 
-type Conn = {
+export type Conn = {
   businessId: number;
   locationId: string;
   pipelineId: string | null;
@@ -103,7 +104,9 @@ type Opp = {
   createdAt?: string;
   dateAdded?: string;
   contact?: { id?: string; name?: string; email?: string; phone?: string };
+  customFields?: RawField[];
 };
+type RawField = { id?: string; value?: unknown; fieldValue?: unknown } & Record<string, unknown>;
 type Contact = {
   id: string;
   name?: string;
@@ -116,7 +119,103 @@ type Contact = {
   city?: string;
   state?: string;
   postalCode?: string;
+  customFields?: RawField[];
 };
+
+// ---------- lead details (custom fields, notes, files) ----------
+
+export type CustomField = { label: string; value: string };
+type FieldDef = { name: string; position: number; dataType: string };
+const defCache = new Map<number, { at: number; defs: Map<string, FieldDef> }>();
+
+/** Names of the sub-account's custom fields (contact and opportunity). Needs locations/customFields.readonly. */
+async function fieldDefs(c: Conn): Promise<Map<string, FieldDef>> {
+  const hit = defCache.get(c.businessId);
+  if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.defs;
+  const defs = new Map<string, FieldDef>();
+  try {
+    const r = await lcJson<{ customFields?: { id: string; name?: string; position?: number; dataType?: string }[] }>(
+      c.businessId,
+      `/locations/${encodeURIComponent(c.locationId)}/customFields?model=all`,
+    );
+    for (const f of r.customFields ?? []) defs.set(f.id, { name: f.name || "Custom field", position: f.position ?? 0, dataType: f.dataType ?? "" });
+  } catch (e) {
+    console.warn("LeadConnector custom field names unavailable", c.businessId, e instanceof Error ? e.message : e);
+  }
+  defCache.set(c.businessId, { at: Date.now(), defs });
+  return defs;
+}
+
+const IMAGE_EXT = /\.(jpe?g|png|gif|webp|heic|heif)(\?|#|$)/i;
+
+/** Splits a raw custom field value into display text and any file links it holds. */
+export function readLcFieldValue(raw: RawField): { text: string; files: { url: string; name: string; image: boolean }[] } {
+  const v =
+    raw.fieldValue ?? raw.value ?? raw.fieldValueString ?? raw.fieldValueNumber ?? raw.fieldValueArray ?? raw.fieldValueFiles ?? raw.fieldValueDate ?? raw.fieldValueBoolean;
+  const files: { url: string; name: string; image: boolean }[] = [];
+  const walk = (x: unknown): string[] => {
+    if (x == null || x === "") return [];
+    if (typeof x === "string") {
+      if (/^https?:\/\//i.test(x.trim()) && /\/(files|uploads?|attachments?)\//i.test(x)) {
+        files.push({ url: x.trim(), name: x.split("/").pop()?.split("?")[0] ?? "file", image: IMAGE_EXT.test(x) });
+        return [];
+      }
+      return [x.trim()];
+    }
+    if (typeof x === "number" || typeof x === "boolean") return [String(x)];
+    if (Array.isArray(x)) return x.flatMap(walk);
+    if (typeof x === "object") {
+      const o = x as Record<string, unknown>;
+      if (typeof o.url === "string") {
+        const meta = (o.meta ?? {}) as { name?: string; mimetype?: string; originalname?: string };
+        const name = meta.originalname || meta.name || o.url.split("/").pop()?.split("?")[0] || "file";
+        files.push({ url: o.url, name, image: (meta.mimetype ?? "").startsWith("image/") || IMAGE_EXT.test(name) || IMAGE_EXT.test(o.url) });
+        return [];
+      }
+      return Object.values(o).flatMap(walk);
+    }
+    return [];
+  };
+  const text = walk(v).filter(Boolean).join(", ").slice(0, 2000);
+  return { text, files };
+}
+
+/** Custom fields, notes and photos to store on a lead imported from LeadConnector. */
+export async function leadDetails(c: Conn, opp: Opp, contact: Partial<Contact>) {
+  const defs = await fieldDefs(c);
+  const fields: (CustomField & { pos: number })[] = [];
+  const photos: string[] = [];
+  const raw = [...(contact.customFields ?? []), ...(opp.customFields ?? [])];
+  let n = 0;
+  for (const f of raw) {
+    if (!f?.id) continue;
+    const def = defs.get(f.id);
+    const { text, files } = readLcFieldValue(f);
+    const links: string[] = [];
+    for (const file of files.slice(0, 10)) {
+      const copied = await copyRemoteFile(file.url, `job-photos/${c.businessId}/lc-${opp.id}-${n++}`, { imagesOnly: file.image });
+      if (file.image && copied) photos.push(copied);
+      else links.push(copied ?? file.url);
+    }
+    const value = [text, ...links].filter(Boolean).join("\n");
+    if (value) fields.push({ label: (def?.name ?? "Custom field").slice(0, 100), value: value.slice(0, 2000), pos: def?.position ?? 999 });
+  }
+  fields.sort((a, b) => a.pos - b.pos);
+
+  let notes: string[] = [];
+  if (opp.contactId) {
+    try {
+      const r = await lcJson<{ notes?: { body?: string; dateAdded?: string }[] }>(c.businessId, `/contacts/${encodeURIComponent(opp.contactId)}/notes`);
+      notes = (r.notes ?? [])
+        .sort((a, b) => Date.parse(a.dateAdded ?? "") - Date.parse(b.dateAdded ?? ""))
+        .map((x) => (x.body ?? "").replace(/<[^>]+>/g, " ").replace(/\s+\n/g, "\n").trim())
+        .filter(Boolean);
+    } catch {
+      /* notes are a nice-to-have */
+    }
+  }
+  return { customFields: fields.map(({ label, value }) => ({ label, value })), photos: photos.slice(0, 40), notes };
+}
 
 /** Turns one opportunity into a job request. Returns true if it was new to the app. */
 async function importOpportunity(c: Conn, opp: Opp): Promise<boolean> {
@@ -147,12 +246,20 @@ async function importOpportunity(c: Conn, opp: Opp): Promise<boolean> {
     const address = [ct.address1, ct.city, ct.state, ct.postalCode].filter(Boolean).join(", ").slice(0, 300);
     const oppName = (opp.name || "").trim();
     const service = oppName && oppName.toLowerCase() !== name.toLowerCase() ? oppName.slice(0, 300) : "";
+    // Search results can leave out custom fields; read the full opportunity when they're missing.
+    let full = opp;
+    if (!opp.customFields) {
+      full = (await lcJson<{ opportunity?: Opp }>(c.businessId, `/opportunities/${encodeURIComponent(opp.id)}`).catch(() => null))?.opportunity ?? opp;
+    }
+    const extra = await leadDetails(c, { ...full, id: opp.id, contactId: opp.contactId ?? full.contactId }, ct);
+    const intro = `New lead from LeadConnector${opp.source ? ` (${opp.source})` : ""}.`;
+    const notes = [intro, ...(extra.notes.length ? ["", "Notes from LeadConnector:", ...extra.notes.map((x) => `• ${x}`)] : [])].join("\n").slice(0, 4000);
 
     await db.transaction().execute(async (trx) => {
       const known = opp.contactId
         ? await trx.selectFrom("clients").select("id").where("businessId", "=", c.businessId).where("lcContactId", "=", opp.contactId).executeTakeFirst()
         : undefined;
-      const clientId = await ensureClient(trx, c.businessId, { clientId: known?.id ?? null, name, address, phone });
+      const clientId = await ensureClient(trx, c.businessId, { clientId: known?.id ?? null, name, address, phone, email });
       await trx.updateTable("clients").set({ lcContactId: opp.contactId ?? null }).where("id", "=", clientId).where("lcContactId", "is", null).execute();
       if (email) await trx.updateTable("clients").set({ email }).where("id", "=", clientId).where("email", "=", "").execute();
       await trx
@@ -167,7 +274,9 @@ async function importOpportunity(c: Conn, opp: Opp): Promise<boolean> {
           status: "New",
           price: Number(opp.monetaryValue) || 0,
           source: "leadconnector",
-          notes: `New lead from LeadConnector${opp.source ? ` (${opp.source})` : ""}.`,
+          notes,
+          customFields: extra.customFields,
+          photos: extra.photos,
           lcOpportunityId: opp.id,
           lcContactId: opp.contactId ?? null,
         })

@@ -13,6 +13,7 @@ import { Chip } from "./Chip";
 import { Initials } from "./Initials";
 import { SectionLabel } from "./SectionLabel";
 import { PhotoGallery } from "./PhotoGallery";
+import { JobDetailsList } from "./JobDetailsList";
 import styles from "./QuoteBuilder.module.css";
 
 type EditLine = Omit<LineItem, "price"> & { price: string };
@@ -35,6 +36,8 @@ export function QuoteBuilder({
   const [customer, setCustomer] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [addingAddr, setAddingAddr] = useState(false);
   const [lines, setLines] = useState<EditLine[]>([]);
   const [discount, setDiscount] = useState("");
@@ -52,6 +55,9 @@ export function QuoteBuilder({
     setClientId(src.clientId);
     setConfirmed(true);
     setAddress(src.address);
+    const srcClient = src.clientId ? data.clients.find((c) => c.id === src.clientId) : undefined;
+    setPhone(srcClient?.phone || (fromJob?.phone ?? ""));
+    setEmail(srcClient?.email ?? "");
     if (quote) {
       setLines(quote.lines.map((l) => ({ ...l, price: String(l.price) })));
       setDiscount(quote.discount ? String(quote.discount) : "");
@@ -72,7 +78,10 @@ export function QuoteBuilder({
           }),
         );
       }
-      setNote(fromJob.notes.replace(/\n?Email: .*$/m, "").replace(/\n?— Sent from your website form$/m, "").trim());
+      // CRM notes are internal; they show under Request details instead of going to the customer.
+      if (fromJob.source !== "leadconnector") {
+        setNote(fromJob.notes.replace(/\n?Email: .*$/m, "").replace(/\n?— Sent from your website form$/m, "").trim());
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quote?.id, fromJob?.id]);
@@ -92,12 +101,16 @@ export function QuoteBuilder({
     setConfirmed(true);
     setAddingAddr(false);
     setAddress(c.addresses.length === 1 ? c.addresses[0] : "");
+    setPhone(c.phone);
+    setEmail(c.email);
   };
   const addNewCustomer = () => {
     setClientId(null);
     setCustomer(query.trim());
     setConfirmed(true);
     setAddress("");
+    setPhone("");
+    setEmail("");
   };
 
   const services = data.services.filter((s) => s.active || lines.some((l) => l.refId === s.id));
@@ -137,6 +150,8 @@ export function QuoteBuilder({
         clientId,
         customer: customer.trim(),
         address: address.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
         note,
         lines: clean,
         discount: pricing.toNum(discount),
@@ -147,7 +162,8 @@ export function QuoteBuilder({
     );
   };
 
-  const canSend = confirmed && customer.trim() && lines.some((l) => l.name.trim()) && !save.isPending;
+  const emailInvalid = !!email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const canSend = confirmed && customer.trim() && !emailInvalid && lines.some((l) => l.name.trim()) && !save.isPending;
 
   const requestJob = fromJob ?? (quote?.requestJobId ? data.jobs.find((j) => j.id === quote.requestJobId) : undefined);
   const requestPhotos = requestJob?.photos ?? [];
@@ -162,7 +178,7 @@ export function QuoteBuilder({
             <Initials name={customer} size={38} />
             <div className={styles.pickedText}>
               <div className={styles.pickedName}>{customer}</div>
-              <div className={styles.pickedMeta}>{client ? `${client.phone || "No phone"} · existing client` : "New customer — saved to Clients when sent"}</div>
+              <div className={styles.pickedMeta}>{client ? "Existing client" : "New customer — saved to Clients when sent"}</div>
             </div>
             <button className={styles.textBtn} onClick={() => { setConfirmed(false); setClientId(null); }}>Change</button>
           </div>
@@ -190,6 +206,24 @@ export function QuoteBuilder({
         )}
 
         {confirmed && (
+          <div className={styles.contact}>
+            <label className={styles.contactField}>
+              <span className={styles.subLbl}>Phone</span>
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="04xx xxx xxx" inputMode="tel" autoComplete="off" />
+            </label>
+            <label className={styles.contactField}>
+              <span className={styles.subLbl}>Email</span>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Where the quote and invoice go" type="email" inputMode="email" autoComplete="off" />
+            </label>
+            {emailInvalid ? (
+              <p className={styles.contactError}>Check the email address.</p>
+            ) : !email.trim() ? (
+              <p className={styles.contactHint}>Add an email so you can send the quote and invoice straight to them.</p>
+            ) : null}
+          </div>
+        )}
+
+        {confirmed && (
           <div className={styles.addr}>
             <div className={styles.subLbl}>Property</div>
             {client && client.addresses.length > 0 && !addingAddr ? (
@@ -207,6 +241,15 @@ export function QuoteBuilder({
       </section>
 
       {/* photos the customer attached to their request (e.g. from the website form) */}
+      {requestJob && (requestJob.customFields.length > 0 || (requestJob.source === "leadconnector" && requestJob.notes)) && (
+        <section className={styles.card}>
+          <SectionLabel>Request details</SectionLabel>
+          <JobDetailsList fields={requestJob.customFields} />
+          {requestJob.source === "leadconnector" && requestJob.notes && requestPhotos.length === 0 && (
+            <p className={styles.reqNotes}>{requestJob.notes}</p>
+          )}
+        </section>
+      )}
       {requestPhotos.length > 0 && (
         <section className={styles.card}>
           <SectionLabel>Customer photos ({requestPhotos.length})</SectionLabel>

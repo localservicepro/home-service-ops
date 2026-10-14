@@ -41,7 +41,14 @@ export async function handle(request: Request) {
           gst,
           price: t.total,
           service: (lines as { kind: string; name: string }[]).filter((l) => l.kind !== "addon").map((l) => l.name).join(", "),
-          clientId: await ensureClient(trx, biz, { clientId: input.clientId ?? null, name: customer, address }),
+          clientId: await ensureClient(trx, biz, {
+            clientId: input.clientId ?? null,
+            name: customer,
+            address,
+            phone: input.phone,
+            email: input.email,
+            overwriteContact: true,
+          }),
           // Sending (or resending) a quote puts it back to awaiting a reply.
           status: "Awaiting",
           declineReason: null,

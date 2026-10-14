@@ -69,6 +69,7 @@ export async function handle(request: Request) {
         workStartedAt: j.workStartedAt,
         workElapsedMs: j.workElapsedMs,
         photos: arr<string>(j.photos),
+        customFields: arr<{ label: string; value: string }>(j.customFields).filter((f) => f && typeof f.label === "string" && typeof f.value === "string"),
         stripeLinkUrl: j.stripeLinkUrl,
         stripeLinkAmount: j.stripeLinkAmount == null ? null : Number(j.stripeLinkAmount),
         payProvider: j.payProvider,

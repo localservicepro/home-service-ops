@@ -15,9 +15,6 @@
 .searchInput {
   padding-left: 36px;
 }
-.reqBtn {
-  display: none;
-}
 .boardWrap {
   padding: var(--spacing-4) var(--spacing-6) 0;
 }
@@ -74,9 +71,6 @@
   .controls {
     padding: var(--spacing-2) 0 0;
     max-width: 380px;
-  }
-  .reqBtn {
-    display: inline-flex;
   }
   .boardWrap {
     padding: var(--spacing-4) 0 0;

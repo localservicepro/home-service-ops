@@ -22,3 +22,25 @@ export async function upload(opts: { visibility: "public"; filename: string; con
   if (!res.ok || !body.url) return { ok: false, error: { message: body.message || body.error || "Upload couldn't be started." } };
   return { ok: true, presignedUrl: `${STORAGE_URL}${body.url}`, url: `${STORAGE_URL}/object/public/${BUCKET}/${path}` };
 }
+
+/**
+ * Copies a file from another site (e.g. a LeadConnector upload) into our bucket, so it keeps
+ * working if the original link expires. Returns the public URL, or null if it can't be copied.
+ */
+export async function copyRemoteFile(url: string, filenameNoExt: string, opts: { imagesOnly?: boolean } = {}): Promise<string | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(15_000), redirect: "follow" });
+    if (!res.ok) return null;
+    const type = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    if (opts.imagesOnly && !type.startsWith("image/")) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (!bytes.length || bytes.length > MAX_BYTES) return null;
+    const ext = (type.split("/")[1] || "bin").replace("jpeg", "jpg").replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
+    const signed = await upload({ visibility: "public", filename: `${filenameNoExt}.${ext}`, contentType: type || "application/octet-stream", sizeBytes: bytes.length });
+    if (!signed.ok) return null;
+    const put = await fetch(signed.presignedUrl, { method: "PUT", headers: { "Content-Type": type || "application/octet-stream" }, body: bytes });
+    return put.ok ? signed.url : null;
+  } catch {
+    return null;
+  }
+}

@@ -27,6 +27,7 @@ import { PaymentSheet } from "../components/PaymentSheet";
 import { PhotoGallery } from "../components/PhotoGallery";
 import { JobReviewPanel } from "../components/GbpCard";
 import { JobXeroPanelInner } from "../components/XeroCard";
+import { JobDetailsList } from "../components/JobDetailsList";
 import styles from "./jobs.$jobId.module.css";
 
 export default function JobDetailPage() {
@@ -37,6 +38,7 @@ export default function JobDetailPage() {
   const isAdmin = role === "admin";
   const { data, isFetching } = useOpsData();
   const job = data?.jobs.find((j) => j.id === Number(jobId));
+  const jobClientEmail = job?.clientId ? data?.clients.find((c) => c.id === job.clientId)?.email ?? "" : "";
   const staff = job?.staffId ? data?.staff.find((s) => s.id === job.staffId) : undefined;
 
   const [sheet, setSheet] = useState<null | "edit" | "assign" | "extra" | "pay" | "cancel">(null);
@@ -251,6 +253,7 @@ export default function JobDetailPage() {
                 <div className={styles.custName}>{job.customer}</div>
               )}
               <div className={styles.custPhone}>{job.phone || "No phone on file"}</div>
+              {jobClientEmail && <div className={styles.custPhone}>{jobClientEmail}</div>}
             </div>
             {job.phone && (
               <div className={styles.custBtns}>
@@ -305,6 +308,12 @@ export default function JobDetailPage() {
               {job.status === "New" || job.status === "Quote Sent" ? "Customer photos" : "Photos"} ({job.photos.length})
             </SectionLabel>
             <PhotoGallery photos={job.photos} size="md" />
+          </div>
+        )}
+        {job.customFields.length > 0 && (
+          <div className={styles.card}>
+            <SectionLabel action={job.source === "leadconnector" ? <span className={styles.hint}>From LeadConnector</span> : undefined}>Job details</SectionLabel>
+            <JobDetailsList fields={job.customFields} />
           </div>
         )}
         {job.notes && (

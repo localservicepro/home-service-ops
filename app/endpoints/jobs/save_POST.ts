@@ -45,7 +45,7 @@ export async function handle(request: Request) {
       const copy = [
         "customer", "address", "phone", "service", "scheduledDate", "scheduledTime", "status",
         "staffId", "freq", "notes", "gst", "crewPay", "crewPayType", "payMethod", "payState",
-        "photos", "discount",
+        "photos", "discount", "customFields",
       ] as const;
       for (const k of copy) if (input[k] !== undefined) values[k] = input[k];
 
@@ -88,12 +88,15 @@ export async function handle(request: Request) {
 
       // Link to (or create) the client record for new jobs / changed customers.
       const customer = input.customer ?? existing?.customer;
-      if (customer && (input.clientId !== undefined || input.customer !== undefined || !existing)) {
+      if (customer && (input.clientId !== undefined || input.customer !== undefined || input.email !== undefined || !existing)) {
         values.clientId = await ensureClient(trx, biz, {
-          clientId: input.clientId ?? null,
+          // Keep the job's client unless the customer itself changed.
+          clientId: input.clientId !== undefined ? input.clientId : input.customer !== undefined ? null : existing?.clientId ?? null,
           name: customer,
           address: input.address ?? existing?.address,
           phone: input.phone ?? existing?.phone,
+          email: input.email,
+          overwriteContact: input.phone !== undefined || input.email !== undefined,
         });
       }
 

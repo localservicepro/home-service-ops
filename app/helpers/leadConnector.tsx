@@ -10,6 +10,7 @@ export const LC_API_VERSION = "2021-07-28";
 export const LC_CALLBACK_PATH = "/crm/callback";
 export const LC_SCOPES = [
   "locations.readonly",
+  "locations/customFields.readonly",
   "contacts.readonly",
   "contacts.write",
   "opportunities.readonly",

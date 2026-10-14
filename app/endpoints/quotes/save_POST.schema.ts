@@ -9,6 +9,9 @@ export const schema = z.object({
   clientId: z.number().int().nullable().optional(),
   customer: z.string().trim().min(1).max(200).optional(),
   address: z.string().trim().max(300).optional(),
+  // Customer contact, saved to the client so the quote and invoice can be sent.
+  phone: z.string().trim().max(50).optional(),
+  email: z.union([z.literal(""), z.string().trim().email("Enter a valid email")]).optional(),
   note: z.string().max(4000).optional(),
   lines: z.array(lineItemSchema).min(1, "Add at least one line item").max(100).optional(),
   discount: z.number().min(0).max(1_000_000).optional(),
