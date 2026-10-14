@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getOpsSnapshot } from "../endpoints/ops/snapshot_GET.schema";
 
-const OPS_QUERY_KEY = ["ops", "snapshot"] as const;
+export const OPS_QUERY_KEY = ["ops", "snapshot"] as const;
 
 // Single source of truth for the whole app (a small business dataset).
 export function useOpsData() {

@@ -9,6 +9,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSession } from "../endpoints/auth/session_GET.schema";
 import { postLogout } from "../endpoints/auth/logout_POST.schema";
 import { supabase } from "./supabaseClient";
+import { OPS_QUERY_KEY } from "./useOpsData";
+import { getOpsSnapshot } from "../endpoints/ops/snapshot_GET.schema";
 import { User } from "./User";
 
 // React Query key for auth session. Make sure to optimistically update user infos using this.
@@ -54,6 +56,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const { data, error, status, refetch } = useQuery({
     queryKey: AUTH_QUERY_KEY,
     queryFn: async () => {
+      // Already signed in on this device: start loading the business data alongside the
+      // session check instead of after it (the slowest part of opening the app).
+      const local = await supabase.auth.getSession().catch(() => null);
+      if (local?.data.session) {
+        queryClient.prefetchQuery({ queryKey: OPS_QUERY_KEY, queryFn: () => getOpsSnapshot(), staleTime: 15_000 });
+      }
       const result = await getSession();
       if ("error" in result) {
         if (result.error === "Not authenticated") return null;

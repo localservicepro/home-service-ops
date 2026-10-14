@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, Suspense, lazy, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -21,10 +21,12 @@ import { opsFormat } from "../helpers/opsFormat";
 import { postCrmPull } from "../endpoints/crm/pull_POST.schema";
 import { postPaySync } from "../endpoints/payments/sync_POST.schema";
 import { AuthLoadingState } from "./AuthLoadingState";
-import { LandingPage } from "./LandingPage";
 import { Button } from "./Button";
 import type { BillingSummary } from "../helpers/plans";
 import { saveReturnTo, peekReturnTo, clearReturnTo } from "../helpers/returnTo";
+
+// Only signed-out visitors see the marketing page; keep it out of the app's first download.
+const LandingPage = lazy(() => import("./LandingPage").then((m) => ({ default: m.LandingPage })));
 import styles from "./AppShell.module.css";
 
 const ADMIN_NAV = [
@@ -104,9 +106,13 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
         })
         .catch(() => undefined);
     };
-    check();
+    // Let the screen's own data load first; these are background checks.
+    const first = setTimeout(check, 4000);
     const t = setInterval(check, 3 * 60 * 1000);
-    return () => clearInterval(t);
+    return () => {
+      clearTimeout(first);
+      clearInterval(t);
+    };
   }, [me?.businessId, crew, qc]);
 
   useEffect(() => {
@@ -125,7 +131,13 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
     // Signed-out web visitors to the home page see the marketing page; the installed
     // mobile app (and every other page) goes straight to sign-in.
     const native = typeof window !== "undefined" && !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
-    if (pathname === "/" && !native) return <LandingPage />;
+    if (pathname === "/" && !native) {
+      return (
+        <Suspense fallback={<AuthLoadingState title="Loading" />}>
+          <LandingPage />
+        </Suspense>
+      );
+    }
     saveReturnTo(pathname + window.location.search + window.location.hash);
     return <Navigate to="/login" replace />;
   }

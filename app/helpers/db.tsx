@@ -21,7 +21,8 @@ export const db = new Kysely<DB>({
   dialect: new PostgresJSDialect({
     postgres: postgres(url ?? "postgres://localhost/postgres", {
       prepare: false,
-      idle_timeout: 10,
+      // Keep connections while the worker is alive: reconnecting costs more than the queries.
+      idle_timeout: 120,
       max: 3,
     }),
   }),
