@@ -3,6 +3,7 @@ import { db } from "../../helpers/db";
 import { businessBrand, esc, isValidOrigin, layout, linkBase, sendAppEmail } from "../../helpers/mailer";
 import { pricing } from "../../helpers/pricing";
 import { errorResponse, requireMember } from "../../helpers/tenant";
+import { sendSms } from "../../helpers/sms";
 import { schema, OutputType } from "./send_POST.schema";
 
 export async function handle(request: Request) {
@@ -22,7 +23,24 @@ export async function handle(request: Request) {
       input.message ? esc(input.message).replace(/\n/g, "<br>") : `Thanks for the opportunity. Here's your quote for <b>${esc(q.service || "the work")}</b>${q.address ? ` at ${esc(q.address)}` : ""}.`,
       `Total: <b>${total}</b>. You can view the full breakdown and accept it online.`,
     ];
-    await sendAppEmail({
+    const wantEmail = input.channel !== "sms";
+    const wantSms = input.channel !== "email";
+    // Text first: if it's the only route and it fails, nothing is marked as sent.
+    let textedTo: string | null = null;
+    let smsError: string | null = null;
+    if (wantSms) {
+      const note = input.message ? `${input.message}\n\n` : "";
+      const r = await sendSms(ctx.businessId, {
+        to: input.phone,
+        kind: "quote",
+        quoteId: q.id,
+        message: `Hi ${first}, ${note}here's your quote ${q.num} from ${brand.name} (${total}). View and accept it here: ${url}`,
+      });
+      if (r.ok) textedTo = r.to;
+      else if (!wantEmail) throw new Error(r.error);
+      else smsError = r.error;
+    }
+    if (wantEmail) await sendAppEmail({
       to: input.to,
       fromName: brand.name,
       replyTo: brand.email || undefined,
@@ -36,15 +54,18 @@ export async function handle(request: Request) {
       }),
       text: `Hi ${first}, here's your quote ${q.num} from ${brand.name} (${total}). View and accept it here: ${url}`,
     });
+    const emailedTo = wantEmail ? input.to : null;
+    const sentTo = [emailedTo, textedTo && input.phone].filter(Boolean).join(" and ");
     await db
       .updateTable("quotes")
-      .set({ sentAt: new Date(), sentTo: input.to, ...(q.status === "Declined" ? {} : {}) })
+      .set({ sentAt: new Date(), sentTo, ...(textedTo ? { smsSentAt: new Date(), smsSentTo: input.phone } : {}) })
       .where("id", "=", q.id)
       .execute();
     if (q.clientId) {
-      await db.updateTable("clients").set({ email: input.to }).where("id", "=", q.clientId).where("email", "=", "").execute();
+      if (emailedTo) await db.updateTable("clients").set({ email: emailedTo }).where("id", "=", q.clientId).where("email", "=", "").execute();
+      if (textedTo) await db.updateTable("clients").set({ phone: input.phone }).where("id", "=", q.clientId).where("phone", "=", "").execute();
     }
-    return new Response(superjson.stringify({ ok: true, sentTo: input.to } satisfies OutputType));
+    return new Response(superjson.stringify({ ok: true, sentTo, emailedTo, textedTo, smsError } satisfies OutputType));
   } catch (error) {
     return errorResponse(error);
   }

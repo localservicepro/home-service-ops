@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { db } from "./db";
 import { PUBLIC_APP_URL, businessBrand, esc, layout, sendAppEmail } from "./mailer";
 import { API_URL } from "./serverEnv";
+import { sendSms, smsState } from "./sms";
 
 // Server-only. Google Business Profile (via Places API) + post-job review request emails.
 // Requests are OFF unless the business turns them on in Settings.
@@ -144,7 +145,7 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
   const job = await db
     .selectFrom("jobs")
     .leftJoin("clients", "clients.id", "jobs.clientId")
-    .select(["jobs.id", "jobs.customer", "jobs.clientId", "jobs.reviewRequestedAt", "clients.email", "clients.reviewOptOut", "clients.name as clientName"])
+    .select(["jobs.id", "jobs.customer", "jobs.clientId", "jobs.reviewRequestedAt", "jobs.phone as jobPhone", "clients.email", "clients.phone", "clients.reviewOptOut", "clients.name as clientName"])
     .where("jobs.id", "=", jobId)
     .where("jobs.businessId", "=", businessId)
     .executeTakeFirst();
@@ -155,7 +156,15 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
   };
   const gbp = await db.selectFrom("gbpConnection").select("placeId").where("businessId", "=", businessId).executeTakeFirst();
   if (!gbp) throw new Error("Connect your Google Business Profile in Settings first.");
-  if (!job.clientId || !job.email?.includes("@")) return skip("This client has no email address.", "no_email");
+  // Route by the business's SMS preference; fall back to whichever contact detail the client has.
+  const sms = await smsState(businessId);
+  const phone = (job.phone || job.jobPhone || "").trim();
+  const canEmail = !!job.email?.includes("@");
+  const canSms = sms.ready && !!phone;
+  const pref = sms.ready ? sms.prefs.reviews : "email";
+  const wantEmail = canEmail && (pref !== "sms" || !canSms);
+  const wantSms = canSms && (pref !== "email" || !canEmail);
+  if (!job.clientId || (!wantEmail && !wantSms)) return skip(sms.ready ? "This client has no email or mobile number." : "This client has no email address.", "no_email");
   if (job.reviewOptOut) return skip("This client has opted out of review requests.", "opted_out");
   if (!opts.force) {
     if (job.reviewRequestedAt) return { status: "skipped", reason: "Already asked for this job." };
@@ -181,7 +190,24 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
     optOut: await unsubscribeUrl(job.clientId),
   });
   try {
-    await sendAppEmail({ to: job.email, subject: mail.subject, html: mail.html, text: mail.text, fromName: brand.name, replyTo: brand.email || undefined });
+    let sent = false;
+    let lastError: string | null = null;
+    if (wantSms) {
+      const first = (job.clientName || job.customer || "").trim().split(/\s+/)[0] ?? "";
+      const r = await sendSms(businessId, {
+        to: phone,
+        kind: "review",
+        jobId,
+        message: `${first ? `Hi ${first}, ` : ""}${s?.reviewMessage?.trim() || DEFAULT_REVIEW_MESSAGE}\n\nLeave a Google review: ${reviewLink(gbp.placeId)}\n\nNo more review requests: ${await unsubscribeUrl(job.clientId)}`,
+      });
+      if (r.ok) sent = true;
+      else lastError = r.error;
+    }
+    if (wantEmail) {
+      await sendAppEmail({ to: job.email!, subject: mail.subject, html: mail.html, text: mail.text, fromName: brand.name, replyTo: brand.email || undefined });
+      sent = true;
+    }
+    if (!sent) throw new Error(lastError ?? "The review request couldn't be sent.");
   } catch (e) {
     await db.updateTable("jobs").set({ reviewStatus: "failed", reviewRequestedAt: new Date() }).where("id", "=", jobId).execute();
     throw e;

@@ -179,6 +179,8 @@ export interface Jobs {
   gst: Generated<boolean>;
   id: Generated<number>;
   invoiceSentAt: Timestamp | null;
+  invoiceSmsAt: Timestamp | null;
+  invoiceSmsTo: string | null;
   invoiceSentTo: string | null;
   invoiceViewedAt: Timestamp | null;
   lcContactId: string | null;
@@ -267,6 +269,47 @@ export interface LcPendingInstalls {
   userId: string | null;
 }
 
+export interface SmsConnection {
+  accessExpiresAt: Timestamp;
+  accessToken: string;
+  businessId: number;
+  connectedAt: Generated<Timestamp>;
+  installerEmail: string | null;
+  installerName: string | null;
+  lastError: string | null;
+  lastSentAt: Timestamp | null;
+  prefs: Generated<Json>;
+  provider: Generated<string>;
+  refreshToken: string;
+  scopes: Generated<string>;
+  workspaceId: Int8 | null;
+  workspaceName: string | null;
+}
+
+export interface SmsPendingInstalls {
+  accessExpiresAt: Timestamp;
+  accessToken: string;
+  createdAt: Generated<Timestamp>;
+  id: string;
+  installerEmail: string | null;
+  installerName: string | null;
+  refreshToken: string;
+  scopes: Generated<string>;
+}
+
+export interface SmsLog {
+  businessId: number;
+  createdAt: Generated<Timestamp>;
+  error: string | null;
+  id: Generated<number>;
+  jobId: number | null;
+  kind: string;
+  messageId: string | null;
+  quoteId: number | null;
+  status: string;
+  toPhone: string;
+}
+
 export interface LcOpportunities {
   businessId: number;
   contactId: string | null;
@@ -328,6 +371,8 @@ export interface Quotes {
   status: Generated<QuoteStatus>;
   statusChangedAt: Generated<Timestamp>;
   viewedAt: Timestamp | null;
+  smsSentAt: Timestamp | null;
+  smsSentTo: string | null;
 }
 
 export interface Services {
@@ -458,6 +503,9 @@ export interface DB {
   lcOauthStates: LcOauthStates;
   lcOpportunities: LcOpportunities;
   lcPendingInstalls: LcPendingInstalls;
+  smsConnection: SmsConnection;
+  smsLog: SmsLog;
+  smsPendingInstalls: SmsPendingInstalls;
   leadFormHits: LeadFormHits;
   leadForms: LeadForms;
   memberships: Memberships;

@@ -66,3 +66,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+.picker {
+  display: grid;
+  width: 100%;
+}

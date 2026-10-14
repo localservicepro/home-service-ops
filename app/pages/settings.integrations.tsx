@@ -1,8 +1,9 @@
 import { Helmet } from "react-helmet";
-import { CalendarDays, CreditCard, BookOpen, Star } from "lucide-react";
+import { CalendarDays, CreditCard, BookOpen, Star, MessageSquare } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { GoogleCalendarCard } from "../components/GoogleCalendarCard";
 import { LeadConnectorCard } from "../components/LeadConnectorCard";
+import { SmsCard } from "../components/SmsCard";
 import { StripeCard } from "../components/StripeCard";
 import { PaymentProviderCard } from "../components/PaymentProviderCard";
 import { XeroCard } from "../components/XeroCard";
@@ -21,6 +22,13 @@ const SECTIONS = [
         <LeadConnectorCard />
       </>
     ),
+  },
+  {
+    id: "messaging",
+    title: "Messaging",
+    icon: MessageSquare,
+    blurb: "Text quotes, invoices, review requests and alerts from your own number.",
+    cards: () => <SmsCard />,
   },
   {
     id: "payments",

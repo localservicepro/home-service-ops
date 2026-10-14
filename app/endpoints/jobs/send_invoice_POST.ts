@@ -4,6 +4,7 @@ import { businessBrand, esc, isValidOrigin, layout, linkBase, sendAppEmail } fro
 import { invoiceNum } from "../../helpers/publicDocs";
 import { pricing } from "../../helpers/pricing";
 import { errorResponse, requireMember } from "../../helpers/tenant";
+import { sendSms } from "../../helpers/sms";
 import { schema, OutputType } from "./send_invoice_POST.schema";
 
 export async function handle(request: Request) {
@@ -19,7 +20,25 @@ export async function handle(request: Request) {
     const first = j.customer.split(" ")[0];
     const total = pricing.fmtMoney(Number(j.price));
     const paid = j.status === "Paid";
-    await sendAppEmail({
+    const wantEmail = input.channel !== "sms";
+    const wantSms = input.channel !== "email";
+    let textedTo: string | null = null;
+    let smsError: string | null = null;
+    if (wantSms) {
+      const note = input.message ? `${input.message}\n\n` : "";
+      const r = await sendSms(ctx.businessId, {
+        to: input.phone,
+        kind: "invoice",
+        jobId: j.id,
+        message: paid
+          ? `Hi ${first}, ${note}thanks for your payment. Your receipt ${inv} from ${brand.name}: ${url}`
+          : `Hi ${first}, ${note}here's invoice ${inv} from ${brand.name} for ${total}. View and pay online: ${url}`,
+      });
+      if (r.ok) textedTo = r.to;
+      else if (!wantEmail) throw new Error(r.error);
+      else smsError = r.error;
+    }
+    if (wantEmail) await sendAppEmail({
       to: input.to,
       fromName: brand.name,
       replyTo: brand.email || undefined,
@@ -41,15 +60,23 @@ export async function handle(request: Request) {
       }),
       text: `Hi ${first}, ${paid ? "here's your receipt" : `here's invoice ${inv} for ${total}`} from ${brand.name}: ${url}`,
     });
+    const emailedTo = wantEmail ? input.to : null;
+    const sentTo = [emailedTo, textedTo && input.phone].filter(Boolean).join(" and ");
     await db
       .updateTable("jobs")
-      .set({ invoiceSentAt: new Date(), invoiceSentTo: input.to, ...(paid ? {} : { payState: "awaiting" as const, payMethod: j.payMethod ?? "online" }) })
+      .set({
+        invoiceSentAt: new Date(),
+        invoiceSentTo: sentTo,
+        ...(textedTo ? { invoiceSmsAt: new Date(), invoiceSmsTo: input.phone } : {}),
+        ...(paid ? {} : { payState: "awaiting" as const, payMethod: j.payMethod ?? "online" }),
+      })
       .where("id", "=", j.id)
       .execute();
     if (j.clientId) {
-      await db.updateTable("clients").set({ email: input.to }).where("id", "=", j.clientId).where("email", "=", "").execute();
+      if (emailedTo) await db.updateTable("clients").set({ email: emailedTo }).where("id", "=", j.clientId).where("email", "=", "").execute();
+      if (textedTo) await db.updateTable("clients").set({ phone: input.phone }).where("id", "=", j.clientId).where("phone", "=", "").execute();
     }
-    return new Response(superjson.stringify({ ok: true, sentTo: input.to } satisfies OutputType));
+    return new Response(superjson.stringify({ ok: true, sentTo, emailedTo, textedTo, smsError } satisfies OutputType));
   } catch (error) {
     return errorResponse(error);
   }

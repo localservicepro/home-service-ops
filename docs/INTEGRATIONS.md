@@ -201,6 +201,24 @@ Also set **APP_URL** = `https://home.localservicepro.com.au` as a Supabase secre
 
 ---
 
+## 9. myCRMSIM: SMS from each business's own number
+
+Each business connects **its own** myCRMSIM account in Settings → Integrations → Messaging. Texts go out from the phone or SIM they've paired in myCRMSIM, so there's no per-message cost from this app and no A2P registration. You register Home Service Ops with myCRMSIM once; every business then signs in with its own myCRMSIM login.
+
+1. Ask myCRMSIM support to register an OAuth app. Their API docs say app credentials are "issued when a SuperAdmin registers your app". Give them:
+   - **App name:** Home Service Ops
+   - **Redirect URI:** `API/sms/callback`
+   - **Scopes:** `workspaces.read`, `devices.read`, `messages.write`, `messages.read`
+2. They send back a **client_id** and **client_secret**. Add them in Supabase as secrets **`MYCRMSIM_CLIENT_ID`** and **`MYCRMSIM_CLIENT_SECRET`**.
+3. Each business then, in myCRMSIM:
+   - goes to **Devices**, adds their Android phone (or WhatsApp / iMessage) and assigns it to a workspace;
+   - turns on **SMS** in that workspace's **Message Routing** (Subaccount SIM → Message Routing).
+4. In Home Service Ops, they go to **Settings → Integrations → Messaging → Connect myCRMSIM**, sign in, approve, and pick the workspace. **Send test** checks it end to end.
+
+Limits from myCRMSIM: 30 texts per 15 minutes per workspace; one attachment per message.
+
+---
+
 ## Checklist
 
 | Secret | Integration |
@@ -212,7 +230,8 @@ Also set **APP_URL** = `https://home.localservicepro.com.au` as a Supabase secre
 | `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `XERO_WEBHOOK_KEY` | Xero |
 | `LC_CLIENT_ID`, `LC_CLIENT_SECRET` | LeadConnector |
 | `GCAL_CLIENT_ID`, `GCAL_CLIENT_SECRET` | Google Calendar |
-| `GOOGLE_MAPS_API_KEY` | Google reviews |
+| `GOOGLE_MAPS_API_KEY` | Google reviews and address search |
+| `MYCRMSIM_CLIENT_ID`, `MYCRMSIM_CLIENT_SECRET` | myCRMSIM SMS |
 | Supabase → Auth → Providers → Google (client ID and secret) | Google sign-in |
 
 | Provider | Callback URL | Webhook URL |
@@ -222,6 +241,7 @@ Also set **APP_URL** = `https://home.localservicepro.com.au` as a Supabase secre
 | GoCardless | `API/gocardless/callback` | `API/gocardless/webhook` |
 | Xero | `API/xero/callback` | `API/xero/webhook` |
 | LeadConnector | `API/crm/callback` | `API/crm/webhook` |
+| myCRMSIM | `API/sms/callback` | n/a |
 | Google Calendar | `API/gcal/callback` | n/a |
 | Google sign-in | `https://gcuzmuztikisxsmkgtbi.supabase.co/auth/v1/callback` | n/a |
 

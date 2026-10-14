@@ -198,3 +198,19 @@ Xero redirect                  https://gcuzmuztikisxsmkgtbi.supabase.co/function
 Xero webhook                   https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/xero/webhook
 Website form embed script      https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/embed
 ```
+
+
+## myCRMSIM (SMS)
+
+New, so there's no old URL to replace.
+
+| What | URL |
+| --- | --- |
+| OAuth redirect URI (give this to myCRMSIM when they register the app) | `https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/sms/callback` |
+
+| Secret | Where to find it |
+| --- | --- |
+| `MYCRMSIM_CLIENT_ID` | Issued by myCRMSIM when they register the app |
+| `MYCRMSIM_CLIENT_SECRET` | Issued with the client ID |
+
+Scopes to request: `workspaces.read`, `devices.read`, `messages.write`, `messages.read`.

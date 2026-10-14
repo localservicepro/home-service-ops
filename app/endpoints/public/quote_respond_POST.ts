@@ -3,6 +3,7 @@ import { db } from "../../helpers/db";
 import { businessBrand, esc, layout, sendAppEmail } from "../../helpers/mailer";
 import { pricing } from "../../helpers/pricing";
 import { pushToLc } from "../../helpers/lcSync";
+import { smsOwner } from "../../helpers/sms";
 import { schema, OutputType } from "./quote_respond_POST.schema";
 
 export async function handle(request: Request) {
@@ -20,6 +21,10 @@ export async function handle(request: Request) {
     await pushToLc(q.businessId, { quoteIds: [q.id] });
 
     // Let the business know straight away.
+    await smsOwner(
+      q.businessId,
+      `${q.customer} ${status === "Accepted" ? "accepted" : "declined"} quote ${q.num} (${pricing.fmtMoney(Number(q.price))})${status === "Declined" && input.reason ? `: "${input.reason}"` : ""}.`,
+    );
     try {
       const brand = await businessBrand(q.businessId);
       if (brand.email) {

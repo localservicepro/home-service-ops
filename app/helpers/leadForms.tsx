@@ -5,6 +5,7 @@ import { upload } from "./storage";
 import { db } from "./db";
 import { ensureClient } from "./ensureClient";
 import { businessBrand, esc, layout, PUBLIC_APP_URL, sendAppEmail } from "./mailer";
+import { smsOwner } from "./sms";
 import { FIELD_ORDER, MAX_PHOTOS, normalizeConfig, type LeadFormConfig, type PublicLeadForm } from "./leadFormConfig";
 
 // Server-only. Website enquiry form: config per business, public submissions → client + "New" request.
@@ -185,6 +186,7 @@ export async function submitLead(request: Request, input: LeadSubmission) {
   } catch {
     /* ignore */
   }
+  await smsOwner(f.businessId, `New enquiry (${job.num}) from ${val.name}${val.phone ? `, ${val.phone}` : ""}${picked.length ? ` – ${picked.map((s) => s.name).join(", ")}` : ""}. ${PUBLIC_APP_URL}/jobs/${job.id}`);
   if (f.notifyEmail) {
     try {
       const brand = await businessBrand(f.businessId);

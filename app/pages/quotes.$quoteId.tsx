@@ -66,6 +66,7 @@ export default function QuoteDetailPage() {
             id={quote.id}
             customer={quote.customer}
             defaultEmail={data.clients.find((c) => c.id === quote.clientId)?.email}
+            defaultPhone={data.clients.find((c) => c.id === quote.clientId)?.phone}
             token={quote.publicToken}
             sentAt={quote.sentAt}
             sentTo={quote.sentTo}

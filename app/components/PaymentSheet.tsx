@@ -90,6 +90,7 @@ export function PaymentSheet({
             id={job.id}
             customer={job.customer}
             defaultEmail={ops?.clients.find((c) => c.id === job.clientId)?.email}
+            defaultPhone={ops?.clients.find((c) => c.id === job.clientId)?.phone || job.phone}
             token={job.publicToken}
             sentAt={job.invoiceSentAt}
             sentTo={job.invoiceSentTo}
