@@ -10,14 +10,19 @@
   flex: none;
 }
 
-/* phone: stage tabs */
+/* phone: stage tabs, pinned under the app bar while the cards scroll */
 .tabs {
+  position: sticky;
+  top: 58px;
+  z-index: 20;
   display: flex;
   gap: 7px;
   overflow-x: auto;
   scrollbar-width: none;
   margin: 0 calc(-1 * var(--spacing-6));
-  padding: 0 var(--spacing-6) 2px;
+  padding: 8px var(--spacing-6) 8px;
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(8px);
 }
 .tab {
   flex: none;
@@ -207,6 +212,35 @@
     color: var(--foreground);
     white-space: nowrap;
   }
+}
+
+/* Desktop: the board fits the page, so stage headers can stay pinned while you scroll.
+   Columns stretch to the tallest one so every header stays in view. */
+@media (min-width: 1180px) {
+  .board {
+    overflow-x: visible;
+    align-items: stretch;
+  }
+  .col,
+  .colOn {
+    padding-top: 0;
+  }
+  .colHead {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: 0 -10px;
+    padding: 14px 14px 10px;
+    border-radius: 18px 18px 12px 12px;
+    background: color-mix(in srgb, var(--muted) 60%, var(--background));
+    box-shadow: 0 8px 12px -12px rgba(8, 23, 43, 0.35);
+  }
+  .over .colHead {
+    background: var(--secondary);
+  }
+}
+
+@media (min-width: 768px) {
   .colCount {
     margin-left: auto;
     min-width: 22px;
