@@ -14,6 +14,7 @@ import { MonthCalendar } from "./MonthCalendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
 import { Initials } from "./Initials";
 import { CustomFieldsEditor, type FieldRow } from "./CustomFieldsEditor";
+import { AddressInput } from "./AddressInput";
 import styles from "./JobFormSheet.module.css";
 
 type Draft = {
@@ -211,7 +212,7 @@ export function JobFormSheet({
               ))}
             </div>
           )}
-          <Input value={d.address} onChange={(e) => set("address", e.target.value)} placeholder="Street, suburb" />
+          <AddressInput value={d.address} onChange={(v) => set("address", v)} />
         </div>
 
         <div className={styles.field}>

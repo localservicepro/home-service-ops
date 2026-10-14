@@ -20,6 +20,7 @@ import { Input } from "../components/Input";
 import { ClientSheet } from "../components/ClientSheet";
 import { ConfirmSheet } from "../components/ConfirmSheet";
 import { ClientReviewToggle } from "../components/GbpCard";
+import { AddressInput } from "../components/AddressInput";
 import styles from "./clients.$clientId.module.css";
 
 export default function ClientDetailPage() {
@@ -113,7 +114,7 @@ export default function ClientDetailPage() {
           ))}
           {adding && (
             <div className={styles.addRow}>
-              <Input autoFocus value={addr} onChange={(e) => setAddr(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addAddress()} placeholder="Street, suburb" />
+              <AddressInput autoFocus value={addr} onChange={setAddr} onEnter={addAddress} className={styles.addrInput} />
               <Button onClick={addAddress} disabled={!addr.trim() || save.isPending}>Save</Button>
             </div>
           )}

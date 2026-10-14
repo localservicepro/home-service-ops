@@ -208,3 +208,6 @@
   font-size: 13.5px;
   cursor: pointer;
 }
+.addrInput {
+  flex: 1;
+}

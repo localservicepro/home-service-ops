@@ -14,6 +14,7 @@ import { Initials } from "./Initials";
 import { SectionLabel } from "./SectionLabel";
 import { PhotoGallery } from "./PhotoGallery";
 import { JobDetailsList } from "./JobDetailsList";
+import { AddressInput } from "./AddressInput";
 import styles from "./QuoteBuilder.module.css";
 
 type EditLine = Omit<LineItem, "price"> & { price: string };
@@ -234,7 +235,7 @@ export function QuoteBuilder({
                 <Chip onClick={() => { setAddingAddr(true); setAddress(""); }}><Plus size={13} /> New address</Chip>
               </div>
             ) : (
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, suburb" />
+              <AddressInput value={address} onChange={setAddress} />
             )}
           </div>
         )}

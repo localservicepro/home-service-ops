@@ -6,6 +6,7 @@ import { useOpsMutation } from "../helpers/useOpsMutation";
 import { BottomSheet } from "./BottomSheet";
 import { Input } from "./Input";
 import { Button } from "./Button";
+import { AddressInput } from "./AddressInput";
 import styles from "./ClientSheet.module.css";
 
 export function ClientSheet({
@@ -63,7 +64,7 @@ export function ClientSheet({
           {emailInvalid && <small className={styles.error}>Check the email address.</small>}
         </label>
         {!client && (
-          <label className={styles.field}><span>First property</span><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street, suburb (optional)" /></label>
+          <label className={styles.field}><span>First property</span><AddressInput value={address} onChange={setAddress} placeholder="Start typing an address (optional)" /></label>
         )}
       </div>
     </BottomSheet>
