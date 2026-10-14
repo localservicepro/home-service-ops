@@ -15,7 +15,7 @@ import { Skeleton } from "./Skeleton";
 import styles from "./LcSyncSettings.module.css";
 
 // Connected LeadConnector: choose the pipeline, match stages, and sync leads.
-export function LcSyncSettings({ status, className }: { status: CrmStatus; className?: string }) {
+export function LcSyncSettings({ status, className, onSaved }: { status: CrmStatus; className?: string; onSaved?: () => void }) {
   const qc = useQueryClient();
   const pipelinesQ = useQuery({ queryKey: ["crm", "pipelines"], queryFn: () => getCrmPipelines(), enabled: status.planAllows, retry: false });
   const [pipelineId, setPipelineId] = useState("");
@@ -56,6 +56,7 @@ export function LcSyncSettings({ status, className }: { status: CrmStatus; class
     onSuccess: async () => {
       toast.success("LeadConnector sync saved");
       refresh();
+      onSaved?.();
       const r = await postCrmPull({ force: true }).catch(() => null);
       if (r?.imported) toast.success(`${r.imported} new lead${r.imported === 1 ? "" : "s"} brought in`);
       refresh();
@@ -87,62 +88,66 @@ export function LcSyncSettings({ status, className }: { status: CrmStatus; class
 
   return (
     <div className={`${styles.wrap} ${className ?? ""}`}>
-      <label className={styles.field}>
-        <span>Pipeline</span>
-        <select className={styles.select} value={pipelineId} onChange={(e) => pickPipeline(e.target.value)}>
-          <option value="">Choose a pipeline…</option>
-          {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-      </label>
+      <div className={styles.col}>
+        <label className={styles.field}>
+          <span>Pipeline</span>
+          <select className={styles.select} value={pipelineId} onChange={(e) => pickPipeline(e.target.value)}>
+            <option value="">Choose a pipeline…</option>
+            {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
 
-      {pipeline && (
-        <div className={styles.stages}>
-          <div className={styles.stagesHead}>Match your stages</div>
-          {STAGE_KEYS.map((k) => (
-            <label key={k} className={styles.stageRow}>
-              <span className={styles.stageText}>
-                <b>{STAGE_LABELS[k].label}</b>
-                <small>{STAGE_LABELS[k].hint}</small>
-              </span>
-              <select className={styles.select} value={map[k] ?? ""} onChange={(e) => setMap({ ...map, [k]: e.target.value || undefined })}>
-                <option value="">{k === "new" ? "Choose…" : "Don't move"}</option>
-                {pipeline.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </label>
-          ))}
-        </div>
-      )}
-
-      <div className={styles.toggle}>
-        <span><b>Bring in new leads</b><small>New opportunities in this pipeline appear as job requests.</small></span>
-        <Switch checked={importLeads} onCheckedChange={setImportLeads} aria-label="Bring in new leads" />
-      </div>
-      <div className={styles.toggle}>
-        <span><b>Add app jobs to LeadConnector</b><small>Jobs and quotes you create in the app get a contact and opportunity (needs a phone or email).</small></span>
-        <Switch checked={pushNew} onCheckedChange={setPushNew} aria-label="Add app jobs to LeadConnector" />
-      </div>
-
-      {dirty && (
-        <Button onClick={() => save.mutate()} disabled={!pipelineId || !map.new || save.isPending}>
-          {save.isPending ? "Saving…" : "Save sync settings"}
-        </Button>
-      )}
-
-      {status.pipelineId && !dirty && (
-        <>
-          <div className={styles.status}>
-            <span>
-              {status.linkedLeads} linked opportunit{status.linkedLeads === 1 ? "y" : "ies"}
-              {status.lastSyncAt ? ` · synced ${opsFormat.timeAgo(status.lastSyncAt)}` : ""}
-            </span>
-            <small>New leads arrive instantly by webhook, and are also checked each time the app is opened.</small>
+        {pipeline && (
+          <div className={styles.stages}>
+            <div className={styles.stagesHead}>Match your stages</div>
+            {STAGE_KEYS.map((k) => (
+              <label key={k} className={styles.stageRow}>
+                <span className={styles.stageText}>
+                  <b>{STAGE_LABELS[k].label}</b>
+                  <small>{STAGE_LABELS[k].hint}</small>
+                </span>
+                <select className={styles.select} value={map[k] ?? ""} onChange={(e) => setMap({ ...map, [k]: e.target.value || undefined })}>
+                  <option value="">{k === "new" ? "Choose…" : "Don't move"}</option>
+                  {pipeline.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </label>
+            ))}
           </div>
-          {status.lastSyncError && <p className={styles.error}><AlertTriangle size={14} /> Last sync problem: {status.lastSyncError}</p>}
-          <Button variant="outline" onClick={() => pull.mutate()} disabled={pull.isPending}>
-            <RefreshCw size={15} className={pull.isPending ? styles.spin : ""} /> {pull.isPending ? "Checking…" : "Sync leads now"}
+        )}
+      </div>
+
+      <div className={styles.col}>
+        <div className={styles.toggle}>
+          <span><b>Bring in new leads</b><small>New opportunities in this pipeline appear as job requests.</small></span>
+          <Switch checked={importLeads} onCheckedChange={setImportLeads} aria-label="Bring in new leads" />
+        </div>
+        <div className={styles.toggle}>
+          <span><b>Add app jobs to LeadConnector</b><small>Jobs and quotes you create in the app get a contact and opportunity (needs a phone or email).</small></span>
+          <Switch checked={pushNew} onCheckedChange={setPushNew} aria-label="Add app jobs to LeadConnector" />
+        </div>
+
+        {dirty && (
+          <Button onClick={() => save.mutate()} disabled={!pipelineId || !map.new || save.isPending}>
+            {save.isPending ? "Saving…" : "Save sync settings"}
           </Button>
-        </>
-      )}
+        )}
+
+        {status.pipelineId && !dirty && (
+          <>
+            <div className={styles.status}>
+              <span>
+                {status.linkedLeads} linked opportunit{status.linkedLeads === 1 ? "y" : "ies"}
+                {status.lastSyncAt ? ` · synced ${opsFormat.timeAgo(status.lastSyncAt)}` : ""}
+              </span>
+              <small>New leads arrive instantly by webhook, and are also checked each time the app is opened.</small>
+            </div>
+            {status.lastSyncError && <p className={styles.error}><AlertTriangle size={14} /> Last sync problem: {status.lastSyncError}</p>}
+            <Button variant="outline" onClick={() => pull.mutate()} disabled={pull.isPending}>
+              <RefreshCw size={15} className={pull.isPending ? styles.spin : ""} /> {pull.isPending ? "Checking…" : "Sync leads now"}
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

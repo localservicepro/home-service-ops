@@ -9,6 +9,7 @@ import { useOpsMutation } from "../helpers/useOpsMutation";
 import { Button } from "./Button";
 import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
+import { IntegrationToggle } from "./IntegrationToggle";
 import styles from "./StripeCard.module.css";
 
 export const STRIPE_STATUS_KEY = ["stripe", "status"];
@@ -19,6 +20,7 @@ export function StripeCard({ className }: { className?: string }) {
   const { data, isLoading } = useQuery({ queryKey: STRIPE_STATUS_KEY, queryFn: () => getStripeStatus() });
   const [connecting, setConnecting] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [open, setOpen] = useState(false);
   const popupRef = useRef<Window | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: STRIPE_STATUS_KEY });
 
@@ -78,7 +80,14 @@ export function StripeCard({ className }: { className?: string }) {
       <div className={styles.head}>
         <span className={`${styles.icon} ${data?.connected ? styles.iconOn : ""}`}><CreditCard size={18} /></span>
         <div className={styles.text}>
-          <b>Stripe</b>
+          <span className={styles.titleRow}>
+            <b>Stripe</b>
+            {data?.connected && (
+              <span className={`${styles.badge} ${data.livemode ? "" : styles.test}`}>
+                <Check size={12} /> {data.livemode ? "Live" : "Test mode"}
+              </span>
+            )}
+          </span>
           {isLoading ? (
             <Skeleton className={styles.skel} />
           ) : data?.connected ? (
@@ -87,11 +96,7 @@ export function StripeCard({ className }: { className?: string }) {
             <small>Take card payments with pay-now links. Jobs are marked paid automatically.</small>
           )}
         </div>
-        {data?.connected && (
-          <span className={`${styles.badge} ${data.livemode ? "" : styles.test}`}>
-            <Check size={12} /> {data.livemode ? "Live" : "Test mode"}
-          </span>
-        )}
+        {data?.connected && <IntegrationToggle open={open} onToggle={() => setOpen((o) => !o)} controls="stripe-body" />}
       </div>
 
       {!isLoading && data && !data.configured && (
@@ -100,7 +105,7 @@ export function StripeCard({ className }: { className?: string }) {
 
       {!isLoading && data && (
         data.connected ? (
-          <div className={styles.actions}>
+          open && <div id="stripe-body" className={`${styles.actions} ${styles.body}`}>
             <Button variant="outline" onClick={connect} disabled={connecting}>{connecting ? "Waiting…" : "Change account"}</Button>
             <Button variant="outline" onClick={() => setConfirm(true)}><Unlink size={15} /> Disconnect</Button>
           </div>

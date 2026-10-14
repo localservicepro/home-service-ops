@@ -103,9 +103,13 @@
   width: 100%;
 }
 .actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 9px;
+}
+.actions > * {
+  flex: 1 1 170px;
+  min-width: 0;
 }
 .setup {
   font-size: 12px;
@@ -148,4 +152,28 @@
   background: var(--card);
   color: var(--muted-foreground);
   cursor: pointer;
+}
+
+/* Collapsible: the head always shows; settings open with Manage. */
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.meta,
+.metaWarn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.metaWarn {
+  color: var(--status-progress) !important;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }

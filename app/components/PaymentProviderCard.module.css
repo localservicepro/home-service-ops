@@ -79,7 +79,22 @@
   width: 100%;
 }
 .actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 9px;
+}
+.actions > * {
+  flex: 1 1 170px;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.body {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }

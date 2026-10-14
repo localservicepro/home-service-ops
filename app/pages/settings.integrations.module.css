@@ -46,10 +46,15 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
 }
 .cards > * {
   min-width: 0;
+  container-type: inline-size;
+}
+/* An open card gets the whole row, so its settings have room. */
+.cards > [data-open] {
+  grid-column: 1 / -1;
 }
 .cards > *:empty {
   display: none;
@@ -85,7 +90,7 @@
     font-size: 16px;
   }
   .cards {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
     gap: 14px;
   }
 }

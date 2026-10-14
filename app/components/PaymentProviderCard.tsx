@@ -9,6 +9,7 @@ import { postGcConnect } from "../endpoints/gocardless/connect_POST.schema";
 import { Button } from "./Button";
 import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
+import { IntegrationToggle } from "./IntegrationToggle";
 import styles from "./PaymentProviderCard.module.css";
 
 export const SQUARE_STATUS_KEY = ["square", "status"];
@@ -62,6 +63,7 @@ export function PaymentProviderCard({ kind, className }: { kind: Kind; className
   const c = COPY[kind];
   const [connecting, setConnecting] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [open, setOpen] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const popupRef = useRef<Window | null>(null);
   const refresh = () => {
@@ -147,7 +149,14 @@ export function PaymentProviderCard({ kind, className }: { kind: Kind; className
           <Icon size={18} />
         </span>
         <div className={styles.text}>
-          <b>{c.title}</b>
+          <span className={styles.titleRow}>
+            <b>{c.title}</b>
+            {data?.connected && (
+              <span className={`${styles.badge} ${data.sandbox ? styles.test : ""}`}>
+                <Check size={12} /> {data.sandbox ? "Sandbox" : "Live"}
+              </span>
+            )}
+          </span>
           {isLoading ? (
             <Skeleton className={styles.skel} />
           ) : data?.connected ? (
@@ -159,11 +168,7 @@ export function PaymentProviderCard({ kind, className }: { kind: Kind; className
             <small>{c.blurb}</small>
           )}
         </div>
-        {data?.connected && (
-          <span className={`${styles.badge} ${data.sandbox ? styles.test : ""}`}>
-            <Check size={12} /> {data.sandbox ? "Sandbox" : "Live"}
-          </span>
-        )}
+        {data?.connected && <IntegrationToggle open={open} onToggle={() => setOpen((o) => !o)} controls={`${kind}-body`} />}
       </div>
 
       {!isLoading && data && !data.configured && <p className={styles.warn}>{c.title} isn't set up for this app yet, so connecting won't work until it is.</p>}
@@ -171,7 +176,7 @@ export function PaymentProviderCard({ kind, className }: { kind: Kind; className
       {!isLoading &&
         data &&
         (data.connected ? (
-          <div className={styles.actions}>
+          open && <div id={`${kind}-body`} className={`${styles.actions} ${styles.body}`}>
             <Button variant="outline" onClick={connect} disabled={connecting}>
               {connecting ? "Waiting…" : "Change account"}
             </Button>

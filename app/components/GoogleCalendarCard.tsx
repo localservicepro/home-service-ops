@@ -11,6 +11,7 @@ import { opsFormat } from "../helpers/opsFormat";
 import { Button } from "./Button";
 import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
+import { IntegrationToggle } from "./IntegrationToggle";
 import styles from "./GoogleCalendarCard.module.css";
 
 const KEY = ["gcal", "status"];
@@ -21,6 +22,7 @@ export function GoogleCalendarCard({ className }: { className?: string }) {
   const { data, isLoading } = useQuery({ queryKey: KEY, queryFn: () => getGcalStatus() });
   const [connecting, setConnecting] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [open, setOpen] = useState(false);
   const popupRef = useRef<Window | null>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: KEY });
@@ -82,57 +84,68 @@ export function GoogleCalendarCard({ className }: { className?: string }) {
     o.failed ? `${o.synced} synced, ${o.failed} failed` : `${o.synced} job${o.synced === 1 ? "" : "s"} synced to Google Calendar`,
   );
 
+  const connected = !!data?.connected;
+  const expanded = connected && open;
+
   return (
-    <div className={`${styles.card} ${className ?? ""}`}>
+    <div className={`${styles.card} ${className ?? ""}`} data-open={expanded || undefined}>
       <div className={styles.head}>
-        <span className={`${styles.icon} ${data?.connected ? styles.iconOn : ""}`}><CalendarDays size={18} /></span>
+        <span className={`${styles.icon} ${connected ? styles.iconOn : ""}`}><CalendarDays size={18} /></span>
         <div className={styles.text}>
-          <b>Google Calendar</b>
+          <span className={styles.titleRow}>
+            <b>Google Calendar</b>
+            {connected && <span className={styles.badge}><Check size={12} /> Connected</span>}
+          </span>
           {isLoading ? (
             <Skeleton className={styles.skel} />
           ) : data?.connected ? (
-            <small>Linked to <strong>{data.email}</strong></small>
+            <>
+              <small>Linked to <strong>{data.email}</strong></small>
+              {!expanded && (
+                <small className={data.lastSyncError ? styles.metaWarn : styles.meta}>
+                  {data.lastSyncError && <AlertTriangle size={12} />}
+                  {data.linkedJobs} job{data.linkedJobs === 1 ? "" : "s"} in your calendar
+                  {data.lastSyncedAt ? ` · synced ${opsFormat.timeAgo(data.lastSyncedAt)}` : ""}
+                </small>
+              )}
+            </>
           ) : (
             <small>Link your calendar so scheduled jobs can go straight into it.</small>
           )}
         </div>
-        {data?.connected && <span className={styles.badge}><Check size={12} /> Connected</span>}
+        {connected && <IntegrationToggle open={expanded} onToggle={() => setOpen((o) => !o)} controls="gcal-body" />}
       </div>
 
       {!isLoading && data && !data.configured && (
         <p className={styles.warn}>The Google OAuth client isn't set up for this app yet, so connecting won't work until it is.</p>
       )}
 
-      {!isLoading && data && (
-        data.connected ? (
-          <>
-            <div className={styles.syncInfo}>
-              <span>
-                {data.linkedJobs} job{data.linkedJobs === 1 ? "" : "s"} in your calendar
-                {data.lastSyncedAt ? ` · synced ${opsFormat.timeAgo(data.lastSyncedAt)}` : ""}
-              </span>
-              <span className={styles.syncSub}>Scheduled jobs are added, moved and removed automatically{data.timeZone ? ` (${data.timeZone})` : ""}.</span>
-            </div>
-            {data.lastSyncError && (
-              <p className={styles.warn}><AlertTriangle size={13} /> Last sync problem: {data.lastSyncError}</p>
-            )}
-            <Button
-              className={styles.connect}
-              onClick={() => sync.mutate({}, { onSettled: () => refresh() })}
-              disabled={sync.isPending}
-            >
+      {!isLoading && data && !data.connected && (
+        <Button className={styles.connect} onClick={connect} disabled={connecting || !data.configured}>
+          {connecting ? "Waiting for Google…" : "Connect Google Calendar"}
+        </Button>
+      )}
+
+      {expanded && data && (
+        <div id="gcal-body" className={styles.body}>
+          <div className={styles.syncInfo}>
+            <span>
+              {data.linkedJobs} job{data.linkedJobs === 1 ? "" : "s"} in your calendar
+              {data.lastSyncedAt ? ` · synced ${opsFormat.timeAgo(data.lastSyncedAt)}` : ""}
+            </span>
+            <span className={styles.syncSub}>Scheduled jobs are added, moved and removed automatically{data.timeZone ? ` (${data.timeZone})` : ""}.</span>
+          </div>
+          {data.lastSyncError && (
+            <p className={styles.warn}><AlertTriangle size={13} /> Last sync problem: {data.lastSyncError}</p>
+          )}
+          <div className={styles.actions}>
+            <Button onClick={() => sync.mutate({}, { onSettled: () => refresh() })} disabled={sync.isPending}>
               <RefreshCw size={15} className={sync.isPending ? styles.spin : ""} /> {sync.isPending ? "Syncing…" : "Sync now"}
             </Button>
-            <div className={styles.actions}>
-              <Button variant="outline" onClick={connect} disabled={connecting}>{connecting ? "Waiting for Google…" : "Reconnect"}</Button>
-              <Button variant="outline" onClick={() => setConfirm(true)}><Unlink size={15} /> Disconnect</Button>
-            </div>
-          </>
-        ) : (
-          <Button className={styles.connect} onClick={connect} disabled={connecting || !data.configured}>
-            {connecting ? "Waiting for Google…" : "Connect Google Calendar"}
-          </Button>
-        )
+            <Button variant="outline" onClick={connect} disabled={connecting}>{connecting ? "Waiting…" : "Reconnect"}</Button>
+            <Button variant="outline" onClick={() => setConfirm(true)}><Unlink size={15} /> Disconnect</Button>
+          </div>
+        </div>
       )}
 
       <ConfirmSheet
