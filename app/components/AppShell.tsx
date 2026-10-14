@@ -24,6 +24,7 @@ import { AuthLoadingState } from "./AuthLoadingState";
 import { LandingPage } from "./LandingPage";
 import { Button } from "./Button";
 import type { BillingSummary } from "../helpers/plans";
+import { saveReturnTo, peekReturnTo, clearReturnTo } from "../helpers/returnTo";
 import styles from "./AppShell.module.css";
 
 const ADMIN_NAV = [
@@ -115,12 +116,17 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
     if (me && !crew && pathname.startsWith("/field")) navigate("/", { replace: true });
   }, [crew, me, pathname, navigate]);
 
+  useEffect(() => {
+    if (authState.type === "authenticated" && peekReturnTo() === pathname + window.location.search + window.location.hash) clearReturnTo();
+  }, [authState.type, pathname]);
+
   if (authState.type === "loading") return <AuthLoadingState title="Signing you in" />;
   if (authState.type === "unauthenticated") {
     // Signed-out web visitors to the home page see the marketing page; the installed
     // mobile app (and every other page) goes straight to sign-in.
     const native = typeof window !== "undefined" && !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
     if (pathname === "/" && !native) return <LandingPage />;
+    saveReturnTo(pathname + window.location.search + window.location.hash);
     return <Navigate to="/login" replace />;
   }
   if (isLoading) return <AuthLoadingState title="Loading your business" />;

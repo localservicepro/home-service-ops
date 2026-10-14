@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../helpers/useAuth";
 import { supabase } from "../helpers/supabaseClient";
 import { AuthLoadingState } from "../components/AuthLoadingState";
+import { peekReturnTo } from "../helpers/returnTo";
 import { PENDING_SIGNUP_KEY, type PendingSignup } from "../endpoints/auth/session_GET.schema";
 
 // Where Google sends people back to. Stays on one splash screen while Supabase finishes the sign-in
@@ -42,6 +43,6 @@ export default function AuthCallbackPage() {
     const qs = new URLSearchParams({ error: oauthError ?? "server_error", error_description: params.get("error_description") ?? hash.get("error_description") ?? "" });
     return <Navigate to={`${invite ? `/join/${invite}` : "/login"}?${qs}`} replace />;
   }
-  if (authState.type === "authenticated") return <Navigate to="/" replace />;
+  if (authState.type === "authenticated") return <Navigate to={peekReturnTo() ?? "/"} replace />;
   return <AuthLoadingState title="Signing you in with Google" />;
 }

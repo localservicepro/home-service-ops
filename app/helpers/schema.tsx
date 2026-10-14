@@ -252,6 +252,20 @@ export interface LcOauthStates {
   state: string;
 }
 
+export interface LcPendingInstalls {
+  accessExpiresAt: Timestamp;
+  accessToken: string;
+  companyId: string | null;
+  createdAt: Generated<Timestamp>;
+  id: string;
+  locationId: string;
+  locationName: Generated<string>;
+  redirectUri: string;
+  refreshToken: string;
+  scopes: Generated<string>;
+  userId: string | null;
+}
+
 export interface LcOpportunities {
   businessId: number;
   contactId: string | null;
@@ -442,6 +456,7 @@ export interface DB {
   lcConnection: LcConnection;
   lcOauthStates: LcOauthStates;
   lcOpportunities: LcOpportunities;
+  lcPendingInstalls: LcPendingInstalls;
   leadFormHits: LeadFormHits;
   leadForms: LeadForms;
   memberships: Memberships;

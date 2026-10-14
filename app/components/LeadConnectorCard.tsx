@@ -5,6 +5,7 @@ import { Workflow, Check, Unlink } from "lucide-react";
 import { getCrmStatus } from "../endpoints/crm/status_GET.schema";
 import { postCrmAuthorize } from "../endpoints/crm/authorize_POST.schema";
 import { postCrmDisconnect } from "../endpoints/crm/disconnect_POST.schema";
+import { postCrmClaim } from "../endpoints/crm/claim_POST.schema";
 import { useOpsMutation } from "../helpers/useOpsMutation";
 import { Button } from "./Button";
 import { Skeleton } from "./Skeleton";
@@ -22,6 +23,26 @@ export function LeadConnectorCard({ className }: { className?: string }) {
   const [confirm, setConfirm] = useState(false);
   const popupRef = useRef<Window | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: KEY });
+
+  // Installed from the LeadConnector marketplace: the API sends us back here with an install id.
+  const claimed = useRef(false);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("lc_install");
+    if (!id || claimed.current) return;
+    claimed.current = true;
+    url.searchParams.delete("lc_install");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    setConnecting(true);
+    postCrmClaim({ id })
+      .then((r) => toast.success(`LeadConnector connected to ${r.locationName || "your sub-account"}`))
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Couldn't finish connecting LeadConnector"))
+      .finally(() => {
+        setConnecting(false);
+        refresh();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {

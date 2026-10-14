@@ -8,6 +8,7 @@ import { PasswordLoginForm } from "../components/PasswordLoginForm";
 import { SignUpForm } from "../components/SignUpForm";
 import { GoogleSignInButton } from "../components/GoogleSignInButton";
 import { readOAuthError } from "../helpers/oauthError";
+import { peekReturnTo } from "../helpers/returnTo";
 import styles from "./login.module.css";
 
 export default function LoginPage() {
@@ -16,7 +17,7 @@ export default function LoginPage() {
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("mode") === "signup" ? "signup" : "signin",
   );
   const [googleError] = useState(readOAuthError);
-  if (authState.type === "authenticated") return <Navigate to="/" replace />;
+  if (authState.type === "authenticated") return <Navigate to={peekReturnTo() ?? "/"} replace />;
   // Coming back from Google: keep the splash up while the session is exchanged.
   if (authState.type === "loading" && typeof window !== "undefined" && new URLSearchParams(window.location.search).has("code"))
     return <AuthLoadingState title="Signing you in with Google" />;

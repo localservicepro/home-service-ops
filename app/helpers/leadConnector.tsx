@@ -18,6 +18,7 @@ export const LC_SCOPES = [
 const AUTH_URL = "https://marketplace.leadconnectorhq.com/oauth/chooselocation";
 const TOKEN_URL = `${LC_API}/oauth/token`;
 const STATE_TTL_MS = 15 * 60 * 1000;
+const PENDING_TTL_MS = 60 * 60 * 1000;
 
 function creds() {
   const env = process.env as unknown as Record<string, string | undefined>;
@@ -79,11 +80,7 @@ async function tokenRequest(body: Record<string, string>) {
 
 const expiry = (secs: number) => new Date(Date.now() + Math.max(60, secs - 120) * 1000);
 
-export async function finishLcAuth(code: string, state: string) {
-  const row = await db.deleteFrom("lcOauthStates").where("state", "=", state).returningAll().executeTakeFirst();
-  if (!row || row.createdAt.getTime() < Date.now() - STATE_TTL_MS) {
-    throw new Error("This connection link has expired. Please try connecting again.");
-  }
+async function exchangeCode(code: string, redirectUri: string) {
   const { clientId, clientSecret } = requireCreds();
   const t = await tokenRequest({
     client_id: clientId,
@@ -91,7 +88,7 @@ export async function finishLcAuth(code: string, state: string) {
     grant_type: "authorization_code",
     code,
     user_type: "Location",
-    redirect_uri: row.redirectUri,
+    redirect_uri: redirectUri,
   });
   if (!t.locationId) throw new Error("Please choose a single sub-account when connecting, not the whole agency.");
   if (!t.refresh_token) throw new Error("LeadConnector didn't return a refresh token. Please try again.");
@@ -105,8 +102,7 @@ export async function finishLcAuth(code: string, state: string) {
   } catch {
     /* name is cosmetic */
   }
-
-  const values = {
+  return {
     locationId: t.locationId,
     locationName,
     companyId: t.companyId ?? null,
@@ -115,25 +111,58 @@ export async function finishLcAuth(code: string, state: string) {
     accessExpiresAt: expiry(t.expires_in),
     refreshToken: t.refresh_token,
     scopes: t.scope ?? "",
-    redirectUri: row.redirectUri,
-    connectedAt: new Date(),
+    redirectUri,
   };
+}
+type LcTokens = Awaited<ReturnType<typeof exchangeCode>>;
+
+async function saveConnection(businessId: number, tokens: LcTokens) {
+  const values = { ...tokens, connectedAt: new Date() };
   // Switching to a different sub-account: old opportunity links point at the other account.
-  const prev = await db.selectFrom("lcConnection").select("locationId").where("businessId", "=", row.businessId).executeTakeFirst();
-  const switched = !!prev && prev.locationId !== t.locationId;
+  const prev = await db.selectFrom("lcConnection").select("locationId").where("businessId", "=", businessId).executeTakeFirst();
+  const switched = !!prev && prev.locationId !== tokens.locationId;
   if (switched) {
-    await db.deleteFrom("lcOpportunities").where("businessId", "=", row.businessId).execute();
-    await db.updateTable("jobs").set({ lcOpportunityId: null, lcContactId: null }).where("businessId", "=", row.businessId).execute();
-    await db.updateTable("quotes").set({ lcOpportunityId: null }).where("businessId", "=", row.businessId).execute();
-    await db.updateTable("clients").set({ lcContactId: null }).where("businessId", "=", row.businessId).execute();
+    await db.deleteFrom("lcOpportunities").where("businessId", "=", businessId).execute();
+    await db.updateTable("jobs").set({ lcOpportunityId: null, lcContactId: null }).where("businessId", "=", businessId).execute();
+    await db.updateTable("quotes").set({ lcOpportunityId: null }).where("businessId", "=", businessId).execute();
+    await db.updateTable("clients").set({ lcContactId: null }).where("businessId", "=", businessId).execute();
   }
   const reset = switched ? { pipelineId: null, stageMap: {}, importAfter: null, lastImportAt: null } : {};
   await db
     .insertInto("lcConnection")
-    .values({ businessId: row.businessId, ...values })
+    .values({ businessId, ...values })
     .onConflict((oc) => oc.column("businessId").doUpdateSet({ ...values, ...reset }))
     .execute();
-  return { locationId: t.locationId, locationName };
+  return { locationId: tokens.locationId, locationName: tokens.locationName };
+}
+
+export async function finishLcAuth(code: string, state: string) {
+  const row = await db.deleteFrom("lcOauthStates").where("state", "=", state).returningAll().executeTakeFirst();
+  if (!row || row.createdAt.getTime() < Date.now() - STATE_TTL_MS) {
+    throw new Error("This connection link has expired. Please try connecting again.");
+  }
+  return saveConnection(row.businessId, await exchangeCode(code, row.redirectUri));
+}
+
+/**
+ * Install started from the LeadConnector marketplace (no state, so no business yet).
+ * Keep the tokens briefly; the app claims them once someone signs in.
+ */
+export async function stashLcInstall(code: string) {
+  const tokens = await exchangeCode(code, `${API_URL}${LC_CALLBACK_PATH}`);
+  const id = randomBytes(24).toString("hex");
+  await db.deleteFrom("lcPendingInstalls").where("createdAt", "<", new Date(Date.now() - PENDING_TTL_MS)).execute();
+  await db.insertInto("lcPendingInstalls").values({ id, ...tokens }).execute();
+  return { id, locationName: tokens.locationName };
+}
+
+export async function claimLcInstall(id: string, businessId: number) {
+  const row = await db.deleteFrom("lcPendingInstalls").where("id", "=", id).returningAll().executeTakeFirst();
+  if (!row || row.createdAt.getTime() < Date.now() - PENDING_TTL_MS) {
+    throw new Error("This LeadConnector install has expired. Click Connect LeadConnector to link it again.");
+  }
+  const { id: _id, createdAt: _c, ...tokens } = row;
+  return saveConnection(businessId, tokens);
 }
 
 /** Valid access token for a business's sub-account. Refresh tokens rotate, so refresh under a row lock. */

@@ -1,50 +1,55 @@
 .wrap {
   padding: var(--spacing-3) var(--spacing-5, 20px) var(--spacing-8);
 }
-.tabs {
+.section {
+  scroll-margin-top: 16px;
+}
+/* Providers without keys hide their cards; hide the category too when nothing is left. */
+.section:has(> .cards:empty) {
+  display: none;
+}
+.section + .section {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.head {
   display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
 }
-.tab,
-.tabOn {
+.icon {
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 13px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
   background: var(--card);
-  font: 700 12.5px var(--font-family-base);
+  border: 1px solid var(--border);
   color: var(--navy-700);
-  cursor: pointer;
-  white-space: nowrap;
 }
-.tab:hover {
-  border-color: #bcd3ea;
+.head h2 {
+  margin: 0;
+  font: 800 15px/1.25 var(--font-family-heading, var(--font-family-base));
+  color: var(--navy-900);
 }
-.tabOn {
-  background: var(--navy-900);
-  border-color: var(--navy-900);
-  color: #fff;
-}
-.blurb {
-  margin: 10px 0 12px;
+.head p {
+  margin: 2px 0 0;
   font-size: 12.5px;
+  line-height: 1.45;
   color: var(--muted-foreground);
 }
-/* Cards stack in columns without uneven gaps, whatever their height. */
+/* Cards keep their own height; the grid adds columns as the page widens. */
 .cards {
-  columns: 1;
-  column-gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
 }
 .cards > * {
-  break-inside: avoid;
-  margin-bottom: 12px;
-  width: 100%;
+  min-width: 0;
 }
 .cards > *:empty {
   display: none;
@@ -53,9 +58,34 @@
   .wrap {
     padding: 0 0 var(--spacing-8);
   }
-}
-@media (min-width: 1000px) {
   .cards {
-    columns: 2;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+/* Desktop: category header in a left column, its cards beside it. */
+@media (min-width: 1100px) {
+  .section {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 28px;
+  }
+  .section + .section {
+    margin-top: 28px;
+    padding-top: 28px;
+  }
+  .head {
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    position: sticky;
+    top: 16px;
+    align-self: start;
+  }
+  .head h2 {
+    font-size: 16px;
+  }
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
   }
 }
