@@ -7,13 +7,13 @@ export async function handle(request: Request) {
   const url = new URL(request.url);
   const error = url.searchParams.get("error");
   const fail = (message: string) => popupDone({ title: "Couldn't connect", message, type: "SMS_ERROR", ok: false });
-  if (error) return fail(url.searchParams.get("error_description") || `myCRMSIM returned: ${error}`);
+  if (error) return fail(url.searchParams.get("error_description") || `SMS Gateway returned: ${error}`);
   const code = url.searchParams.get("code");
-  if (!code) return fail("The myCRMSIM response was incomplete. Please try again.");
+  if (!code) return fail("The SMS Gateway response was incomplete. Please try again.");
   try {
     const { id, installerName } = await stashSmsInstall(code);
     return popupDone({
-      title: "myCRMSIM connected",
+      title: "SMS Gateway connected",
       message: installerName ? `Signed in as ${installerName}. Finishing up in the app…` : "Finishing up in the app…",
       type: "SMS_CONNECTED",
       extra: { install: id },

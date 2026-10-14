@@ -14,7 +14,7 @@ export async function handle(request: Request) {
       .set({ workspaceId: input.workspaceId == null ? null : String(input.workspaceId), workspaceName: input.workspaceName, prefs: input.prefs })
       .where("businessId", "=", ctx.businessId)
       .executeTakeFirst();
-    if (!Number(r.numUpdatedRows)) throw new Error("myCRMSIM isn't connected.");
+    if (!Number(r.numUpdatedRows)) throw new Error("SMS Gateway isn't connected.");
     return new Response(superjson.stringify({ ok: true } satisfies OutputType));
   } catch (error) {
     return errorResponse(error);

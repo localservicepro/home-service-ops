@@ -42,7 +42,7 @@ export const isSmsConfigured = () => {
 };
 function requireCreds() {
   const c = creds();
-  if (!c.clientId || !c.clientSecret) throw new Error("SMS through myCRMSIM isn't set up for this app yet.");
+  if (!c.clientId || !c.clientSecret) throw new Error("The SMS Gateway isn't set up for this app yet.");
   return { clientId: c.clientId, clientSecret: c.clientSecret };
 }
 const redirectUri = () => `${API_URL}${SMS_CALLBACK_PATH}`;
@@ -76,18 +76,18 @@ async function tokenRequest(body: Record<string, string>) {
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15_000),
   }).catch(() => {
-    throw new Error("Couldn't reach myCRMSIM. Please try again in a moment.");
+    throw new Error("Couldn't reach SMS Gateway. Please try again in a moment.");
   });
   const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string; data?: TokenData };
   const d = json.data ?? {};
-  if (!res.ok || !d.access_token || !d.refresh_token) throw new Error(json.message || `myCRMSIM sign-in failed (${res.status})`);
+  if (!res.ok || !d.access_token || !d.refresh_token) throw new Error(json.message || `SMS Gateway sign-in failed (${res.status})`);
   return { accessToken: d.access_token, refreshToken: d.refresh_token, accessExpiresAt: expiry(d.expires_in ?? 86_400), scopes: (d.scopes ?? []).join(" ") };
 }
 const expiry = (secs: number) => new Date(Date.now() + Math.max(60, secs - 300) * 1000);
 
 /** Exchanges the install code and holds the tokens until the app links them to a business. */
 export async function stashSmsInstall(code: string) {
-  if (!/^[A-Za-z0-9]{8,128}$/.test(code)) throw new Error("The myCRMSIM response was incomplete. Please try connecting again.");
+  if (!/^[A-Za-z0-9]{8,128}$/.test(code)) throw new Error("The SMS Gateway response was incomplete. Please try connecting again.");
   const { clientId, clientSecret } = requireCreds();
   const t = await tokenRequest({ grant_type: "authorization_code", code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri() });
   let installerName: string | null = null;
@@ -108,7 +108,7 @@ export async function stashSmsInstall(code: string) {
 
 export async function claimSmsInstall(id: string, businessId: number) {
   const row = await db.deleteFrom("smsPendingInstalls").where("id", "=", id).returningAll().executeTakeFirst();
-  if (!row || row.createdAt.getTime() < Date.now() - PENDING_TTL_MS) throw new Error("This connection has expired. Click Connect myCRMSIM again.");
+  if (!row || row.createdAt.getTime() < Date.now() - PENDING_TTL_MS) throw new Error("This connection has expired. Click Connect SMS Gateway again.");
   const values = {
     accessToken: row.accessToken,
     refreshToken: row.refreshToken,
@@ -138,7 +138,7 @@ export async function disconnectSms(businessId: number) {
 async function access(businessId: number) {
   return db.transaction().execute(async (trx) => {
     const c = await trx.selectFrom("smsConnection").selectAll().where("businessId", "=", businessId).forUpdate().executeTakeFirst();
-    if (!c) throw new Error("myCRMSIM isn't connected.");
+    if (!c) throw new Error("SMS Gateway isn't connected.");
     if (c.accessExpiresAt.getTime() > Date.now()) return { token: c.accessToken, conn: c };
     const { clientId, clientSecret } = requireCreds();
     const t = await tokenRequest({ grant_type: "refresh_token", refresh_token: c.refreshToken, client_id: clientId, client_secret: clientSecret });
@@ -158,13 +158,13 @@ async function api<T>(businessId: number, path: string, init: { method?: string;
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
-    throw new Error("Couldn't reach myCRMSIM. Please try again in a moment.");
+    throw new Error("Couldn't reach SMS Gateway. Please try again in a moment.");
   }
   const json = (await res.json().catch(() => ({}))) as { success?: boolean; message?: string } & T;
   if (!res.ok || json.success === false) {
-    const msg = json.message || `myCRMSIM error ${res.status}`;
-    if (res.status === 429) throw new Error("myCRMSIM's send limit was reached (30 texts per 15 minutes). Try again shortly.");
-    if (res.status === 403) throw new Error(`${msg} Reconnect myCRMSIM to grant access.`);
+    const msg = json.message || `SMS Gateway error ${res.status}`;
+    if (res.status === 429) throw new Error("The SMS Gateway's send limit was reached (30 texts per 15 minutes). Try again shortly.");
+    if (res.status === 403) throw new Error(`${msg} Reconnect SMS Gateway to grant access.`);
     throw new Error(msg);
   }
   return json;
@@ -205,8 +205,8 @@ export async function sendSms(
   const to = toE164(opts.to);
   if (!to) return { ok: false, error: "That doesn't look like a mobile number." };
   const conn = await db.selectFrom("smsConnection").select(["workspaceId"]).where("businessId", "=", businessId).executeTakeFirst();
-  if (!conn) return { ok: false, error: "Connect myCRMSIM in Settings → Integrations to send texts." };
-  if (!conn.workspaceId) return { ok: false, error: "Choose the myCRMSIM workspace to send from in Settings → Integrations." };
+  if (!conn) return { ok: false, error: "Connect SMS Gateway in Settings → Integrations to send texts." };
+  if (!conn.workspaceId) return { ok: false, error: "Choose the SMS Gateway workspace to send from in Settings → Integrations." };
   const log = { businessId, kind: opts.kind, toPhone: to, jobId: opts.jobId ?? null, quoteId: opts.quoteId ?? null };
   try {
     const r = await api<{ data?: { message_id?: string; status?: string } }>(businessId, "/mycrmsim/messages", {
@@ -214,7 +214,7 @@ export async function sendSms(
       body: { workspace_id: Number(conn.workspaceId), phone: to, channel: "default", message: opts.message.slice(0, 1500) },
     });
     const status = r.data?.status ?? "queued";
-    if (status === "failed") throw new Error("myCRMSIM couldn't queue the text. Check a phone is assigned to the workspace.");
+    if (status === "failed") throw new Error("SMS Gateway couldn't queue the text. Check a phone is assigned to the workspace.");
     await db.insertInto("smsLog").values({ ...log, messageId: r.data?.message_id ?? null, status }).execute();
     await db.updateTable("smsConnection").set({ lastSentAt: new Date(), lastError: null }).where("businessId", "=", businessId).execute();
     return { ok: true, to, messageId: r.data?.message_id ?? null };

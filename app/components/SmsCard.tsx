@@ -38,17 +38,17 @@ export function SmsCard({ className }: { className?: string }) {
       if (e.data.type === "SMS_CONNECTED" && typeof e.data.install === "string") {
         postSmsClaim({ id: e.data.install })
           .then((r) => {
-            toast.success(`myCRMSIM connected${r.installerName ? ` as ${r.installerName}` : ""}`);
+            toast.success(`SMS Gateway connected${r.installerName ? ` as ${r.installerName}` : ""}`);
             setOpen(true);
           })
-          .catch((err) => toast.error(err instanceof Error ? err.message : "Couldn't finish connecting myCRMSIM"))
+          .catch((err) => toast.error(err instanceof Error ? err.message : "Couldn't finish connecting SMS Gateway"))
           .finally(() => {
             setConnecting(false);
             refresh();
           });
       } else if (e.data.type === "SMS_ERROR") {
         setConnecting(false);
-        toast.error(e.data.message || "Couldn't connect myCRMSIM");
+        toast.error(e.data.message || "Couldn't connect SMS Gateway");
       }
     };
     window.addEventListener("message", onMsg);
@@ -75,8 +75,8 @@ export function SmsCard({ className }: { className?: string }) {
       return;
     }
     popupRef.current = popup;
-    popup.document.title = "Connecting myCRMSIM…";
-    popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening myCRMSIM…</p>';
+    popup.document.title = "Connecting SMS Gateway…";
+    popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening SMS Gateway…</p>';
     setConnecting(true);
     try {
       const { authorizeUrl } = await postSmsAuthorize({});
@@ -84,11 +84,11 @@ export function SmsCard({ className }: { className?: string }) {
     } catch (e) {
       popup.close();
       setConnecting(false);
-      toast.error(e instanceof Error ? e.message : "Couldn't start myCRMSIM sign-in");
+      toast.error(e instanceof Error ? e.message : "Couldn't start SMS Gateway sign-in");
     }
   };
 
-  const disconnect = useOpsMutation(postSmsDisconnect, "myCRMSIM disconnected");
+  const disconnect = useOpsMutation(postSmsDisconnect, "SMS Gateway disconnected");
   const connected = !!data?.connected;
   const needsSetup = connected && !data?.workspaceId;
   useEffect(() => {
@@ -102,7 +102,7 @@ export function SmsCard({ className }: { className?: string }) {
         <span className={`${styles.icon} ${connected ? styles.iconOn : ""}`}><MessageSquare size={18} /></span>
         <div className={styles.text}>
           <span className={styles.titleRow}>
-            <b>myCRMSIM SMS</b>
+            <b>SMS Gateway</b>
             {connected && <span className={styles.badge}><Check size={12} /> Connected</span>}
           </span>
           {isLoading ? (
@@ -132,12 +132,12 @@ export function SmsCard({ className }: { className?: string }) {
       </div>
 
       {!isLoading && data && !data.configured && (
-        <p className={styles.warn}>SMS through myCRMSIM isn't set up for this app yet, so connecting won't work until it is.</p>
+        <p className={styles.warn}>The SMS Gateway isn't set up for this app yet, so connecting won't work until it is.</p>
       )}
 
       {!isLoading && data && !data.connected && (
         <Button className={styles.connect} onClick={connect} disabled={connecting || !data.configured}>
-          {connecting ? "Waiting for myCRMSIM…" : "Connect myCRMSIM"}
+          {connecting ? "Waiting for SMS Gateway…" : "Connect SMS Gateway"}
         </Button>
       )}
 
@@ -154,8 +154,8 @@ export function SmsCard({ className }: { className?: string }) {
       <ConfirmSheet
         open={confirm}
         onOpenChange={setConfirm}
-        title="Disconnect myCRMSIM?"
-        body="Quotes, invoices and alerts go by email only until you reconnect. Nothing in myCRMSIM is changed."
+        title="Disconnect SMS Gateway?"
+        body="Quotes, invoices and alerts go by email only until you reconnect. Nothing in your SMS Gateway account is changed."
         confirmLabel="Disconnect"
         pending={disconnect.isPending}
         onConfirm={() => disconnect.mutate({}, { onSuccess: () => { setConfirm(false); refresh(); } })}
@@ -237,7 +237,7 @@ function SmsSettings({ status, onSaved }: { status: SmsStatus; onSaved: () => vo
               ))}
             </p>
           ) : (
-            <p className={styles.error}><AlertTriangle size={14} /> No phone is assigned to this workspace yet. In myCRMSIM, go to Devices, add your phone and assign it, and turn on SMS in the workspace's Message Routing.</p>
+            <p className={styles.error}><AlertTriangle size={14} /> No phone is assigned to this workspace yet. In your SMS Gateway account, go to Devices, add your phone and assign it, and turn on SMS in the workspace's Message Routing.</p>
           )
         )}
 
@@ -276,7 +276,7 @@ function SmsSettings({ status, onSaved }: { status: SmsStatus; onSaved: () => vo
           </div>
         )}
         {status.lastError && <p className={styles.error}><AlertTriangle size={14} /> Last text failed: {status.lastError}</p>}
-        <p className={styles.muted}>Texts go out from your own number through myCRMSIM, up to 30 every 15 minutes.</p>
+        <p className={styles.muted}>Texts go out from your own number through the SMS Gateway, up to 30 every 15 minutes.</p>
       </div>
     </div>
   );
