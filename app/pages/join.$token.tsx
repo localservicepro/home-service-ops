@@ -57,7 +57,7 @@ export default function JoinPage() {
       >
         {googleError && <p className={styles.error}>{googleError}</p>}
         <GoogleSignInButton mode="signup" invite={token} label="Join with Google" />
-        <SignUpForm inviteToken={token} defaultEmail={data.email} />
+        <SignUpForm inviteToken={token} defaultEmail={data.email || undefined} businessName={data.businessName} />
         <p className={styles.note}>Already have a login? <Link to="/login">Sign in</Link></p>
       </AuthScreen>
     </>

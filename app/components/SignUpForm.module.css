@@ -46,3 +46,23 @@
   color: var(--primary);
   font-weight: 600;
 }
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+.notice b {
+  font-size: 15px;
+}
+.hint {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
