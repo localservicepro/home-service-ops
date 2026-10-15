@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet";
 import { CheckCircle2, AlertCircle } from "lucide-react";
+import { APP_CONNECT_COOKIE, APP_SCHEME } from "../helpers/nativeApp";
 import styles from "./done.module.css";
 
 // Landing page for browser hops through the API: OAuth popups (Stripe, Xero, Google Calendar…),
@@ -23,6 +24,8 @@ function decode(raw: string | null): Done | null {
 export default function DonePage() {
   const done = useMemo(() => decode(new URLSearchParams(window.location.search).get("d")), []);
   const inPopup = typeof window !== "undefined" && !!window.opener;
+  // Connected from the Android app's in-app browser tab, and Vercel's redirect back didn't run.
+  const fromApp = !inPopup && typeof document !== "undefined" && document.cookie.includes(`${APP_CONNECT_COOKIE}=1`);
 
   useEffect(() => {
     if (!done?.ty || !window.opener) return;
@@ -44,6 +47,11 @@ export default function DonePage() {
         <h1>{done?.t ?? "Link not valid"}</h1>
         <p>{done?.m ?? "This link isn't valid."}</p>
         {inPopup && done?.ty && <p className={styles.hint}>You can close this window.</p>}
+        {fromApp && (
+          <a className={styles.appBtn} href={`${APP_SCHEME}://done${window.location.search}`}>
+            Back to Home Service Ops
+          </a>
+        )}
       </div>
     </div>
   );

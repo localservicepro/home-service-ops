@@ -12,15 +12,91 @@ export function isNativeApp(): boolean {
   return !!cap?.isNativePlatform?.();
 }
 
+/** Cookie the in-app browser carries while connecting; Vercel then sends /done back to the app. */
+export const APP_CONNECT_COOKIE = "hso_app_connect";
+
+type ActiveConnect = { markClosed: () => void };
+let activeConnect: ActiveConnect | null = null;
+
 /**
- * window.open for connect/checkout pop-ups. The app can't open a second window (and on Android
- * an empty window.open replaces the app's own page), so inside the app this explains where to
- * do it instead and returns null. On the web a blocked pop-up gets the usual message.
+ * Inside the app, a connect "pop-up" runs in an in-app browser tab (Chrome Custom Tab). It
+ * starts at /app-connect.html, which drops a short-lived cookie and forwards to the provider.
+ * When the provider finishes on /done, Vercel redirects to au.com.localservicepro.home://done
+ * (vercel.json), the app closes the tab and replays the result as the same postMessage a web
+ * pop-up sends, so the integration cards work unchanged. Closing the tab counts as closing
+ * the pop-up.
  */
-export function openPopupWindow(name: string, features: string, label: string): Window | null {
+function inAppBrowserWindow(label: string): Window {
+  let closed = false;
+  const state: ActiveConnect = { markClosed: () => void (closed = true) };
+  activeConnect?.markClosed();
+  activeConnect = state;
+  const open = async (url: string) => {
+    const { Browser } = await import("@capacitor/browser");
+    const done = await Browser.addListener("browserFinished", () => {
+      // Let a result arriving through the app link land first.
+      setTimeout(() => state.markClosed(), 400);
+      done.remove();
+    });
+    await Browser.open({ url: `${window.location.origin}/app-connect.html?to=${encodeURIComponent(url)}`, toolbarColor: "#08172B" });
+  };
+  const fake = {
+    get closed() {
+      return closed;
+    },
+    document: { title: "", body: { innerHTML: "" } },
+    location: {
+      get href() {
+        return "";
+      },
+      set href(url: string) {
+        open(url).catch(() => {
+          closed = true;
+          toast.error(`Couldn't open ${label}. Please try again.`);
+        });
+      },
+    },
+    close() {
+      closed = true;
+      import("@capacitor/browser").then(({ Browser }) => Browser.close()).catch(() => {});
+    },
+    focus() {},
+  };
+  return fake as unknown as Window;
+}
+
+/** au.com.localservicepro.home://done?d=… → the same message the web pop-up would post. */
+function finishInAppConnect(d: string | null) {
+  try {
+    if (d) {
+      const bin = atob(d.replace(/-/g, "+").replace(/_/g, "/"));
+      const done = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))) as {
+        t: string;
+        m: string;
+        ty: string | null;
+        x: Record<string, string> | null;
+      };
+      if (done.ty) window.postMessage({ type: done.ty, message: done.m, ...(done.x ?? {}) }, window.location.origin);
+      else toast(done.t, { description: done.m });
+    }
+  } catch {
+    /* fall through: the card re-checks its status when the tab closes */
+  }
+  const a = activeConnect;
+  activeConnect = null;
+  setTimeout(() => a?.markClosed(), 400);
+}
+
+/**
+ * window.open for connect/checkout pop-ups. In the app it opens an in-app browser tab instead
+ * (see inAppBrowserWindow); `inApp: false` keeps it web-only (Stripe plan checkout, which Play
+ * doesn't allow in apps). On the web a blocked pop-up gets the usual message.
+ */
+export function openPopupWindow(name: string, features: string, label: string, opts: { inApp?: boolean } = {}): Window | null {
   if (isNativeApp()) {
-    toast.info(`Connect ${label} from a web browser`, {
-      description: "Sign in at home.localservicepro.com.au on a computer or in your phone's browser. Once connected it works in the app too.",
+    if (opts.inApp !== false) return inAppBrowserWindow(label);
+    toast.info(`Open ${label} from a web browser`, {
+      description: "Sign in at home.localservicepro.com.au on a computer or in your phone's browser.",
       duration: 8000,
     });
     return null;
@@ -54,8 +130,16 @@ export async function startNativeApp() {
     }
     // au.com.localservicepro.home://auth/callback?code=… → finish sign-in in the app's own page,
     // where supabase-js kept the PKCE verifier when sign-in started.
+    if (u.protocol === `${APP_SCHEME}:` && u.host === "done") {
+      Browser.close().catch(() => {});
+      finishInAppConnect(u.searchParams.get("d"));
+      return;
+    }
     if (u.protocol === `${APP_SCHEME}:`) {
       Browser.close().catch(() => {});
+      // e.g. a LeadConnector marketplace install (…://settings/integrations?lc_install=…): the
+      // page claims it once loaded, so the connect "pop-up" is done.
+      finishInAppConnect(null);
       const path = `/${u.host}${u.pathname}`.replace(/\/+$/, "") || "/";
       window.location.replace(`${path}${u.search}${u.hash}`);
     }

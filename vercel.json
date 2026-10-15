@@ -6,6 +6,34 @@
       "permanent": false
     },
     {
+      "source": "/done",
+      "has": [
+        {
+          "type": "cookie",
+          "key": "hso_app_connect",
+          "value": "1"
+        }
+      ],
+      "destination": "au.com.localservicepro.home://done",
+      "permanent": false
+    },
+    {
+      "source": "/settings/integrations",
+      "has": [
+        {
+          "type": "cookie",
+          "key": "hso_app_connect",
+          "value": "1"
+        },
+        {
+          "type": "query",
+          "key": "lc_install"
+        }
+      ],
+      "destination": "au.com.localservicepro.home://settings/integrations",
+      "permanent": false
+    },
+    {
       "source": "/",
       "has": [
         {

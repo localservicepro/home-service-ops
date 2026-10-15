@@ -1,24 +1,6 @@
 .wrap {
   padding: var(--spacing-3) var(--spacing-5, 20px) var(--spacing-8);
 }
-.nativeNote {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  margin: 0 0 18px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--muted-foreground);
-}
-.nativeNote svg {
-  flex: none;
-  margin-top: 1px;
-  color: var(--navy-700);
-}
 .section {
   scroll-margin-top: 16px;
 }

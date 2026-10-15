@@ -107,7 +107,7 @@ export default function BillingPage() {
 
   // Stripe pages can't load inside the app, so they open in a window of their own.
   const openStripe = async (get: () => Promise<{ url?: string }>) => {
-    const popup = openPopupWindow("lsp-billing", "width=560,height=780", "Stripe");
+    const popup = openPopupWindow("lsp-billing", "width=560,height=780", "Stripe", { inApp: false });
     if (!popup) return;
     popupRef.current = popup;
     popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening Stripe…</p>';
