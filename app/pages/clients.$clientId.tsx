@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { Phone, Mail, MapPin, Navigation, Plus, Trash2, Pencil, FileText } from "lucide-react";
+import { Phone, Mail, MapPin, Navigation, Plus, Trash2, Pencil, FileText, MessageSquare } from "lucide-react";
+import { inboxLink } from "../helpers/useInbox";
 import { useOpsData } from "../helpers/useOpsData";
 import { useOpsMutation } from "../helpers/useOpsMutation";
 import { opsFormat } from "../helpers/opsFormat";
@@ -92,6 +93,9 @@ export default function ClientDetailPage() {
           {client.phone ? (
             <a href={`tel:${client.phone.replace(/\s/g, "")}`} className={styles.contactBtn}><Phone size={16} /> {client.phone}</a>
           ) : <span className={styles.contactMuted}><Phone size={16} /> No phone</span>}
+          {client.phone && inboxLink(client.phone) && (
+            <Link to={inboxLink(client.phone)!} className={styles.contactBtn}><MessageSquare size={16} /> Message</Link>
+          )}
           {client.email ? (
             <a href={`mailto:${client.email}`} className={styles.contactBtn}><Mail size={16} /> Email</a>
           ) : <span className={styles.contactMuted}><Mail size={16} /> No email</span>}

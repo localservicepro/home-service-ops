@@ -39,65 +39,69 @@ import * as r36 from "../endpoints/gocardless/callback_GET";
 import * as r37 from "../endpoints/gocardless/connect_POST";
 import * as r38 from "../endpoints/gocardless/status_GET";
 import * as r39 from "../endpoints/gocardless/webhook_POST";
-import * as r40 from "../endpoints/invites/info_GET";
-import * as r41 from "../endpoints/invites/join_POST";
-import * as r42 from "../endpoints/jobs/photo_POST";
-import * as r43 from "../endpoints/jobs/save_POST";
-import * as r44 from "../endpoints/jobs/send_invoice_POST";
-import * as r45 from "../endpoints/jobs/work_POST";
-import * as r46 from "../endpoints/leadform/get_GET";
-import * as r47 from "../endpoints/leadform/save_POST";
-import * as r48 from "../endpoints/onboarding/apply_POST";
-import * as r49 from "../endpoints/onboarding/complete_POST";
-import * as r50 from "../endpoints/ops/snapshot_GET";
-import * as r51 from "../endpoints/payments/check_POST";
-import * as r52 from "../endpoints/payments/dd_POST";
-import * as r53 from "../endpoints/payments/link_POST";
-import * as r54 from "../endpoints/payments/sync_POST";
-import * as r55 from "../endpoints/public/doc_GET";
-import * as r56 from "../endpoints/public/invoice_dd_POST";
-import * as r57 from "../endpoints/public/invoice_pay_POST";
-import * as r58 from "../endpoints/public/lead_form_GET";
-import * as r59 from "../endpoints/public/lead_submit_POST";
-import * as r60 from "../endpoints/public/lead_upload_POST";
-import * as r61 from "../endpoints/public/quote_respond_POST";
-import * as r62 from "../endpoints/public/review_optout_GET";
-import * as r63 from "../endpoints/push/prefs_POST";
-import * as r64 from "../endpoints/push/register_POST";
-import * as r65 from "../endpoints/push/status_GET";
-import * as r66 from "../endpoints/push/test_POST";
-import * as r67 from "../endpoints/push/unregister_POST";
-import * as r68 from "../endpoints/quotes/book_POST";
-import * as r69 from "../endpoints/quotes/save_POST";
-import * as r70 from "../endpoints/quotes/send_POST";
-import * as r71 from "../endpoints/settings/save_POST";
-import * as r72 from "../endpoints/sms/authorize_POST";
-import * as r73 from "../endpoints/sms/callback_GET";
-import * as r74 from "../endpoints/sms/claim_POST";
-import * as r75 from "../endpoints/sms/disconnect_POST";
-import * as r76 from "../endpoints/sms/settings_POST";
-import * as r77 from "../endpoints/sms/status_GET";
-import * as r78 from "../endpoints/sms/test_POST";
-import * as r79 from "../endpoints/sms/workspaces_GET";
-import * as r80 from "../endpoints/square/callback_GET";
-import * as r81 from "../endpoints/square/connect_POST";
-import * as r82 from "../endpoints/square/status_GET";
-import * as r83 from "../endpoints/square/webhook_POST";
-import * as r84 from "../endpoints/stripe/authorize_POST";
-import * as r85 from "../endpoints/stripe/billing_webhook_POST";
-import * as r86 from "../endpoints/stripe/callback_GET";
-import * as r87 from "../endpoints/stripe/check_POST";
-import * as r88 from "../endpoints/stripe/disconnect_POST";
-import * as r89 from "../endpoints/stripe/link_POST";
-import * as r90 from "../endpoints/stripe/status_GET";
-import * as r91 from "../endpoints/stripe/webhook_POST";
-import * as r92 from "../endpoints/team/invite_POST";
-import * as r93 from "../endpoints/team/list_GET";
-import * as r94 from "../endpoints/team/revoke_POST";
-import * as r95 from "../endpoints/xero/callback_GET";
-import * as r96 from "../endpoints/xero/connect_POST";
-import * as r97 from "../endpoints/xero/status_GET";
-import * as r98 from "../endpoints/xero/webhook_POST";
+import * as r40 from "../endpoints/inbox/read_POST";
+import * as r41 from "../endpoints/inbox/reply_POST";
+import * as r42 from "../endpoints/inbox/thread_GET";
+import * as r43 from "../endpoints/inbox/threads_GET";
+import * as r44 from "../endpoints/invites/info_GET";
+import * as r45 from "../endpoints/invites/join_POST";
+import * as r46 from "../endpoints/jobs/photo_POST";
+import * as r47 from "../endpoints/jobs/save_POST";
+import * as r48 from "../endpoints/jobs/send_invoice_POST";
+import * as r49 from "../endpoints/jobs/work_POST";
+import * as r50 from "../endpoints/leadform/get_GET";
+import * as r51 from "../endpoints/leadform/save_POST";
+import * as r52 from "../endpoints/onboarding/apply_POST";
+import * as r53 from "../endpoints/onboarding/complete_POST";
+import * as r54 from "../endpoints/ops/snapshot_GET";
+import * as r55 from "../endpoints/payments/check_POST";
+import * as r56 from "../endpoints/payments/dd_POST";
+import * as r57 from "../endpoints/payments/link_POST";
+import * as r58 from "../endpoints/payments/sync_POST";
+import * as r59 from "../endpoints/public/doc_GET";
+import * as r60 from "../endpoints/public/invoice_dd_POST";
+import * as r61 from "../endpoints/public/invoice_pay_POST";
+import * as r62 from "../endpoints/public/lead_form_GET";
+import * as r63 from "../endpoints/public/lead_submit_POST";
+import * as r64 from "../endpoints/public/lead_upload_POST";
+import * as r65 from "../endpoints/public/quote_respond_POST";
+import * as r66 from "../endpoints/public/review_optout_GET";
+import * as r67 from "../endpoints/push/prefs_POST";
+import * as r68 from "../endpoints/push/register_POST";
+import * as r69 from "../endpoints/push/status_GET";
+import * as r70 from "../endpoints/push/test_POST";
+import * as r71 from "../endpoints/push/unregister_POST";
+import * as r72 from "../endpoints/quotes/book_POST";
+import * as r73 from "../endpoints/quotes/save_POST";
+import * as r74 from "../endpoints/quotes/send_POST";
+import * as r75 from "../endpoints/settings/save_POST";
+import * as r76 from "../endpoints/sms/authorize_POST";
+import * as r77 from "../endpoints/sms/callback_GET";
+import * as r78 from "../endpoints/sms/claim_POST";
+import * as r79 from "../endpoints/sms/disconnect_POST";
+import * as r80 from "../endpoints/sms/settings_POST";
+import * as r81 from "../endpoints/sms/status_GET";
+import * as r82 from "../endpoints/sms/test_POST";
+import * as r83 from "../endpoints/sms/workspaces_GET";
+import * as r84 from "../endpoints/square/callback_GET";
+import * as r85 from "../endpoints/square/connect_POST";
+import * as r86 from "../endpoints/square/status_GET";
+import * as r87 from "../endpoints/square/webhook_POST";
+import * as r88 from "../endpoints/stripe/authorize_POST";
+import * as r89 from "../endpoints/stripe/billing_webhook_POST";
+import * as r90 from "../endpoints/stripe/callback_GET";
+import * as r91 from "../endpoints/stripe/check_POST";
+import * as r92 from "../endpoints/stripe/disconnect_POST";
+import * as r93 from "../endpoints/stripe/link_POST";
+import * as r94 from "../endpoints/stripe/status_GET";
+import * as r95 from "../endpoints/stripe/webhook_POST";
+import * as r96 from "../endpoints/team/invite_POST";
+import * as r97 from "../endpoints/team/list_GET";
+import * as r98 from "../endpoints/team/revoke_POST";
+import * as r99 from "../endpoints/xero/callback_GET";
+import * as r100 from "../endpoints/xero/connect_POST";
+import * as r101 from "../endpoints/xero/status_GET";
+import * as r102 from "../endpoints/xero/webhook_POST";
 
 export const routes: Record<string, { handle: (request: Request) => Promise<Response> | Response }> = {
   "POST account/delete": r0,
@@ -140,63 +144,67 @@ export const routes: Record<string, { handle: (request: Request) => Promise<Resp
   "POST gocardless/connect": r37,
   "GET gocardless/status": r38,
   "POST gocardless/webhook": r39,
-  "GET invites/info": r40,
-  "POST invites/join": r41,
-  "POST jobs/photo": r42,
-  "POST jobs/save": r43,
-  "POST jobs/send_invoice": r44,
-  "POST jobs/work": r45,
-  "GET leadform/get": r46,
-  "POST leadform/save": r47,
-  "POST onboarding/apply": r48,
-  "POST onboarding/complete": r49,
-  "GET ops/snapshot": r50,
-  "POST payments/check": r51,
-  "POST payments/dd": r52,
-  "POST payments/link": r53,
-  "POST payments/sync": r54,
-  "GET public/doc": r55,
-  "POST public/invoice_dd": r56,
-  "POST public/invoice_pay": r57,
-  "GET public/lead_form": r58,
-  "POST public/lead_submit": r59,
-  "POST public/lead_upload": r60,
-  "POST public/quote_respond": r61,
-  "GET public/review_optout": r62,
-  "POST push/prefs": r63,
-  "POST push/register": r64,
-  "GET push/status": r65,
-  "POST push/test": r66,
-  "POST push/unregister": r67,
-  "POST quotes/book": r68,
-  "POST quotes/save": r69,
-  "POST quotes/send": r70,
-  "POST settings/save": r71,
-  "POST sms/authorize": r72,
-  "GET sms/callback": r73,
-  "POST sms/claim": r74,
-  "POST sms/disconnect": r75,
-  "POST sms/settings": r76,
-  "GET sms/status": r77,
-  "POST sms/test": r78,
-  "GET sms/workspaces": r79,
-  "GET square/callback": r80,
-  "POST square/connect": r81,
-  "GET square/status": r82,
-  "POST square/webhook": r83,
-  "POST stripe/authorize": r84,
-  "POST stripe/billing_webhook": r85,
-  "GET stripe/callback": r86,
-  "POST stripe/check": r87,
-  "POST stripe/disconnect": r88,
-  "POST stripe/link": r89,
-  "GET stripe/status": r90,
-  "POST stripe/webhook": r91,
-  "POST team/invite": r92,
-  "GET team/list": r93,
-  "POST team/revoke": r94,
-  "GET xero/callback": r95,
-  "POST xero/connect": r96,
-  "GET xero/status": r97,
-  "POST xero/webhook": r98,
+  "POST inbox/read": r40,
+  "POST inbox/reply": r41,
+  "GET inbox/thread": r42,
+  "GET inbox/threads": r43,
+  "GET invites/info": r44,
+  "POST invites/join": r45,
+  "POST jobs/photo": r46,
+  "POST jobs/save": r47,
+  "POST jobs/send_invoice": r48,
+  "POST jobs/work": r49,
+  "GET leadform/get": r50,
+  "POST leadform/save": r51,
+  "POST onboarding/apply": r52,
+  "POST onboarding/complete": r53,
+  "GET ops/snapshot": r54,
+  "POST payments/check": r55,
+  "POST payments/dd": r56,
+  "POST payments/link": r57,
+  "POST payments/sync": r58,
+  "GET public/doc": r59,
+  "POST public/invoice_dd": r60,
+  "POST public/invoice_pay": r61,
+  "GET public/lead_form": r62,
+  "POST public/lead_submit": r63,
+  "POST public/lead_upload": r64,
+  "POST public/quote_respond": r65,
+  "GET public/review_optout": r66,
+  "POST push/prefs": r67,
+  "POST push/register": r68,
+  "GET push/status": r69,
+  "POST push/test": r70,
+  "POST push/unregister": r71,
+  "POST quotes/book": r72,
+  "POST quotes/save": r73,
+  "POST quotes/send": r74,
+  "POST settings/save": r75,
+  "POST sms/authorize": r76,
+  "GET sms/callback": r77,
+  "POST sms/claim": r78,
+  "POST sms/disconnect": r79,
+  "POST sms/settings": r80,
+  "GET sms/status": r81,
+  "POST sms/test": r82,
+  "GET sms/workspaces": r83,
+  "GET square/callback": r84,
+  "POST square/connect": r85,
+  "GET square/status": r86,
+  "POST square/webhook": r87,
+  "POST stripe/authorize": r88,
+  "POST stripe/billing_webhook": r89,
+  "GET stripe/callback": r90,
+  "POST stripe/check": r91,
+  "POST stripe/disconnect": r92,
+  "POST stripe/link": r93,
+  "GET stripe/status": r94,
+  "POST stripe/webhook": r95,
+  "POST team/invite": r96,
+  "GET team/list": r97,
+  "POST team/revoke": r98,
+  "GET xero/callback": r99,
+  "POST xero/connect": r100,
+  "GET xero/status": r101,
+  "POST xero/webhook": r102,
 };

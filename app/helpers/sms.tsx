@@ -1,12 +1,16 @@
 import { randomBytes } from "node:crypto";
 import { db } from "./db";
 import { API_URL, env } from "./serverEnv";
+import { toE164 } from "./phone";
+
+export { toE164 };
 
 // Server-only. Text messages through each business's own myCRMSIM account (their SIM / phone).
 // A business connects with OAuth (install → code → tokens), picks the workspace to send from,
 // and chooses which messages go by SMS. Sending never blocks the app: callers get a result.
 
-const API = "https://backend.mysmsgateway.app/api/v1";
+// MYCRMSIM_API_URL only for local testing against a stand-in gateway.
+const API = (env("MYCRMSIM_API_URL") ?? "https://backend.mysmsgateway.app/api/v1").replace(/\/+$/, "");
 const INSTALL = "https://app.mycrmsim.com/integrations/install";
 export const SMS_CALLBACK_PATH = "/sms/callback";
 const PENDING_TTL_MS = 60 * 60 * 1000;
@@ -46,18 +50,6 @@ function requireCreds() {
   return { clientId: c.clientId, clientSecret: c.clientSecret };
 }
 const redirectUri = () => `${API_URL}${SMS_CALLBACK_PATH}`;
-
-/** Australian numbers to +61 form; numbers that already have a country code are kept. */
-export function toE164(raw: string): string | null {
-  const s = (raw || "").replace(/[^\d+]/g, "");
-  if (!s) return null;
-  if (s.startsWith("+")) return /^\+\d{8,15}$/.test(s) ? s : null;
-  if (s.startsWith("00")) return /^00\d{8,15}$/.test(s) ? `+${s.slice(2)}` : null;
-  if (s.startsWith("61") && s.length === 11) return `+${s}`;
-  if (s.startsWith("0") && s.length === 10) return `+61${s.slice(1)}`;
-  if (s.length === 9 && /^[2-578]/.test(s)) return `+61${s}`;
-  return null;
-}
 
 // ---------- connect ----------
 
@@ -147,7 +139,7 @@ async function access(businessId: number) {
   });
 }
 
-async function api<T>(businessId: number, path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function smsApi<T>(businessId: number, path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const { token } = await access(businessId);
   let res: Response;
   try {
@@ -172,13 +164,13 @@ async function api<T>(businessId: number, path: string, init: { method?: string;
 
 export type Workspace = { id: number; name: string };
 export async function listWorkspaces(businessId: number): Promise<Workspace[]> {
-  const r = await api<{ data?: { id: number; name?: string; meta?: { name?: string }; deleted_at?: string | null }[] }>(businessId, "/mycrmsim/workspaces?limit=200");
+  const r = await smsApi<{ data?: { id: number; name?: string; meta?: { name?: string }; deleted_at?: string | null }[] }>(businessId, "/mycrmsim/workspaces?limit=200");
   return (r.data ?? []).filter((w) => !w.deleted_at).map((w) => ({ id: w.id, name: w.name || w.meta?.name || `Workspace ${w.id}` }));
 }
 
 export type Device = { id: number; channel: string; name: string; health: string; number: string | null; workspaceId: number | null };
 export async function listDevices(businessId: number): Promise<Device[]> {
-  const r = await api<{ data?: { id: number; channel?: string; name?: string; health_status?: string; status?: string; number?: string; workspace_id?: number | null }[] }>(
+  const r = await smsApi<{ data?: { id: number; channel?: string; name?: string; health_status?: string; status?: string; number?: string; workspace_id?: number | null }[] }>(
     businessId,
     "/mycrmsim/devices",
   );
@@ -194,7 +186,7 @@ export async function listDevices(businessId: number): Promise<Device[]> {
 
 // ---------- send ----------
 
-export type SmsKind = "quote" | "invoice" | "review" | "owner_alert" | "invite" | "test";
+export type SmsKind = "quote" | "invoice" | "review" | "owner_alert" | "invite" | "test" | "reply";
 export type SmsResult = { ok: true; to: string; messageId: string | null } | { ok: false; error: string };
 
 /** Sends one text from the business's chosen workspace and logs it. Never throws. */
@@ -209,7 +201,7 @@ export async function sendSms(
   if (!conn.workspaceId) return { ok: false, error: "Choose the SMS Gateway workspace to send from in Settings → Integrations." };
   const log = { businessId, kind: opts.kind, toPhone: to, jobId: opts.jobId ?? null, quoteId: opts.quoteId ?? null };
   try {
-    const r = await api<{ data?: { message_id?: string; status?: string } }>(businessId, "/mycrmsim/messages", {
+    const r = await smsApi<{ data?: { message_id?: string; status?: string } }>(businessId, "/mycrmsim/messages", {
       method: "POST",
       body: { workspace_id: Number(conn.workspaceId), phone: to, channel: "default", message: opts.message.slice(0, 1500) },
     });

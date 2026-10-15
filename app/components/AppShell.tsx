@@ -14,6 +14,7 @@ import {
   Settings as SettingsIcon,
   LogOut,
   FileText,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../helpers/useAuth";
 import { useMe } from "../helpers/useMe";
@@ -26,6 +27,7 @@ import type { BillingSummary } from "../helpers/plans";
 import { saveReturnTo, peekReturnTo, clearReturnTo } from "../helpers/returnTo";
 import { enablePush, isNativeApp } from "../helpers/nativeApp";
 import { DeleteAccountButton } from "./DeleteAccountButton";
+import { useInboxThreads } from "../helpers/useInbox";
 
 // Only signed-out visitors see the marketing page; keep it out of the app's first download.
 const LandingPage = lazy(() => import("./LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -46,6 +48,7 @@ const CREW_NAV = [
   { to: "/field/profile", label: "Profile", icon: UserRound, match: (p: string) => p.startsWith("/field/profile") },
 ];
 const ADMIN_ONLY = ["/payments", "/clients", "/crew", "/settings", "/quotes"];
+const INBOX_NAV = { to: "/inbox", label: "Inbox", icon: MessageSquare, match: (p: string) => p.startsWith("/inbox") };
 const SETTINGS_NAV = { to: "/settings", label: "Settings", icon: SettingsIcon, match: (p: string) => p.startsWith("/settings") };
 // Detail and form pages read best in a narrower centred column on wide screens.
 const NARROW = /^\/(clients|crew)\/.+|^\/quotes\/.+|^\/settings\/(?!form|integrations).+|^\/field\/profile/;
@@ -90,6 +93,8 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   const navigate = useNavigate();
   const crew = me?.role === "crew";
   const qc = useQueryClient();
+  // Unread client texts for the Inbox badge (office only; quiet until SMS Gateway is set up).
+  const inbox = useInboxThreads({ enabled: !!me && me.role !== "crew" && me.onboarded });
 
   // Android app: register this phone for alerts once signed in (asks for permission the first time).
   const meId = me?.userId;
@@ -165,7 +170,8 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   if (me.role === "owner" && !me.onboarded) return <Navigate to="/onboarding" replace />;
 
   const nav = crew ? CREW_NAV : ADMIN_NAV;
-  const sideNav = crew ? CREW_NAV : [...ADMIN_NAV, SETTINGS_NAV];
+  const unread = inbox.data?.unread ?? 0;
+  const sideNav = crew ? CREW_NAV : [...ADMIN_NAV.slice(0, 6), INBOX_NAV, ...ADMIN_NAV.slice(6), SETTINGS_NAV];
   const width = NARROW.test(pathname) ? styles.narrow : MEDIUM.test(pathname) ? styles.medium : "";
   const roleLabel = me.role === "owner" ? "Owner" : me.role === "admin" ? "Office admin" : "Crew";
   return (
@@ -194,6 +200,7 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
               >
                 <Icon size={20} strokeWidth={1.9} />
                 <span>{n.label}</span>
+                {n.to === "/inbox" && unread > 0 && <i className={styles.sideBadge}>{unread > 99 ? "99+" : unread}</i>}
               </Link>
             );
           })}
@@ -230,6 +237,12 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
               <span className={styles.brandTag}>HOME SERVICE OPS</span>
             </span>
           </Link>
+          {!crew && (
+            <Link to="/inbox" className={styles.inboxBtn} aria-label={unread ? `Inbox, ${unread} unread` : "Inbox"}>
+              <MessageSquare size={18} />
+              {unread > 0 && <i className={styles.inboxBadge}>{unread > 9 ? "9+" : unread}</i>}
+            </Link>
+          )}
           <Link to={crew ? "/field/profile" : "/settings"} className={styles.account} aria-label="Your account">
             {opsFormat.initials(me.displayName || me.email)}
           </Link>

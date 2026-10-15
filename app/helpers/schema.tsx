@@ -462,6 +462,12 @@ export interface Users {
   updatedAt: Generated<Timestamp | null>;
 }
 
+export interface InboxReads {
+  businessId: number;
+  phone: string;
+  readAt: Generated<Timestamp>;
+}
+
 export interface PushDevices {
   createdAt: Generated<Timestamp>;
   id: Generated<number>;
@@ -516,6 +522,7 @@ export interface DB {
   smsConnection: SmsConnection;
   smsLog: SmsLog;
   pushDevices: PushDevices;
+  inboxReads: InboxReads;
   smsPendingInstalls: SmsPendingInstalls;
   leadFormHits: LeadFormHits;
   leadForms: LeadForms;
