@@ -33,8 +33,10 @@ import { useInboxThreads } from "../helpers/useInbox";
 const LandingPage = lazy(() => import("./LandingPage").then((m) => ({ default: m.LandingPage })));
 import styles from "./AppShell.module.css";
 
+const INBOX_NAV = { to: "/inbox", label: "Inbox", icon: MessageSquare, match: (p: string) => p.startsWith("/inbox") };
 const ADMIN_NAV = [
   { to: "/", label: "Home", icon: Home, match: (p: string) => p === "/" },
+  INBOX_NAV,
   { to: "/quotes", label: "Quotes", icon: FileText, match: (p: string) => p.startsWith("/quotes") },
   { to: "/jobs", label: "Jobs", icon: ClipboardList, match: (p: string) => p.startsWith("/jobs") },
   { to: "/schedule", label: "Schedule", icon: CalendarDays, match: (p: string) => p.startsWith("/schedule") },
@@ -48,7 +50,6 @@ const CREW_NAV = [
   { to: "/field/profile", label: "Profile", icon: UserRound, match: (p: string) => p.startsWith("/field/profile") },
 ];
 const ADMIN_ONLY = ["/payments", "/clients", "/crew", "/settings", "/quotes"];
-const INBOX_NAV = { to: "/inbox", label: "Inbox", icon: MessageSquare, match: (p: string) => p.startsWith("/inbox") };
 const SETTINGS_NAV = { to: "/settings", label: "Settings", icon: SettingsIcon, match: (p: string) => p.startsWith("/settings") };
 // Detail and form pages read best in a narrower centred column on wide screens.
 const NARROW = /^\/(clients|crew)\/.+|^\/quotes\/.+|^\/settings\/(?!form|integrations).+|^\/field\/profile/;
@@ -169,9 +170,10 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   // A new owner finishes setup before using the app.
   if (me.role === "owner" && !me.onboarded) return <Navigate to="/onboarding" replace />;
 
-  const nav = crew ? CREW_NAV : ADMIN_NAV;
+  // Phones: Crew moves to Settings so the bottom bar keeps Inbox next to Home.
+  const nav = crew ? CREW_NAV : ADMIN_NAV.filter((n) => n.to !== "/crew");
   const unread = inbox.data?.unread ?? 0;
-  const sideNav = crew ? CREW_NAV : [...ADMIN_NAV.slice(0, 6), INBOX_NAV, ...ADMIN_NAV.slice(6), SETTINGS_NAV];
+  const sideNav = crew ? CREW_NAV : [...ADMIN_NAV, SETTINGS_NAV];
   const width = NARROW.test(pathname) ? styles.narrow : MEDIUM.test(pathname) ? styles.medium : "";
   const roleLabel = me.role === "owner" ? "Owner" : me.role === "admin" ? "Office admin" : "Crew";
   return (
@@ -237,12 +239,6 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
               <span className={styles.brandTag}>HOME SERVICE OPS</span>
             </span>
           </Link>
-          {!crew && (
-            <Link to="/inbox" className={styles.inboxBtn} aria-label={unread ? `Inbox, ${unread} unread` : "Inbox"}>
-              <MessageSquare size={18} />
-              {unread > 0 && <i className={styles.inboxBadge}>{unread > 9 ? "9+" : unread}</i>}
-            </Link>
-          )}
           <Link to={crew ? "/field/profile" : "/settings"} className={styles.account} aria-label="Your account">
             {opsFormat.initials(me.displayName || me.email)}
           </Link>
@@ -257,7 +253,10 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
             const Icon = n.icon;
             return (
               <Link key={n.to} to={n.to} className={`${styles.navItem} ${active ? styles.navActive : ""}`}>
-                <Icon size={21} strokeWidth={1.9} />
+                <span className={styles.navIcon}>
+                  <Icon size={21} strokeWidth={1.9} />
+                  {n.to === "/inbox" && unread > 0 && <i className={styles.navBadge}>{unread > 9 ? "9+" : unread}</i>}
+                </span>
                 <span>{n.label}</span>
               </Link>
             );

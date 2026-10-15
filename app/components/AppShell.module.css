@@ -70,22 +70,7 @@
   color: var(--accent);
   margin-top: 3px;
 }
-.inboxBtn {
-  position: relative;
-  flex: none;
-  margin-left: auto;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: #fff;
-  text-decoration: none;
-}
-.inboxBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-.inboxBadge,
+.navBadge,
 .sideBadge {
   position: absolute;
   top: 1px;
@@ -100,8 +85,18 @@
   font-style: normal;
   text-align: center;
 }
+.navIcon {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.navBadge {
+  top: -5px;
+  right: -9px;
+}
 .account {
   flex: none;
+  margin-left: auto;
   display: grid;
   place-items: center;
   width: 34px;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { ChevronRight, Leaf, CreditCard, Receipt, LogOut, Plug, Globe } from "lucide-react";
+import { ChevronRight, Leaf, CreditCard, Receipt, LogOut, Plug, Globe, HardHat } from "lucide-react";
 import type { Settings } from "../endpoints/ops/snapshot_GET.schema";
 import { useOpsData } from "../helpers/useOpsData";
 import { useOpsMutation } from "../helpers/useOpsMutation";
@@ -140,6 +140,11 @@ export default function SettingsPage() {
                   <Link to="/settings/services" className={styles.linkRow}>
                     <span className={styles.linkIcon}><Leaf size={16} /></span>
                     <span className={styles.linkText}><b>Services & add-ons</b><small>{data?.services.length ?? 0} services · {data?.addons.length ?? 0} add-ons</small></span>
+                    <ChevronRight size={16} className={styles.chev} />
+                  </Link>
+                  <Link to="/crew" className={styles.linkRow}>
+                    <span className={styles.linkIcon}><HardHat size={16} /></span>
+                    <span className={styles.linkText}><b>Crew</b><small>Your team, rates and who's available</small></span>
                     <ChevronRight size={16} className={styles.chev} />
                   </Link>
                   <Link to="/settings/integrations" className={styles.linkRow}>
