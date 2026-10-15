@@ -28,6 +28,17 @@ The Android app is a [Capacitor](https://capacitorjs.com) shell around the live 
 - **Plan purchases are hidden.** Google Play doesn't allow buying a subscription through Stripe inside an app. The plan and usage are still shown.
 - **Delete my account** is in Settings, and in Profile for crew; Google Play requires this. The public page `/delete-account` explains it for the Play listing.
 - **Offline:** the app shows a branded "You're offline" screen and reloads by itself when the connection returns.
+- **Push notifications** (Firebase Cloud Messaging; setup below). The app asks for permission after the first sign-in. Alerts:
+
+  | Who | Alert |
+  | --- | --- |
+  | Owners and office admins | New website enquiries |
+  | Owners and office admins | New LeadConnector leads (live webhook only, not the background catch-up) |
+  | Owners and office admins | Quote accepted or declined |
+  | Owners and office admins | Invoice paid online (Stripe, Square, GoCardless or Xero) |
+  | Crew | A job assigned to them |
+
+  Tapping an alert opens the right page. Each person turns alert types on or off under **Settings → Notifications** (crew: **Profile**), and **Send a test** checks their phone. Signing out stops alerts to that phone.
 
 ## Build the APK and AAB
 
@@ -69,6 +80,19 @@ Add these four GitHub repository secrets under **Settings → Secrets and variab
 
 Then run the workflow again. The AAB is now signed and ready for Play.
 
+## One-time: Firebase (push notifications)
+
+Firebase is Google's free notification service.
+
+1. Go to <https://console.firebase.google.com>, choose **Create a project** and name it "Home Service Ops". Google Analytics isn't needed.
+2. Click **Add app → Android**, enter the package name `au.com.localservicepro.home` and register the app. Download **`google-services.json`** and skip the remaining steps of that wizard.
+3. Add a GitHub repository secret **`GOOGLE_SERVICES_JSON`** and paste the whole contents of that file.
+4. In Firebase, open ⚙ **Project settings → Service accounts** and click **Generate new private key**. A `.json` file downloads.
+5. In Supabase, open **Edge Functions → Secrets** and add **`FCM_SERVICE_ACCOUNT`**. Paste the whole contents of the service account file. Keep this file private: it can send notifications as your app.
+6. Run the **Android app** workflow again and install the new build. Phones on an older build have no push until they update.
+
+If either secret is missing, everything else still works and push simply stays off.
+
 ## One-time: Google Play Console
 
 1. **Create a developer account** at <https://play.google.com/console>. It costs US$25 once.
@@ -95,6 +119,7 @@ Then run the workflow again. The AAB is now signed and ready for Play.
    - **Data safety.** The app collects:
      - name, email and phone (account management, app functionality);
      - photos (app functionality);
+     - device or other IDs: the push notification token (app functionality);
      - customers' names, addresses, phones and emails entered by the business (app functionality).
 
      Answer the remaining questions as follows:

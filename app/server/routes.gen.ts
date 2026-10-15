@@ -61,37 +61,42 @@ import * as r58 from "../endpoints/public/lead_submit_POST";
 import * as r59 from "../endpoints/public/lead_upload_POST";
 import * as r60 from "../endpoints/public/quote_respond_POST";
 import * as r61 from "../endpoints/public/review_optout_GET";
-import * as r62 from "../endpoints/quotes/book_POST";
-import * as r63 from "../endpoints/quotes/save_POST";
-import * as r64 from "../endpoints/quotes/send_POST";
-import * as r65 from "../endpoints/settings/save_POST";
-import * as r66 from "../endpoints/sms/authorize_POST";
-import * as r67 from "../endpoints/sms/callback_GET";
-import * as r68 from "../endpoints/sms/claim_POST";
-import * as r69 from "../endpoints/sms/disconnect_POST";
-import * as r70 from "../endpoints/sms/settings_POST";
-import * as r71 from "../endpoints/sms/status_GET";
-import * as r72 from "../endpoints/sms/test_POST";
-import * as r73 from "../endpoints/sms/workspaces_GET";
-import * as r74 from "../endpoints/square/callback_GET";
-import * as r75 from "../endpoints/square/connect_POST";
-import * as r76 from "../endpoints/square/status_GET";
-import * as r77 from "../endpoints/square/webhook_POST";
-import * as r78 from "../endpoints/stripe/authorize_POST";
-import * as r79 from "../endpoints/stripe/billing_webhook_POST";
-import * as r80 from "../endpoints/stripe/callback_GET";
-import * as r81 from "../endpoints/stripe/check_POST";
-import * as r82 from "../endpoints/stripe/disconnect_POST";
-import * as r83 from "../endpoints/stripe/link_POST";
-import * as r84 from "../endpoints/stripe/status_GET";
-import * as r85 from "../endpoints/stripe/webhook_POST";
-import * as r86 from "../endpoints/team/invite_POST";
-import * as r87 from "../endpoints/team/list_GET";
-import * as r88 from "../endpoints/team/revoke_POST";
-import * as r89 from "../endpoints/xero/callback_GET";
-import * as r90 from "../endpoints/xero/connect_POST";
-import * as r91 from "../endpoints/xero/status_GET";
-import * as r92 from "../endpoints/xero/webhook_POST";
+import * as r62 from "../endpoints/push/prefs_POST";
+import * as r63 from "../endpoints/push/register_POST";
+import * as r64 from "../endpoints/push/status_GET";
+import * as r65 from "../endpoints/push/test_POST";
+import * as r66 from "../endpoints/push/unregister_POST";
+import * as r67 from "../endpoints/quotes/book_POST";
+import * as r68 from "../endpoints/quotes/save_POST";
+import * as r69 from "../endpoints/quotes/send_POST";
+import * as r70 from "../endpoints/settings/save_POST";
+import * as r71 from "../endpoints/sms/authorize_POST";
+import * as r72 from "../endpoints/sms/callback_GET";
+import * as r73 from "../endpoints/sms/claim_POST";
+import * as r74 from "../endpoints/sms/disconnect_POST";
+import * as r75 from "../endpoints/sms/settings_POST";
+import * as r76 from "../endpoints/sms/status_GET";
+import * as r77 from "../endpoints/sms/test_POST";
+import * as r78 from "../endpoints/sms/workspaces_GET";
+import * as r79 from "../endpoints/square/callback_GET";
+import * as r80 from "../endpoints/square/connect_POST";
+import * as r81 from "../endpoints/square/status_GET";
+import * as r82 from "../endpoints/square/webhook_POST";
+import * as r83 from "../endpoints/stripe/authorize_POST";
+import * as r84 from "../endpoints/stripe/billing_webhook_POST";
+import * as r85 from "../endpoints/stripe/callback_GET";
+import * as r86 from "../endpoints/stripe/check_POST";
+import * as r87 from "../endpoints/stripe/disconnect_POST";
+import * as r88 from "../endpoints/stripe/link_POST";
+import * as r89 from "../endpoints/stripe/status_GET";
+import * as r90 from "../endpoints/stripe/webhook_POST";
+import * as r91 from "../endpoints/team/invite_POST";
+import * as r92 from "../endpoints/team/list_GET";
+import * as r93 from "../endpoints/team/revoke_POST";
+import * as r94 from "../endpoints/xero/callback_GET";
+import * as r95 from "../endpoints/xero/connect_POST";
+import * as r96 from "../endpoints/xero/status_GET";
+import * as r97 from "../endpoints/xero/webhook_POST";
 
 export const routes: Record<string, { handle: (request: Request) => Promise<Response> | Response }> = {
   "POST account/delete": r0,
@@ -156,35 +161,40 @@ export const routes: Record<string, { handle: (request: Request) => Promise<Resp
   "POST public/lead_upload": r59,
   "POST public/quote_respond": r60,
   "GET public/review_optout": r61,
-  "POST quotes/book": r62,
-  "POST quotes/save": r63,
-  "POST quotes/send": r64,
-  "POST settings/save": r65,
-  "POST sms/authorize": r66,
-  "GET sms/callback": r67,
-  "POST sms/claim": r68,
-  "POST sms/disconnect": r69,
-  "POST sms/settings": r70,
-  "GET sms/status": r71,
-  "POST sms/test": r72,
-  "GET sms/workspaces": r73,
-  "GET square/callback": r74,
-  "POST square/connect": r75,
-  "GET square/status": r76,
-  "POST square/webhook": r77,
-  "POST stripe/authorize": r78,
-  "POST stripe/billing_webhook": r79,
-  "GET stripe/callback": r80,
-  "POST stripe/check": r81,
-  "POST stripe/disconnect": r82,
-  "POST stripe/link": r83,
-  "GET stripe/status": r84,
-  "POST stripe/webhook": r85,
-  "POST team/invite": r86,
-  "GET team/list": r87,
-  "POST team/revoke": r88,
-  "GET xero/callback": r89,
-  "POST xero/connect": r90,
-  "GET xero/status": r91,
-  "POST xero/webhook": r92,
+  "POST push/prefs": r62,
+  "POST push/register": r63,
+  "GET push/status": r64,
+  "POST push/test": r65,
+  "POST push/unregister": r66,
+  "POST quotes/book": r67,
+  "POST quotes/save": r68,
+  "POST quotes/send": r69,
+  "POST settings/save": r70,
+  "POST sms/authorize": r71,
+  "GET sms/callback": r72,
+  "POST sms/claim": r73,
+  "POST sms/disconnect": r74,
+  "POST sms/settings": r75,
+  "GET sms/status": r76,
+  "POST sms/test": r77,
+  "GET sms/workspaces": r78,
+  "GET square/callback": r79,
+  "POST square/connect": r80,
+  "GET square/status": r81,
+  "POST square/webhook": r82,
+  "POST stripe/authorize": r83,
+  "POST stripe/billing_webhook": r84,
+  "GET stripe/callback": r85,
+  "POST stripe/check": r86,
+  "POST stripe/disconnect": r87,
+  "POST stripe/link": r88,
+  "GET stripe/status": r89,
+  "POST stripe/webhook": r90,
+  "POST team/invite": r91,
+  "GET team/list": r92,
+  "POST team/revoke": r93,
+  "GET xero/callback": r94,
+  "POST xero/connect": r95,
+  "GET xero/status": r96,
+  "POST xero/webhook": r97,
 };

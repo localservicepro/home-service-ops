@@ -3,6 +3,7 @@ import { db } from "../../helpers/db";
 import { syncJobsToCalendar } from "../../helpers/calendarSync";
 import { assertJobCapacity } from "../../helpers/billing";
 import { pushToLc } from "../../helpers/lcSync";
+import { pushJobAssigned } from "../../helpers/push";
 import { errorResponse, requireMember } from "../../helpers/tenant";
 import { schema, OutputType } from "./book_POST.schema";
 
@@ -84,6 +85,7 @@ export async function handle(request: Request) {
     });
     await syncJobsToCalendar([out.jobId]);
     await pushToLc(biz, { jobIds: [out.jobId] });
+    await pushJobAssigned(out.jobId);
     return new Response(superjson.stringify(out satisfies OutputType));
   } catch (error) {
     return errorResponse(error);

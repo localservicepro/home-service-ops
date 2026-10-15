@@ -457,8 +457,18 @@ export interface Users {
   displayName: string;
   email: string;
   id: Generated<number>;
+  pushPrefs: Generated<Json>;
   role: Generated<UserRole>;
   updatedAt: Generated<Timestamp | null>;
+}
+
+export interface PushDevices {
+  createdAt: Generated<Timestamp>;
+  id: Generated<number>;
+  lastSeenAt: Generated<Timestamp>;
+  platform: Generated<string>;
+  token: string;
+  userId: number;
 }
 
 export interface XeroConnection {
@@ -505,6 +515,7 @@ export interface DB {
   lcPendingInstalls: LcPendingInstalls;
   smsConnection: SmsConnection;
   smsLog: SmsLog;
+  pushDevices: PushDevices;
   smsPendingInstalls: SmsPendingInstalls;
   leadFormHits: LeadFormHits;
   leadForms: LeadForms;

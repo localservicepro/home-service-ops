@@ -186,6 +186,12 @@ export async function submitLead(request: Request, input: LeadSubmission) {
   } catch {
     /* ignore */
   }
+  const { pushOffice } = await import("./push");
+  await pushOffice(f.businessId, "leads", {
+    title: `New enquiry from ${val.name}`,
+    body: [picked.map((s) => s.name).join(", "), val.address, val.phone].filter(Boolean).join(" · ") || "From your website form",
+    url: `/jobs/${job.id}`,
+  });
   await smsOwner(f.businessId, `New enquiry (${job.num}) from ${val.name}${val.phone ? `, ${val.phone}` : ""}${picked.length ? ` – ${picked.map((s) => s.name).join(", ")}` : ""}. ${PUBLIC_APP_URL}/jobs/${job.id}`);
   if (f.notifyEmail) {
     try {

@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSession } from "../endpoints/auth/session_GET.schema";
 import { postLogout } from "../endpoints/auth/logout_POST.schema";
 import { supabase } from "./supabaseClient";
+import { disablePushForSignOut } from "./nativeApp";
 import { OPS_QUERY_KEY } from "./useOpsData";
 import { getOpsSnapshot } from "../endpoints/ops/snapshot_GET.schema";
 import { User } from "./User";
@@ -104,6 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           : { type: "unauthenticated" };
 
   const logout = useCallback(async () => {
+    // Stop this phone getting the leaving person's alerts (needs the session, so first).
+    await disablePushForSignOut();
     // Optimistically update UI
     queryClient.setQueryData(AUTH_QUERY_KEY, null);
     // Make the actual API call

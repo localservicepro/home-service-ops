@@ -10,6 +10,8 @@ name: Android app
 #   ANDROID_KEY_ALIAS
 #   ANDROID_KEY_PASSWORD
 # Without them the APK is a debug build (fine for testing on a phone) and the AAB is unsigned.
+#
+# Push notifications: add GOOGLE_SERVICES_JSON (the whole google-services.json file from Firebase).
 
 on:
   workflow_dispatch:
@@ -49,6 +51,17 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Firebase config (push notifications)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "Push notifications: on"
+          else
+            echo "::warning::No GOOGLE_SERVICES_JSON secret: this build has no push notifications."
+          fi
 
       - name: Sync Capacitor
         run: npx cap sync android

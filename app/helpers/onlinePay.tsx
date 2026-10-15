@@ -3,6 +3,7 @@ import { syncJobsToCalendar } from "./calendarSync";
 import { pushToLc } from "./lcSync";
 import { maybeSendReviews } from "./reviews";
 import { APP_URL } from "./serverEnv";
+import { pushJobPaid } from "./push";
 
 // Server-only. Shared bits for the online payment providers (Square, GoCardless).
 
@@ -25,6 +26,7 @@ export async function markJobPaidOnline(jobId: number, provider: PayProvider) {
     await maybeSendReviews(updated.businessId);
     const { maybeSyncXero } = await import("./xero");
     await maybeSyncXero(updated.businessId);
+    await pushJobPaid(jobId, { stripe: "card", square: "Square", gocardless: "direct debit", xero: "Xero" }[provider]);
   }
   return !!updated;
 }

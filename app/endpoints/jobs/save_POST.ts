@@ -7,6 +7,7 @@ import { assertJobCapacity } from "../../helpers/billing";
 import { pushToLc } from "../../helpers/lcSync";
 import { maybeSendReviews } from "../../helpers/reviews";
 import { maybeSyncXero } from "../../helpers/xero";
+import { pushJobAssigned } from "../../helpers/push";
 import { ANY_MEMBER, ForbiddenError, assertJobAccess, errorResponse, isOffice, requireMember } from "../../helpers/tenant";
 import { schema, OutputType } from "./save_POST.schema";
 
@@ -25,11 +26,13 @@ export async function handle(request: Request) {
       await assertJobAccess(ctx, input.id);
     }
 
+    let prevStaffId: number | null = null;
     const result = await db.transaction().execute(async (trx) => {
       const existing = input.id
         ? await trx.selectFrom("jobs").selectAll().where("id", "=", input.id).where("businessId", "=", biz).executeTakeFirst()
         : undefined;
       if (input.id && !existing) throw new Error("Job not found");
+      prevStaffId = existing?.staffId ?? null;
 
       // Plan limit: scheduling a job into a month (new, moved to another month, or un-cancelled).
       const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -124,6 +127,7 @@ export async function handle(request: Request) {
     await pushToLc(biz, { jobIds: [result.id] });
     if (input.status === "Done" || input.status === "Paid") await maybeSendReviews(biz);
     if (input.status === "Paid" || input.status === "Done") await maybeSyncXero(biz);
+    if (input.staffId && input.staffId !== prevStaffId) await pushJobAssigned(result.id);
     return new Response(superjson.stringify(result satisfies OutputType));
   } catch (error) {
     return errorResponse(error);

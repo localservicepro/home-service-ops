@@ -24,7 +24,7 @@ import { AuthLoadingState } from "./AuthLoadingState";
 import { Button } from "./Button";
 import type { BillingSummary } from "../helpers/plans";
 import { saveReturnTo, peekReturnTo, clearReturnTo } from "../helpers/returnTo";
-import { isNativeApp } from "../helpers/nativeApp";
+import { enablePush, isNativeApp } from "../helpers/nativeApp";
 import { DeleteAccountButton } from "./DeleteAccountButton";
 
 // Only signed-out visitors see the marketing page; keep it out of the app's first download.
@@ -90,6 +90,12 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   const navigate = useNavigate();
   const crew = me?.role === "crew";
   const qc = useQueryClient();
+
+  // Android app: register this phone for alerts once signed in (asks for permission the first time).
+  const meId = me?.userId;
+  useEffect(() => {
+    if (meId && isNativeApp()) enablePush();
+  }, [meId]);
 
   // Office view: check LeadConnector for new leads when the app opens and every few minutes
   // (the server throttles this and skips it when sync isn't set up).

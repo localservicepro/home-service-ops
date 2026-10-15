@@ -218,7 +218,7 @@ export async function leadDetails(c: Conn, opp: Opp, contact: Partial<Contact>) 
 }
 
 /** Turns one opportunity into a job request. Returns true if it was new to the app. */
-async function importOpportunity(c: Conn, opp: Opp): Promise<boolean> {
+async function importOpportunity(c: Conn, opp: Opp): Promise<number | false> {
   if (!opp.id || opp.pipelineId !== c.pipelineId || (opp.status && opp.status !== "open")) return false;
   const stageKey = (Object.entries(c.stageMap).find(([, id]) => id === opp.pipelineStageId)?.[0] as StageKey | undefined) ?? "new";
   // Claim it first so a webhook and a sync running together can't both import it.
@@ -255,14 +255,14 @@ async function importOpportunity(c: Conn, opp: Opp): Promise<boolean> {
     const intro = `New lead from LeadConnector${opp.source ? ` (${opp.source})` : ""}.`;
     const notes = [intro, ...(extra.notes.length ? ["", "Notes from LeadConnector:", ...extra.notes.map((x) => `• ${x}`)] : [])].join("\n").slice(0, 4000);
 
-    await db.transaction().execute(async (trx) => {
+    const jobId = await db.transaction().execute(async (trx) => {
       const known = opp.contactId
         ? await trx.selectFrom("clients").select("id").where("businessId", "=", c.businessId).where("lcContactId", "=", opp.contactId).executeTakeFirst()
         : undefined;
       const clientId = await ensureClient(trx, c.businessId, { clientId: known?.id ?? null, name, address, phone, email });
       await trx.updateTable("clients").set({ lcContactId: opp.contactId ?? null }).where("id", "=", clientId).where("lcContactId", "is", null).execute();
       if (email) await trx.updateTable("clients").set({ email }).where("id", "=", clientId).where("email", "=", "").execute();
-      await trx
+      return trx
         .insertInto("jobs")
         .values({
           businessId: c.businessId,
@@ -280,9 +280,11 @@ async function importOpportunity(c: Conn, opp: Opp): Promise<boolean> {
           lcOpportunityId: opp.id,
           lcContactId: opp.contactId ?? null,
         })
-        .execute();
+        .returning("id")
+        .executeTakeFirstOrThrow()
+        .then((r) => r.id);
     });
-    return true;
+    return jobId;
   } catch (e) {
     // Release the claim so the next sync can try again.
     await db.deleteFrom("lcOpportunities").where("businessId", "=", c.businessId).where("opportunityId", "=", opp.id).execute().catch(() => undefined);
@@ -524,7 +526,18 @@ export async function handleLcWebhook(payload: Record<string, unknown>) {
     // Read the opportunity from the API rather than trusting the payload.
     const r = await lcJson<{ opportunity?: Opp }>(businessId, `/opportunities/${encodeURIComponent(oppId)}`);
     const opp = r.opportunity;
-    if (opp && (await importOpportunity(c, { ...opp, id: opp.id ?? oppId }))) imported++;
+    const jobId = opp ? await importOpportunity(c, { ...opp, id: opp.id ?? oppId }) : false;
+    if (jobId) {
+      imported++;
+      // Only live webhook leads alert; the background pull can import a backlog at once.
+      const j = await db.selectFrom("jobs").select(["customer", "service", "address"]).where("id", "=", jobId).executeTakeFirst();
+      const { pushOffice } = await import("./push");
+      await pushOffice(businessId, "leads", {
+        title: `New lead from LeadConnector`,
+        body: [j?.customer, j?.service, j?.address].filter(Boolean).join(" · ") || "Tap to view",
+        url: `/jobs/${jobId}`,
+      });
+    }
   }
   return imported ? "imported" : "not in pipeline";
 }

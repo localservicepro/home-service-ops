@@ -225,6 +225,8 @@ export async function markJobPaidByStripe(jobId: number, sessionId: string) {
       await maybeSendReviews(j.businessId);
       const { maybeSyncXero } = await import("./xero");
       await maybeSyncXero(j.businessId);
+      const { pushJobPaid } = await import("./push");
+      await pushJobPaid(jobId, "card");
     }
   }
   return !!updated;
