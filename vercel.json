@@ -1,0 +1,70 @@
+{
+  "redirects": [
+    {
+      "source": "/android.apk",
+      "destination": "https://github.com/localservicepro/home-service-ops/releases/download/android-app/home-service-ops.apk",
+      "permanent": false
+    },
+    {
+      "source": "/auth/app",
+      "destination": "au.com.localservicepro.home://auth/callback",
+      "permanent": false
+    },
+    {
+      "source": "/done",
+      "has": [
+        {
+          "type": "cookie",
+          "key": "hso_app_connect",
+          "value": "1"
+        }
+      ],
+      "destination": "au.com.localservicepro.home://done",
+      "permanent": false
+    },
+    {
+      "source": "/settings/integrations",
+      "has": [
+        {
+          "type": "cookie",
+          "key": "hso_app_connect",
+          "value": "1"
+        },
+        {
+          "type": "query",
+          "key": "lc_install"
+        }
+      ],
+      "destination": "au.com.localservicepro.home://settings/integrations",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "home-service-ops.vercel.app"
+        }
+      ],
+      "destination": "https://home.localservicepro.com.au/",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [
+        {
+          "type": "host",
+          "value": "home-service-ops.vercel.app"
+        }
+      ],
+      "destination": "https://home.localservicepro.com.au/:path+",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

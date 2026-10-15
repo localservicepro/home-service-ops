@@ -1,0 +1,57 @@
+import superjson from "superjson";
+import { db } from "../../helpers/db";
+import { businessBrand, esc, layout, sendAppEmail } from "../../helpers/mailer";
+import { pricing } from "../../helpers/pricing";
+import { pushToLc } from "../../helpers/lcSync";
+import { smsOwner } from "../../helpers/sms";
+import { pushOffice } from "../../helpers/push";
+import { schema, OutputType } from "./quote_respond_POST.schema";
+
+export async function handle(request: Request) {
+  try {
+    const input = schema.parse(superjson.parse(await request.text()));
+    const q = await db.selectFrom("quotes").selectAll().where("publicToken", "=", input.token).executeTakeFirst();
+    if (!q) throw new Error("This link isn't valid any more.");
+    if (q.status !== "Awaiting") throw new Error(q.status === "Declined" ? "This quote was declined." : "This quote has already been accepted. Thanks!");
+    const status = input.action === "accept" ? "Accepted" : "Declined";
+    await db
+      .updateTable("quotes")
+      .set({ status, statusChangedAt: new Date(), declineReason: status === "Declined" ? input.reason || "Declined online" : null })
+      .where("id", "=", q.id)
+      .execute();
+    await pushToLc(q.businessId, { quoteIds: [q.id] });
+
+    // Let the business know straight away.
+    await pushOffice(q.businessId, "quotes", {
+      title: `${status === "Accepted" ? "✅ Quote accepted" : "Quote declined"} · ${pricing.fmtMoney(Number(q.price))}`,
+      body: `${q.customer} ${status === "Accepted" ? "accepted" : "declined"} ${q.num}${q.service ? ` (${q.service})` : ""}${status === "Declined" && input.reason ? `: "${input.reason}"` : status === "Accepted" ? ". Tap to book it in." : "."}`,
+      url: `/quotes/${q.id}`,
+    });
+    await smsOwner(
+      q.businessId,
+      `${q.customer} ${status === "Accepted" ? "accepted" : "declined"} quote ${q.num} (${pricing.fmtMoney(Number(q.price))})${status === "Declined" && input.reason ? `: "${input.reason}"` : ""}.`,
+    );
+    try {
+      const brand = await businessBrand(q.businessId);
+      if (brand.email) {
+        const accepted = status === "Accepted";
+        const lines = [
+          `<b>${esc(q.customer)}</b> ${accepted ? "accepted" : "declined"} quote <b>${esc(q.num)}</b> (${esc(q.service || "services")}, ${pricing.fmtMoney(Number(q.price))}).`,
+          accepted ? "Open the quote in the app to book it in." : input.reason ? `Their reason: “${esc(input.reason)}”` : "",
+        ].filter(Boolean);
+        await sendAppEmail({
+          to: brand.email,
+          fromName: "Home Service Ops",
+          subject: `${accepted ? "✅ Quote accepted" : "Quote declined"}: ${q.num} · ${q.customer}`,
+          html: layout({ brand: brand.name, heading: accepted ? "Quote accepted" : "Quote declined", paragraphs: lines }),
+          text: `${q.customer} ${accepted ? "accepted" : "declined"} quote ${q.num}.`,
+        });
+      }
+    } catch (e) {
+      console.error("Quote response notification failed", e instanceof Error ? e.message : e);
+    }
+    return new Response(superjson.stringify({ status } satisfies OutputType));
+  } catch (error) {
+    return new Response(superjson.stringify({ error: error instanceof Error ? error.message : String(error) }), { status: 400 });
+  }
+}

@@ -1,0 +1,81 @@
+.controls {
+  padding: var(--spacing-4) var(--spacing-6) 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.searchInput {
+  padding-left: 36px;
+}
+.crewSelect {
+  width: 132px;
+  flex: none;
+}
+.boardWrap {
+  padding: var(--spacing-4) var(--spacing-6) 0;
+}
+.skels {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skel {
+  height: 86px;
+  border-radius: 14px;
+}
+.tip {
+  margin: 14px 0 0;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  background: var(--status-done-bg);
+  color: var(--status-done);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (min-width: 768px) {
+  .controls {
+    padding: var(--spacing-2) 0 0;
+  }
+  .search {
+    flex: 0 1 380px;
+  }
+  .crewSelect {
+    width: 180px;
+  }
+  .boardWrap {
+    padding: var(--spacing-4) 0 0;
+  }
+  .skels {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .skel {
+    height: 320px;
+    border-radius: 18px;
+  }
+}
+
