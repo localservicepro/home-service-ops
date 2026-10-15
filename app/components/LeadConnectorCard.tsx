@@ -14,6 +14,7 @@ import { LcSyncSettings } from "./LcSyncSettings";
 import { IntegrationToggle } from "./IntegrationToggle";
 import { opsFormat } from "../helpers/opsFormat";
 import styles from "./LeadConnectorCard.module.css";
+import { openPopupWindow } from "../helpers/nativeApp";
 
 const KEY = ["crm", "status"];
 
@@ -77,11 +78,8 @@ export function LeadConnectorCard({ className }: { className?: string }) {
   }, [connecting]);
 
   const connect = async () => {
-    const popup = window.open("", "lc-connect", "width=560,height=720");
-    if (!popup) {
-      toast.error("Your browser blocked the sign-in window. Allow pop-ups for this site and try again.");
-      return;
-    }
+    const popup = openPopupWindow("lc-connect", "width=560,height=720", "LeadConnector");
+    if (!popup) return;
     popupRef.current = popup;
     popup.document.title = "Connecting LeadConnector…";
     popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening LeadConnector…</p>';

@@ -24,6 +24,8 @@ import { AuthLoadingState } from "./AuthLoadingState";
 import { Button } from "./Button";
 import type { BillingSummary } from "../helpers/plans";
 import { saveReturnTo, peekReturnTo, clearReturnTo } from "../helpers/returnTo";
+import { isNativeApp } from "../helpers/nativeApp";
+import { DeleteAccountButton } from "./DeleteAccountButton";
 
 // Only signed-out visitors see the marketing page; keep it out of the app's first download.
 const LandingPage = lazy(() => import("./LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -130,8 +132,7 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   if (authState.type === "unauthenticated") {
     // Signed-out web visitors to the home page see the marketing page; the installed
     // mobile app (and every other page) goes straight to sign-in.
-    const native = typeof window !== "undefined" && !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
-    if (pathname === "/" && !native) {
+    if (pathname === "/" && !isNativeApp()) {
       return (
         <Suspense fallback={<AuthLoadingState title="Loading" />}>
           <LandingPage />
@@ -149,6 +150,7 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
           <h1>No business linked</h1>
           <p>{error instanceof Error ? error.message : "Your login isn't linked to a business."} Ask the business owner for a new invite link.</p>
           <Button variant="outline" onClick={async () => { await logout(); navigate("/login"); }}>Sign out</Button>
+          <DeleteAccountButton />
         </div>
       </div>
     );

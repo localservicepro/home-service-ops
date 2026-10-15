@@ -2,11 +2,8 @@ import { useState } from "react";
 import { startGoogle } from "../endpoints/auth/google/start_GET.schema";
 import styles from "./GoogleSignInButton.module.css";
 
-const isNative = () =>
-  typeof window !== "undefined" && !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
-
-// "Continue with Google" — a full-page hop to Google and back. Google blocks sign-in inside
-// embedded app web views, so the installed mobile app keeps email + password only.
+// "Continue with Google" — a full-page hop to Google and back (in the mobile app, via the
+// phone's browser; see startGoogle).
 export function GoogleSignInButton({
   mode,
   invite,
@@ -19,7 +16,6 @@ export function GoogleSignInButton({
   className?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
-  if (isNative()) return null;
   const go = () => {
     setError(null);
     startGoogle({ mode, invite }).catch((e) => setError(e instanceof Error ? e.message : "Google sign-in isn't available right now."));

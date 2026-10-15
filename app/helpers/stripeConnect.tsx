@@ -41,7 +41,7 @@ function encode(params: Params, prefix = "", out = new URLSearchParams()) {
   return out;
 }
 
-async function stripe<T>(path: string, opts: { method?: "GET" | "POST"; params?: Params; account?: string; base?: string } = {}) {
+async function stripe<T>(path: string, opts: { method?: "GET" | "POST" | "DELETE"; params?: Params; account?: string; base?: string } = {}) {
   const { secret } = requireEnv();
   const method = opts.method ?? "GET";
   const body = opts.params ? encode(opts.params) : undefined;

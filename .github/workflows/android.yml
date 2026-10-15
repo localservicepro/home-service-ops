@@ -1,0 +1,98 @@
+name: Android app
+
+# Builds the Play Store bundle (.aab) and an installable .apk. Run it from the Actions tab
+# ("Run workflow"), or push a tag like android-v1.0.1. Download the files from the run's
+# Artifacts section.
+#
+# Signing (optional until you upload to Play): add these repository secrets
+#   ANDROID_KEYSTORE_BASE64   base64 of upload-keystore.jks
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+# Without them the APK is a debug build (fine for testing on a phone) and the AAB is unsigned.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Version shown in the Play Store (e.g. 1.0.1)"
+        required: false
+        default: "1.0.0"
+  push:
+    tags: ["android-v*"]
+  pull_request:
+    paths: ["android/**", "capacitor.config.ts", "native/**", ".github/workflows/android.yml"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install
+        run: npm ci
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Version
+        id: ver
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/android-v* ]]; then name="${GITHUB_REF#refs/tags/android-v}"; else name="${{ inputs.version_name || '1.0.0' }}"; fi
+          # Play needs every upload's versionCode to be higher than the last.
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+
+      - name: Upload key
+        id: key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload-keystore.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: building an unsigned bundle and a debug APK."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          args="-PversionCode=${{ steps.ver.outputs.code }} -PversionName=${{ steps.ver.outputs.name }}"
+          if [ "${{ steps.key.outputs.signed }}" = "true" ]; then
+            ./gradlew --no-daemon $args bundleRelease assembleRelease
+          else
+            ./gradlew --no-daemon $args bundleRelease assembleDebug
+          fi
+          mkdir -p ../out
+          name="home-service-ops-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}"
+          cp app/build/outputs/bundle/release/*.aab "../out/$name.aab"
+          cp app/build/outputs/apk/*/*.apk "../out/$name.apk"
+          ls -la ../out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: home-service-ops-android-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}
+          path: out/*
+          if-no-files-found: error

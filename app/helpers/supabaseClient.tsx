@@ -8,5 +8,12 @@ export const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as stri
 export const APP_URL = ((import.meta.env.VITE_APP_URL as string | undefined) || window.location.origin).replace(/\/+$/, "");
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    // /auth/app runs in the phone's browser for the mobile app's Google sign-in; the code there
+    // belongs to the app (which holds the PKCE verifier), so this page must not try to use it.
+    detectSessionInUrl: window.location.pathname !== "/auth/app",
+    flowType: "pkce",
+  },
 });

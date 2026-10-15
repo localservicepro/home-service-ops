@@ -11,6 +11,7 @@ import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
 import { IntegrationToggle } from "./IntegrationToggle";
 import styles from "./StripeCard.module.css";
+import { openPopupWindow } from "../helpers/nativeApp";
 
 export const STRIPE_STATUS_KEY = ["stripe", "status"];
 
@@ -54,11 +55,8 @@ export function StripeCard({ className }: { className?: string }) {
   }, [connecting]);
 
   const connect = async () => {
-    const popup = window.open("", "stripe-connect", "width=560,height=760");
-    if (!popup) {
-      toast.error("Your browser blocked the Stripe window. Allow pop-ups for this site and try again.");
-      return;
-    }
+    const popup = openPopupWindow("stripe-connect", "width=560,height=760", "Stripe");
+    if (!popup) return;
     popupRef.current = popup;
     popup.document.title = "Connecting Stripe…";
     popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening Stripe…</p>';

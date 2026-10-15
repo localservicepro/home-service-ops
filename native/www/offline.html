@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>No connection</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #08172B; color: #E6EEF8; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px 24px; box-sizing: border-box; gap: 14px; }
+      svg { width: 64px; height: 64px; }
+      h1 { margin: 6px 0 0; font-size: 20px; }
+      p { margin: 0; max-width: 300px; line-height: 1.5; color: #A8B8CC; font-size: 15px; }
+      button { margin-top: 10px; border: 0; border-radius: 12px; padding: 13px 26px; font: 700 15px system-ui, sans-serif; color: #fff; background: linear-gradient(135deg, #0C6FD0, #35C6F4); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0C6FD0"/><stop offset="1" stop-color="#35C6F4"/></linearGradient></defs><rect width="64" height="64" rx="18" fill="url(#g)"/><path d="M14 35l19-24-4 19h21L31 54l4-19H14z" fill="#fff"/></svg>
+      <h1>You're offline</h1>
+      <p>Home Service Ops needs an internet connection. Check your mobile data or Wi-Fi, then try again.</p>
+      <button type="button" onclick="location.replace('https://home.localservicepro.com.au/')">Try again</button>
+    </main>
+    <script>
+      // Reload by itself as soon as the phone is back online.
+      addEventListener("online", function () { location.replace("https://home.localservicepro.com.au/"); });
+    </script>
+  </body>
+</html>

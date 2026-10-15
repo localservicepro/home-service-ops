@@ -19,6 +19,7 @@ import { ConfirmSheet } from "./ConfirmSheet";
 import { IntegrationToggle } from "./IntegrationToggle";
 import { ChannelPicker, type Channel } from "./ChannelPicker";
 import styles from "./SmsCard.module.css";
+import { openPopupWindow } from "../helpers/nativeApp";
 
 export const SMS_STATUS_KEY = ["sms", "status"];
 
@@ -69,11 +70,8 @@ export function SmsCard({ className }: { className?: string }) {
   }, [connecting]);
 
   const connect = async () => {
-    const popup = window.open("", "sms-connect", "width=560,height=760");
-    if (!popup) {
-      toast.error("Your browser blocked the sign-in window. Allow pop-ups for this site and try again.");
-      return;
-    }
+    const popup = openPopupWindow("sms-connect", "width=560,height=760", "SMS Gateway");
+    if (!popup) return;
     popupRef.current = popup;
     popup.document.title = "Connecting SMS Gateway…";
     popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening SMS Gateway…</p>';

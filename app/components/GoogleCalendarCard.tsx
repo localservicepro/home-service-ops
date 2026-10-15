@@ -13,6 +13,7 @@ import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
 import { IntegrationToggle } from "./IntegrationToggle";
 import styles from "./GoogleCalendarCard.module.css";
+import { openPopupWindow } from "../helpers/nativeApp";
 
 const KEY = ["gcal", "status"];
 
@@ -60,11 +61,8 @@ export function GoogleCalendarCard({ className }: { className?: string }) {
 
   const connect = async () => {
     // Open synchronously on the click so it isn't treated as a blocked popup.
-    const popup = window.open("", "gcal-connect", "width=520,height=680");
-    if (!popup) {
-      toast.error("Your browser blocked the Google window. Allow pop-ups for this site and try again.");
-      return;
-    }
+    const popup = openPopupWindow("gcal-connect", "width=520,height=680", "Google Calendar");
+    if (!popup) return;
     popupRef.current = popup;
     popup.document.title = "Connecting Google Calendar…";
     popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening Google…</p>';

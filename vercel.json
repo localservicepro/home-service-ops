@@ -1,17 +1,37 @@
 {
   "redirects": [
     {
+      "source": "/auth/app",
+      "destination": "au.com.localservicepro.home://auth/callback",
+      "permanent": false
+    },
+    {
       "source": "/",
-      "has": [{ "type": "host", "value": "home-service-ops.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "home-service-ops.vercel.app"
+        }
+      ],
       "destination": "https://home.localservicepro.com.au/",
       "permanent": true
     },
     {
       "source": "/:path+",
-      "has": [{ "type": "host", "value": "home-service-ops.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "home-service-ops.vercel.app"
+        }
+      ],
       "destination": "https://home.localservicepro.com.au/:path+",
       "permanent": true
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { GlobalContextProviders } from "./components/_globalContextProviders";
 import { AuthLoadingState } from "./components/AuthLoadingState";
+import { startNativeApp } from "./helpers/nativeApp";
 
 // File-based routes: pages/jobs.$jobId.tsx → /jobs/:jobId, pages/_index.tsx → /.
 // pages/<name>.pageLayout.tsx exports the shells (outermost first) that wrap that page.
@@ -30,6 +31,8 @@ const routes = Object.entries(pageModules).map(([file, load]) => {
   const element = layouts.reduceRight<ReactNode>((child, L) => <L>{child}</L>, <Page />);
   return { path: pathOf(name), element };
 });
+
+startNativeApp().catch(() => {});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

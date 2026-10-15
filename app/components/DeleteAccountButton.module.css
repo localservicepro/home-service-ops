@@ -1,0 +1,33 @@
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 8px 2px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error, #c0392b);
+  cursor: pointer;
+}
+.link:hover {
+  text-decoration: underline;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.body p {
+  margin: 0;
+  line-height: 1.5;
+}
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}

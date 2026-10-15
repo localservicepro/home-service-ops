@@ -17,6 +17,7 @@ import { Input } from "../components/Input";
 import { Skeleton } from "../components/Skeleton";
 import { BottomSheet } from "../components/BottomSheet";
 import styles from "./settings.billing.module.css";
+import { isNativeApp, openPopupWindow } from "../helpers/nativeApp";
 
 const fmtDate = (d: Date | null | undefined) =>
   d ? new Date(d).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "";
@@ -106,8 +107,8 @@ export default function BillingPage() {
 
   // Stripe pages can't load inside the app, so they open in a window of their own.
   const openStripe = async (get: () => Promise<{ url?: string }>) => {
-    const popup = window.open("", "lsp-billing", "width=560,height=780");
-    if (!popup) return toast.error("Your browser blocked the Stripe window. Allow pop-ups and try again.");
+    const popup = openPopupWindow("lsp-billing", "width=560,height=780", "Stripe");
+    if (!popup) return;
     popupRef.current = popup;
     popup.document.body.innerHTML = '<p style="font-family:system-ui;padding:24px;color:#51637A">Opening Stripe…</p>';
     setWaiting(true);
@@ -129,6 +130,8 @@ export default function BillingPage() {
   const subscribed = !!b && (b.status === "active" || b.status === "past_due");
   const current = subscribed ? b!.subscribedPlan : null;
   const busy = waiting || manageMut.isPending;
+  // Google Play doesn't allow buying the subscription through Stripe inside the Android app.
+  const native = isNativeApp();
 
   const heroTitle = !b
     ? ""
@@ -194,7 +197,7 @@ export default function BillingPage() {
                   {b.status === "past_due" && "Your last payment didn't go through. Update your card to keep access."}
                   {b.status === "expired" && "Your trial has ended. Everything is still here, but it's read-only until you choose a plan."}
                 </p>
-                {owner && (
+                {owner && !native && (
                   <div className={styles.heroActions}>
                     {b.status === "past_due" && (
                       <Button onClick={updateCard} disabled={busy}>
@@ -289,7 +292,7 @@ export default function BillingPage() {
                       {b.hasCustomer ? "No card on file yet." : "You'll add a card when you choose a plan."}
                     </p>
                   )}
-                  {b.hasCustomer && (
+                  {b.hasCustomer && !native && (
                     <Button variant="outline" onClick={updateCard} disabled={busy || !b.stripeReady}>
                       <CreditCard size={16} /> {ov?.card ? "Replace card" : "Add a card"}
                     </Button>
@@ -300,7 +303,10 @@ export default function BillingPage() {
             </div>
 
             {/* ---------- plans ---------- */}
-            {b.status !== "comp" && (
+            {native && b.status !== "comp" && (
+              <p className={styles.muted}>Plans and payment details are managed in Home Service Ops on the web.</p>
+            )}
+            {b.status !== "comp" && !native && (
               <div ref={plansRef} className={styles.plansWrap}>
                 <SectionLabel>{subscribed ? "Change plan" : "Choose a plan"}</SectionLabel>
                 <div className={styles.plans}>
@@ -458,7 +464,7 @@ export default function BillingPage() {
               </section>
             )}
 
-            {owner && b.hasCustomer && (
+            {owner && b.hasCustomer && !native && (
               <button className={styles.portalLink} onClick={portal} disabled={busy}>
                 Open the Stripe billing portal <ExternalLink size={13} />
               </button>

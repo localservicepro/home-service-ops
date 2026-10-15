@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet";
-import { CalendarDays, CreditCard, BookOpen, Star, MessageSquare } from "lucide-react";
+import { CalendarDays, CreditCard, BookOpen, Star, MessageSquare, Monitor } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { GoogleCalendarCard } from "../components/GoogleCalendarCard";
 import { LeadConnectorCard } from "../components/LeadConnectorCard";
@@ -8,6 +8,7 @@ import { StripeCard } from "../components/StripeCard";
 import { PaymentProviderCard } from "../components/PaymentProviderCard";
 import { XeroCard } from "../components/XeroCard";
 import { GbpCard, ReviewRequestsCard } from "../components/GbpCard";
+import { isNativeApp } from "../helpers/nativeApp";
 import styles from "./settings.integrations.module.css";
 
 const SECTIONS = [
@@ -72,6 +73,12 @@ export default function IntegrationsPage() {
       </Helmet>
       <PageHeader back="/settings" title="Integrations" subtitle="Connect the tools you already use" />
       <div className={styles.wrap}>
+        {isNativeApp() && (
+          <p className={styles.nativeNote}>
+            <Monitor size={16} />
+            <span>Connecting a new app opens a sign-in window, so do that from a web browser at home.localservicepro.com.au. Everything you connect there works here too.</span>
+          </p>
+        )}
         {SECTIONS.map((s) => (
           <section key={s.id} id={s.id} className={styles.section} aria-labelledby={`${s.id}-h`}>
             <header className={styles.head}>

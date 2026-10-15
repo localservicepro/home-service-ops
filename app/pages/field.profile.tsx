@@ -15,6 +15,7 @@ import { Initials } from "../components/Initials";
 import { Chip } from "../components/Chip";
 import { Button } from "../components/Button";
 import { Skeleton } from "../components/Skeleton";
+import { DeleteAccountButton } from "../components/DeleteAccountButton";
 import styles from "./field.profile.module.css";
 
 const DUTIES: DutyStatus[] = ["Available", "On job", "Off today"];
@@ -85,6 +86,7 @@ export default function FieldProfilePage() {
         )}
 
         <Button variant="outline" size="lg" onClick={signOut}><LogOut size={16} /> Sign out</Button>
+        <DeleteAccountButton />
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { Switch } from "./Switch";
 import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
 import styles from "./XeroCard.module.css";
+import { openPopupWindow } from "../helpers/nativeApp";
 
 export const XERO_STATUS_KEY = ["xero", "status"];
 // OAuth popups finish on this app's own /done page, so only same-origin messages count.
@@ -58,11 +59,8 @@ export function XeroCard() {
   }, [connecting]);
 
   const connect = async () => {
-    const popup = window.open("", "xero-connect", "width=600,height=780");
-    if (!popup) {
-      toast.error("Your browser blocked the Xero window. Allow pop-ups for this site and try again.");
-      return;
-    }
+    const popup = openPopupWindow("xero-connect", "width=600,height=780", "Xero");
+    if (!popup) return;
     popupRef.current = popup;
     popup.document.body.innerHTML = `<p style="font-family:system-ui;padding:24px;color:#51637A">Opening Xero…</p>`;
     setConnecting(true);

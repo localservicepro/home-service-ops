@@ -13,6 +13,7 @@ import { Input } from "../components/Input";
 import { Button } from "../components/Button";
 import { Skeleton } from "../components/Skeleton";
 import { TeamCard } from "../components/TeamCard";
+import { DeleteAccountButton } from "../components/DeleteAccountButton";
 import { useAuth } from "../helpers/useAuth";
 import styles from "./settings.module.css";
 
@@ -168,6 +169,7 @@ export default function SettingsPage() {
                 </div>
 
                 <SignOutButton />
+                <DeleteAccountButton />
               </div>
             </div>
           </>

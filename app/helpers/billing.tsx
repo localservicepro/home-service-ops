@@ -407,6 +407,13 @@ export async function changePlan(businessId: number, plan: PlanKey) {
   };
 }
 
+/** Ends the subscription straight away with no further charges (used when the business is deleted). */
+export async function cancelSubscriptionNow(businessId: number) {
+  const b = await billingRow(businessId);
+  if (!b.stripeSubscriptionId || !b.subscriptionStatus || !ACTIVE_SUB.includes(b.subscriptionStatus)) return;
+  await stripeApi(`/subscriptions/${b.stripeSubscriptionId}`, { method: "DELETE" });
+}
+
 /** Cancel at the end of the paid period, or undo a pending cancellation. */
 export async function setCancelAtPeriodEnd(businessId: number, cancel: boolean) {
   const sub = await liveSub(businessId);

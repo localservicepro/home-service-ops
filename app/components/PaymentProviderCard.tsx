@@ -11,6 +11,7 @@ import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
 import { IntegrationToggle } from "./IntegrationToggle";
 import styles from "./PaymentProviderCard.module.css";
+import { openPopupWindow } from "../helpers/nativeApp";
 
 export const SQUARE_STATUS_KEY = ["square", "status"];
 export const GC_STATUS_KEY = ["gocardless", "status"];
@@ -102,11 +103,8 @@ export function PaymentProviderCard({ kind, className }: { kind: Kind; className
   }, [connecting]);
 
   const connect = async () => {
-    const popup = window.open("", `${kind}-connect`, "width=560,height=780");
-    if (!popup) {
-      toast.error(`Your browser blocked the ${c.title} window. Allow pop-ups for this site and try again.`);
-      return;
-    }
+    const popup = openPopupWindow(`${kind}-connect`, "width=560,height=780", c.title);
+    if (!popup) return;
     popupRef.current = popup;
     popup.document.body.innerHTML = `<p style="font-family:system-ui;padding:24px;color:#51637A">Opening ${c.title}…</p>`;
     setConnecting(true);

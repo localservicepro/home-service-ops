@@ -44,3 +44,34 @@ export async function copyRemoteFile(url: string, filenameNoExt: string, opts: {
     return null;
   }
 }
+
+/** Deletes every file under a folder (e.g. `job-photos/12/`), sub-folders included. Best effort. */
+export async function deleteFolder(prefix: string): Promise<number> {
+  const key = env("SUPABASE_SERVICE_ROLE_KEY");
+  if (!key) return 0;
+  const headers = { Authorization: `Bearer ${key}`, apikey: key, "Content-Type": "application/json" };
+  const files: string[] = [];
+  const walk = async (dir: string, depth: number) => {
+    for (let offset = 0; ; offset += 1000) {
+      const res = await fetch(`${STORAGE_URL}/object/list/${BUCKET}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ prefix: dir, limit: 1000, offset }),
+      });
+      if (!res.ok) return;
+      const items = (await res.json().catch(() => [])) as { name: string; id: string | null }[];
+      for (const it of items) {
+        const path = `${dir.replace(/\/$/, "")}/${it.name}`;
+        // Folders come back without an id.
+        if (it.id) files.push(path);
+        else if (depth < 4) await walk(path, depth + 1);
+      }
+      if (items.length < 1000) return;
+    }
+  };
+  await walk(prefix, 0);
+  for (let i = 0; i < files.length; i += 500) {
+    await fetch(`${STORAGE_URL}/object/${BUCKET}`, { method: "DELETE", headers, body: JSON.stringify({ prefixes: files.slice(i, i + 500) }) }).catch(() => {});
+  }
+  return files.length;
+}
