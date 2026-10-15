@@ -25,7 +25,7 @@ The Android app is a [Capacitor](https://capacitorjs.com) shell around the live 
 
   Email and password sign-in works as normal.
 - **Connecting integrations** (Google Calendar, LeadConnector, Stripe, Square, GoCardless, Xero, SMS Gateway) opens the provider's sign-in in an in-app browser tab. It starts at `/app-connect.html`, which sets a 15-minute cookie and only forwards to known sign-in sites. When the provider finishes on `/done`, Vercel sees the cookie and redirects to `au.com.localservicepro.home://done` (`vercel.json`). The app then closes the tab and the card updates. If that redirect doesn't run, the done page shows a **Back to Home Service Ops** button, and closing the tab also refreshes the card.
-- **Plan purchases are hidden.** Google Play doesn't allow buying a subscription through Stripe inside an app. The plan and usage are still shown.
+- **Plan purchases are hidden.** Google Play doesn't allow buying a subscription through Stripe inside an app. The plan and usage are still shown. For owners, **Manage plan on the web** (or **Choose a plan on the web**) opens Plan & billing on the website in a browser tab, already signed in. It uses a single-use, one-hour link from `/account/web_link`, opened at `/go/<token>`. The plan refreshes when they close the tab.
 - **Delete my account** is in Settings, and in Profile for crew; Google Play requires this. The public page `/delete-account` explains it for the Play listing.
 - **Offline:** the app shows a branded "You're offline" screen and reloads by itself when the connection returns.
 - **Push notifications** (Firebase Cloud Messaging; setup below). The app asks for permission after the first sign-in. Alerts:

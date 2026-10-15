@@ -17,7 +17,8 @@ import { Input } from "../components/Input";
 import { Skeleton } from "../components/Skeleton";
 import { BottomSheet } from "../components/BottomSheet";
 import styles from "./settings.billing.module.css";
-import { isNativeApp, openPopupWindow } from "../helpers/nativeApp";
+import { isNativeApp, openInBrowser, openPopupWindow } from "../helpers/nativeApp";
+import { postAccountWebLink } from "../endpoints/account/web_link_POST.schema";
 
 const fmtDate = (d: Date | null | undefined) =>
   d ? new Date(d).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "";
@@ -132,6 +133,19 @@ export default function BillingPage() {
   const busy = waiting || manageMut.isPending;
   // Google Play doesn't allow buying the subscription through Stripe inside the Android app.
   const native = isNativeApp();
+  // In the app: open Plan & billing on the website, already signed in; re-check when they come back.
+  const [openingWeb, setOpeningWeb] = useState(false);
+  const manageOnWeb = async () => {
+    setOpeningWeb(true);
+    try {
+      const { url } = await postAccountWebLink({ next: "/settings/billing" });
+      await openInBrowser(url, () => refresh.mutate());
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't open the website");
+    } finally {
+      setOpeningWeb(false);
+    }
+  };
 
   const heroTitle = !b
     ? ""
@@ -197,6 +211,13 @@ export default function BillingPage() {
                   {b.status === "past_due" && "Your last payment didn't go through. Update your card to keep access."}
                   {b.status === "expired" && "Your trial has ended. Everything is still here, but it's read-only until you choose a plan."}
                 </p>
+                {owner && native && b.status !== "comp" && (
+                  <div className={styles.heroActions}>
+                    <Button onClick={manageOnWeb} disabled={openingWeb} className={styles.heroBtn}>
+                      <ExternalLink size={16} /> {openingWeb ? "Opening…" : subscribed ? "Manage plan on the web" : "Choose a plan on the web"}
+                    </Button>
+                  </div>
+                )}
                 {owner && !native && (
                   <div className={styles.heroActions}>
                     {b.status === "past_due" && (
@@ -304,7 +325,9 @@ export default function BillingPage() {
 
             {/* ---------- plans ---------- */}
             {native && b.status !== "comp" && (
-              <p className={styles.muted}>Plans and payment details are managed in Home Service Ops on the web.</p>
+              <p className={styles.muted}>
+                Plans, cards and invoices are managed on the Home Service Ops website.{owner ? " The button above opens it, already signed in." : " Ask the business owner to change the plan."}
+              </p>
             )}
             {b.status !== "comp" && !native && (
               <div ref={plansRef} className={styles.plansWrap}>

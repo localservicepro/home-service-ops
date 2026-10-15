@@ -106,9 +106,15 @@ export function openPopupWindow(name: string, features: string, label: string, o
   return popup;
 }
 
-/** Opens a page in the system browser (Custom Tab) from inside the app. */
-export async function openInBrowser(url: string) {
+/** Opens a page in the system browser (Custom Tab) from inside the app; onClose runs when it's closed. */
+export async function openInBrowser(url: string, onClose?: () => void) {
   const { Browser } = await import("@capacitor/browser");
+  if (onClose) {
+    const l = await Browser.addListener("browserFinished", () => {
+      l.remove();
+      onClose();
+    });
+  }
   await Browser.open({ url, toolbarColor: "#08172B" });
 }
 
