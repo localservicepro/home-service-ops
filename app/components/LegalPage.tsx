@@ -49,6 +49,7 @@ export function LegalPage({ title, updated, intro, children }: { title: string; 
             <Link to="/">Home</Link>
             <Link to="/privacy">Privacy Policy</Link>
             <Link to="/terms">Terms of Service</Link>
+            <Link to="/download">Android app</Link>
             <a href="mailto:info@localservicepro.com.au">Contact</a>
           </nav>
           <small>© {new Date().getFullYear()} Local Service Pro. Made in Australia for home service businesses.</small>

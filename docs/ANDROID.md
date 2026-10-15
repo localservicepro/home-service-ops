@@ -40,6 +40,17 @@ The Android app is a [Capacitor](https://capacitorjs.com) shell around the live 
 
   Tapping an alert opens the right page. Each person turns alert types on or off under **Settings → Notifications** (crew: **Profile**), and **Send a test** checks their phone. Signing out stops alerts to that phone.
 
+## Website download link
+
+Every build also uploads the APK to the **android-app** GitHub release, replacing the previous one. The website links to it:
+
+- **`/download`** is the public "Get the Android app" page. It shows a Download button on Android phones and a QR code on computers; iPhone users get a note to add the site to their home screen instead.
+- **`/android.apk`** redirects to `https://github.com/localservicepro/home-service-ops/releases/download/android-app/home-service-ops.apk` (set in `vercel.json`).
+
+The page is linked from the landing page, the legal-page footers and **Settings** (web only). Signed-in people on an Android phone's browser also see a dismissible "Get the app" bar.
+
+Until the signing secrets are added, the APK is debug-signed with a different key on every build. Anyone who already installed an older copy must uninstall it before installing a newer one. The app loads the live site, so new installs are rarely needed.
+
 ## Build the APK and AAB
 
 The Android SDK can't be installed in Claude's sandbox, so GitHub builds the app. The workflow runs:

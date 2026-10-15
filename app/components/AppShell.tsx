@@ -1,4 +1,4 @@
-import { ReactNode, Suspense, lazy, useEffect } from "react";
+import { ReactNode, Suspense, lazy, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -15,6 +15,8 @@ import {
   LogOut,
   FileText,
   MessageSquare,
+  Smartphone,
+  X,
 } from "lucide-react";
 import { useAuth } from "../helpers/useAuth";
 import { useMe } from "../helpers/useMe";
@@ -28,6 +30,7 @@ import { saveReturnTo, peekReturnTo, clearReturnTo } from "../helpers/returnTo";
 import { enablePush, isNativeApp } from "../helpers/nativeApp";
 import { DeleteAccountButton } from "./DeleteAccountButton";
 import { useInboxThreads } from "../helpers/useInbox";
+import { isAndroidBrowser } from "../helpers/appDownload";
 
 // Only signed-out visitors see the marketing page; keep it out of the app's first download.
 const LandingPage = lazy(() => import("./LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -82,6 +85,41 @@ function BillingBanner({ billing: b }: { billing: BillingSummary }) {
       <span>{msg}</span>
       <b>{b.status === "trial" || b.status === "expired" ? "Choose a plan" : b.status === "past_due" ? "Fix billing" : "Upgrade"} →</b>
     </Link>
+  );
+}
+
+const GET_APP_DISMISSED = "hso-get-app-dismissed";
+
+// Android phone browsers (not the app itself): a one-line nudge to install the app.
+function GetAppBanner() {
+  const [show, setShow] = useState(() => {
+    if (!isAndroidBrowser() || isNativeApp()) return false;
+    try {
+      return !localStorage.getItem(GET_APP_DISMISSED);
+    } catch {
+      return true;
+    }
+  });
+  if (!show) return null;
+  const dismiss = () => {
+    try {
+      localStorage.setItem(GET_APP_DISMISSED, "1");
+    } catch {
+      /* private mode */
+    }
+    setShow(false);
+  };
+  return (
+    <div className={`${styles.banner} ${styles.bannerInfo}`}>
+      <Link to="/download" className={styles.getApp}>
+        <Smartphone size={15} />
+        <span>Get the Home Service Ops app for your phone</span>
+        <b>Install →</b>
+      </Link>
+      <button type="button" className={styles.bannerClose} onClick={dismiss} aria-label="Dismiss">
+        <X size={15} />
+      </button>
+    </div>
   );
 }
 
@@ -243,6 +281,7 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
             {opsFormat.initials(me.displayName || me.email)}
           </Link>
         </header>
+        <GetAppBanner />
         {!crew && <BillingBanner billing={me.billing} />}
         <main className={styles.main}>
           <div className={`${styles.content} ${width}`}>{children}</div>

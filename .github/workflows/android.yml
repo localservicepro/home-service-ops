@@ -11,6 +11,9 @@ name: Android app
 #   ANDROID_KEY_PASSWORD
 # Without them the APK is a debug build (fine for testing on a phone) and the AAB is unsigned.
 #
+# Every build also replaces home-service-ops.apk on the "android-app" GitHub release, which the
+# website's /download page links to (vercel.json: /android.apk).
+#
 # Push notifications: add GOOGLE_SERVICES_JSON (the whole google-services.json file from Firebase).
 
 on:
@@ -24,6 +27,10 @@ on:
     tags: ["android-v*"]
   pull_request:
     paths: ["android/**", "capacitor.config.ts", "native/**", ".github/workflows/android.yml"]
+
+# Publishing the APK to the "android-app" release needs to write releases.
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -113,3 +120,20 @@ jobs:
           name: home-service-ops-android-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}
           path: out/*
           if-no-files-found: error
+
+      - name: Publish APK for the website's download link
+        # Same-repo runs only (fork PRs can't write releases).
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp out/*.apk "$RUNNER_TEMP/home-service-ops.apk"
+          signed="${{ steps.key.outputs.signed }}"
+          notes="Home Service Ops ${{ steps.ver.outputs.name }} (build ${{ steps.ver.outputs.code }}), built $(date -u +'%d %b %Y %H:%M UTC') from ${GITHUB_SHA::7}."
+          if [ "$signed" != "true" ]; then notes="$notes Test build (debug-signed): uninstall an older copy before installing."; fi
+          if ! gh release view android-app >/dev/null 2>&1; then
+            gh release create android-app --title "Home Service Ops for Android" --notes "$notes" --target "$GITHUB_SHA" --latest=false
+          fi
+          gh release upload android-app "$RUNNER_TEMP/home-service-ops.apk" --clobber
+          gh release edit android-app --notes "$notes"
+          echo "APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/android-app/home-service-ops.apk" >> "$GITHUB_STEP_SUMMARY"

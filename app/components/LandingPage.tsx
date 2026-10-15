@@ -212,6 +212,7 @@ export function LandingPage() {
             <button onClick={go("crm")}>LeadConnector</button>
             <button onClick={go("pricing")}>Pricing</button>
             <button onClick={go("faq")}>FAQ</button>
+            <Link to="/download">Android app</Link>
             <Link to={LOGIN}>Log in</Link>
           </div>
         )}
@@ -240,6 +241,9 @@ export function LandingPage() {
                 See how it works
               </button>
             </div>
+            <Link to="/download" className={styles.appLink}>
+              <Smartphone size={16} /> Get the Android app
+            </Link>
             <ul className={styles.heroTicks}>
               <li>
                 <Check size={15} /> {TRIAL_DAYS}-day free trial
@@ -572,6 +576,7 @@ export function LandingPage() {
             <button onClick={go("crew")}>Crew app</button>
             <button onClick={go("crm")}>LeadConnector</button>
             <button onClick={go("pricing")}>Pricing</button>
+            <Link to="/download">Android app</Link>
             <Link to={LOGIN}>Log in</Link>
           </nav>
           <div className={styles.footerLegal}>

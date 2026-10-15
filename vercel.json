@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/android.apk",
+      "destination": "https://github.com/localservicepro/home-service-ops/releases/download/android-app/home-service-ops.apk",
+      "permanent": false
+    },
+    {
       "source": "/auth/app",
       "destination": "au.com.localservicepro.home://auth/callback",
       "permanent": false

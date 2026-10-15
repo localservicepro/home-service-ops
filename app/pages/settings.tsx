@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { ChevronRight, Leaf, CreditCard, Receipt, LogOut, Plug, Globe, HardHat } from "lucide-react";
+import { ChevronRight, Leaf, CreditCard, Receipt, LogOut, Plug, Globe, HardHat, Smartphone } from "lucide-react";
+import { isNativeApp } from "../helpers/nativeApp";
 import type { Settings } from "../endpoints/ops/snapshot_GET.schema";
 import { useOpsData } from "../helpers/useOpsData";
 import { useOpsMutation } from "../helpers/useOpsMutation";
@@ -162,6 +163,13 @@ export default function SettingsPage() {
                     <span className={styles.linkText}><b>Payment settings</b><small>Methods, card provider, bank details</small></span>
                     <ChevronRight size={16} className={styles.chev} />
                   </Link>
+                  {!isNativeApp() && (
+                    <Link to="/download" className={styles.linkRow}>
+                      <span className={styles.linkIcon}><Smartphone size={16} /></span>
+                      <span className={styles.linkText}><b>Get the Android app</b><small>Download for your phone, or send the link to your crew</small></span>
+                      <ChevronRight size={16} className={styles.chev} />
+                    </Link>
+                  )}
                   <Link to="/settings/billing" className={styles.linkRow}>
                     <span className={styles.linkIcon}><Receipt size={16} /></span>
                     <span className={styles.linkText}><b>Plan & billing</b><small>Subscription, limits and invoices</small></span>
