@@ -1,0 +1,87 @@
+.center {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  font-family: var(--font-family-base);
+  color: var(--muted-foreground);
+}
+.center h1 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--foreground);
+}
+.skel {
+  width: min(640px, 100%);
+  height: 420px;
+  border-radius: 20px;
+}
+.paid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--status-paid-bg);
+  color: var(--status-paid);
+  font-size: 14px;
+  font-weight: 700;
+}
+.bank {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--muted);
+  font-size: 13.5px;
+}
+.bank b {
+  margin-bottom: 4px;
+  color: var(--foreground);
+}
+.bank div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted-foreground);
+}
+.bank div span:last-child {
+  font-weight: 700;
+  color: var(--foreground);
+}
+.err {
+  margin: 0;
+  font-size: 13px;
+  color: var(--error);
+}
+.pending {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+.pending svg {
+  flex: none;
+  margin-top: 1px;
+}
+.pending div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pending b {
+  font-size: 14px;
+}
+.pending span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--navy-700);
+}

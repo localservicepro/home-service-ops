@@ -1,0 +1,42 @@
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: var(--muted);
+}
+.tab,
+.active {
+  border: 0;
+  border-radius: 9px;
+  padding: 9px 10px;
+  font: 700 13px var(--font-family-base);
+  cursor: pointer;
+}
+.tab {
+  background: transparent;
+  color: var(--muted-foreground);
+}
+.active {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-sm);
+}
+.note {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+.error {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--error) 10%, var(--card));
+  color: var(--error);
+  font-size: 13px;
+  line-height: 1.4;
+}

@@ -1,0 +1,84 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1.5px solid var(--muted);
+  border-radius: 14px;
+  background: var(--card);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-family-base);
+}
+.on {
+  border-color: var(--primary);
+  background: var(--secondary);
+}
+.who {
+  flex: 1;
+  min-width: 0;
+}
+.name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.meta {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  margin-top: 1px;
+}
+.radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.radioOn {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.none {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px dashed var(--faint);
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.pay {
+  margin-top: var(--spacing-4);
+  padding: 13px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+.payLbl {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.payRow {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+.payInput {
+  max-width: 110px;
+}

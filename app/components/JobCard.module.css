@@ -1,0 +1,96 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  animation: rise var(--animation-duration-slow) both;
+  transition: transform var(--animation-duration-fast), border-color var(--animation-duration-fast);
+}
+.card:hover {
+  border-color: #bcd3ea;
+}
+.card:active {
+  transform: scale(0.98);
+}
+.when {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 50px;
+  text-align: center;
+}
+.time {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--foreground);
+  white-space: nowrap;
+}
+.ampm {
+  font-size: 9.5px;
+  color: var(--muted-foreground);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+}
+.body {
+  flex: 1;
+  min-width: 0;
+}
+.service {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.price {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.unassigned {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--faint);
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
