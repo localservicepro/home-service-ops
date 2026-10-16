@@ -392,6 +392,7 @@ export interface Settings {
   businessId: number;
   cardProvider: Generated<string>;
   directDebit: Generated<boolean>;
+  messagePrefs: Generated<Json>;
   owner: Generated<Json>;
   reviewDelayMinutes: Generated<number>;
   reviewEnabledAt: Timestamp | null;

@@ -70,3 +70,23 @@
   display: grid;
   width: 100%;
 }
+.smsNote {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: -4px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--status-progress-bg);
+  color: #8a5a14;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.smsNote svg {
+  flex: none;
+  margin-top: 2px;
+}
+.smsNote a {
+  color: var(--primary);
+  font-weight: 700;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { MessageSquare, Check, Unlink, AlertTriangle, Send } from "lucide-react";
 import { getSmsStatus, type OutputType as SmsStatus } from "../endpoints/sms/status_GET.schema";
 import { postSmsAuthorize } from "../endpoints/sms/authorize_POST.schema";
@@ -17,7 +18,6 @@ import { Switch } from "./Switch";
 import { Skeleton } from "./Skeleton";
 import { ConfirmSheet } from "./ConfirmSheet";
 import { IntegrationToggle } from "./IntegrationToggle";
-import { ChannelPicker, type Channel } from "./ChannelPicker";
 import styles from "./SmsCard.module.css";
 import { openPopupWindow } from "../helpers/nativeApp";
 
@@ -166,8 +166,6 @@ function SmsSettings({ status, onSaved }: { status: SmsStatus; onSaved: () => vo
   const qc = useQueryClient();
   const wsQ = useQuery({ queryKey: ["sms", "workspaces"], queryFn: () => getSmsWorkspaces(), retry: false });
   const [workspaceId, setWorkspaceId] = useState<number | null>(status.workspaceId);
-  const [docsDefault, setDocsDefault] = useState<Channel>(status.prefs.docsDefault);
-  const [reviews, setReviews] = useState<Channel>(status.prefs.reviews);
   const [ownerAlerts, setOwnerAlerts] = useState(status.prefs.ownerAlerts);
   const [ownerPhone, setOwnerPhone] = useState(status.prefs.ownerPhone);
   const [testTo, setTestTo] = useState(status.prefs.ownerPhone);
@@ -181,8 +179,6 @@ function SmsSettings({ status, onSaved }: { status: SmsStatus; onSaved: () => vo
   const devices = useMemo(() => (wsQ.data?.devices ?? []).filter((d) => d.workspaceId === workspaceId), [wsQ.data, workspaceId]);
   const dirty =
     workspaceId !== status.workspaceId ||
-    docsDefault !== status.prefs.docsDefault ||
-    reviews !== status.prefs.reviews ||
     ownerAlerts !== status.prefs.ownerAlerts ||
     ownerPhone.trim() !== status.prefs.ownerPhone;
 
@@ -191,7 +187,7 @@ function SmsSettings({ status, onSaved }: { status: SmsStatus; onSaved: () => vo
       postSmsSettings({
         workspaceId,
         workspaceName: ws?.name ?? status.workspaceName,
-        prefs: { docsDefault, reviews, ownerAlerts, ownerPhone: ownerPhone.trim() },
+        prefs: { docsDefault: status.prefs.docsDefault, reviews: status.prefs.reviews, ownerAlerts, ownerPhone: ownerPhone.trim() },
       }),
     onSuccess: () => {
       toast.success("SMS settings saved");
@@ -239,14 +235,10 @@ function SmsSettings({ status, onSaved }: { status: SmsStatus; onSaved: () => vo
           )
         )}
 
-        <div className={styles.pref}>
-          <span><b>Quotes & invoices</b><small>How the Send screen starts. You can change it each time.</small></span>
-          <ChannelPicker value={docsDefault} onChange={setDocsDefault} label="Quotes and invoices" />
-        </div>
-        <div className={styles.pref}>
-          <span><b>Google review requests</b><small>Clients without that contact detail get the other.</small></span>
-          <ChannelPicker value={reviews} onChange={setReviews} label="Review requests" />
-        </div>
+        <p className={styles.prefLink}>
+          Choose whether quotes, invoices and review requests go by email, text or both in{" "}
+          <Link to="/settings">Settings → How clients hear from you</Link>.
+        </p>
       </div>
 
       <div className={styles.col}>

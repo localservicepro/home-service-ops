@@ -3,6 +3,7 @@ import { db } from "./db";
 import { PUBLIC_APP_URL, businessBrand, esc, layout, sendAppEmail } from "./mailer";
 import { API_URL } from "./serverEnv";
 import { sendSms, smsState } from "./sms";
+import { getMessagePrefs } from "./messagePrefs";
 
 // Server-only. Google Business Profile (via Places API) + post-job review request emails.
 // Requests are OFF unless the business turns them on in Settings.
@@ -156,12 +157,13 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
   };
   const gbp = await db.selectFrom("gbpConnection").select("placeId").where("businessId", "=", businessId).executeTakeFirst();
   if (!gbp) throw new Error("Connect your Google Business Profile in Settings first.");
-  // Route by the business's SMS preference; fall back to whichever contact detail the client has.
+  // Route by the business's choice in Settings; fall back to whichever contact detail the client has.
   const sms = await smsState(businessId);
+  const { prefs } = await getMessagePrefs(businessId);
   const phone = (job.phone || job.jobPhone || "").trim();
   const canEmail = !!job.email?.includes("@");
   const canSms = sms.ready && !!phone;
-  const pref = sms.ready ? sms.prefs.reviews : "email";
+  const pref = sms.ready ? prefs.reviews : "email";
   const wantEmail = canEmail && (pref !== "sms" || !canSms);
   const wantSms = canSms && (pref !== "email" || !canEmail);
   if (!job.clientId || (!wantEmail && !wantSms)) return skip(sms.ready ? "This client has no email or mobile number." : "This client has no email address.", "no_email");

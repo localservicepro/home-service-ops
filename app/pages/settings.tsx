@@ -16,6 +16,7 @@ import { Skeleton } from "../components/Skeleton";
 import { TeamCard } from "../components/TeamCard";
 import { DeleteAccountButton } from "../components/DeleteAccountButton";
 import { NotificationsCard } from "../components/NotificationsCard";
+import { MessagePrefsCard } from "../components/MessagePrefsCard";
 import { useAuth } from "../helpers/useAuth";
 import styles from "./settings.module.css";
 
@@ -176,6 +177,11 @@ export default function SettingsPage() {
                     <ChevronRight size={16} className={styles.chev} />
                   </Link>
                 </section>
+
+                <div className={styles.teamWrap}>
+                  <SectionLabel>How clients hear from you</SectionLabel>
+                  <MessagePrefsCard />
+                </div>
 
                 <div className={styles.teamWrap}>
                   <SectionLabel>Notifications</SectionLabel>

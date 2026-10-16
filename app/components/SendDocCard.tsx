@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Eye, ExternalLink, MessageSquare } from "lucide-react";
+import { Mail, Eye, ExternalLink, MessageSquare, Info } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { getSmsStatus } from "../endpoints/sms/status_GET.schema";
-import { SMS_STATUS_KEY } from "./SmsCard";
+import { getMessageSettings } from "../endpoints/settings/messages_GET.schema";
+import { MESSAGE_SETTINGS_KEY } from "./MessagePrefsCard";
 import { ChannelPicker, type Channel } from "./ChannelPicker";
 import { postQuotesSend } from "../endpoints/quotes/send_POST.schema";
 import { postJobsSendInvoice } from "../endpoints/jobs/send_invoice_POST.schema";
@@ -47,17 +47,17 @@ export function SendDocCard({
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [channel, setChannel] = useState<Channel>("email");
-  const sms = useQuery({ queryKey: SMS_STATUS_KEY, queryFn: () => getSmsStatus(), staleTime: 60_000 });
-  const smsReady = !!sms.data?.ready;
+  const settings = useQuery({ queryKey: MESSAGE_SETTINGS_KEY, queryFn: () => getMessageSettings(), staleTime: 60_000 });
+  const smsReady = !!settings.data?.smsReady;
   useEffect(() => {
     if (open) {
       const lastEmail = sentTo?.includes("@") ? sentTo.split(" and ")[0] : "";
       setTo(lastEmail || defaultEmail || "");
       setPhone(defaultPhone || "");
       setMessage("");
-      const pref = smsReady ? (sms.data?.prefs.docsDefault ?? "email") : "email";
-      // Start on what the customer can actually receive.
-      setChannel(pref === "both" && !defaultEmail ? "sms" : pref === "both" && !defaultPhone ? "email" : pref);
+      // Start on the business's choice in Settings, narrowed to what the customer can receive.
+      const pref = settings.data?.prefs[kind === "quote" ? "quotes" : "invoices"] ?? "email";
+      setChannel(!smsReady ? pref : pref === "both" && !defaultEmail ? "sms" : pref === "both" && !defaultPhone ? "email" : pref);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -96,7 +96,7 @@ export function SendDocCard({
         </div>
       </div>
       <div className={styles.actions}>
-        <Button size="sm" variant={sentAt ? "outline" : "primary"} onClick={() => setOpen(true)}>{smsReady ? <MessageSquare size={14} /> : <Mail size={14} />} {sentAt ? "Send again" : `${smsReady ? "Send" : "Email"} ${noun}`}</Button>
+        <Button size="sm" variant={sentAt ? "outline" : "primary"} onClick={() => setOpen(true)}>{smsReady ? <MessageSquare size={14} /> : <Mail size={14} />} {sentAt ? "Send again" : `Send ${noun}`}</Button>
         <Button asChild size="sm" variant="ghost"><Link to={`/${kind === "quote" ? "q" : "i"}/${token}`}><ExternalLink size={14} /> Customer view</Link></Button>
       </div>
       <BottomSheet
@@ -119,7 +119,15 @@ export function SendDocCard({
         }
       >
         <div className={styles.form}>
-          {smsReady && <ChannelPicker value={ch} onChange={setChannel} label="Send by" className={styles.picker} />}
+          <ChannelPicker value={channel} onChange={setChannel} label="Send by" className={styles.picker} />
+          {!smsReady && channel !== "email" && (
+            <p className={styles.smsNote}>
+              <Info size={14} />
+              <span>
+                SMS Gateway isn't connected yet, so this goes by email. <Link to="/settings/integrations#messaging">Connect SMS Gateway</Link>
+              </span>
+            </p>
+          )}
           {ch !== "sms" && (
             <label className={styles.field}><span>Customer email</span><Input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="customer@email.com" /></label>
           )}
