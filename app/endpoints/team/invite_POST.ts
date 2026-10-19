@@ -4,6 +4,7 @@ import { db } from "../../helpers/db";
 import { ForbiddenError, errorResponse, requireMember } from "../../helpers/tenant";
 import { assertSeat } from "../../helpers/billing";
 import { esc, isValidOrigin, layout, linkBase, sendAppEmail } from "../../helpers/mailer";
+import { sendSms, smsState } from "../../helpers/sms";
 import { schema, OutputType } from "./invite_POST.schema";
 
 export async function handle(request: Request) {
@@ -36,10 +37,32 @@ export async function handle(request: Request) {
       .returning(["id", "token"])
       .executeTakeFirstOrThrow();
 
-    // Email the link when we have an address (they can also be sent it by text).
-    if (input.email && input.origin && isValidOrigin(input.origin)) {
-      const url = `${linkBase(input.origin)}/join/${row.token}`;
-      const who = input.role === "crew" ? "the crew app" : "the office app";
+    // Send the link by text and/or email (it can also be copied or shared from the app).
+    const origin = input.origin && isValidOrigin(input.origin) ? input.origin : null;
+    const url = origin ? `${linkBase(origin)}/join/${row.token}` : null;
+    const who = input.role === "crew" ? "the crew app" : "the office app";
+    let textedTo: string | null = null;
+    let smsError: string | null = null;
+    const sms = await smsState(ctx.businessId);
+    const wantSms = input.channel !== "email" && !!input.phone && sms.ready;
+    // Without SMS Gateway a text-only invite goes by email instead (when there's an address).
+    const wantEmail = !!input.email && (input.channel !== "sms" || !sms.ready || !input.phone);
+    if (wantSms && url) {
+      const staff = input.staffId ? await db.selectFrom("staff").select("name").where("id", "=", input.staffId).executeTakeFirst() : undefined;
+      const first = staff?.name.split(" ")[0];
+      const r = await sendSms(ctx.businessId, {
+        to: input.phone!,
+        kind: "invite",
+        message: `Hi${first ? ` ${first}` : ""}, ${ctx.user.displayName} invited you to ${ctx.businessName} on Home Service Ops (${who}). Create your login here: ${url} (works once, expires in 14 days)`,
+      });
+      if (r.ok) textedTo = r.to;
+      else smsError = r.error;
+      if (r.ok && input.staffId) {
+        await db.updateTable("staff").set({ phone: input.phone! }).where("id", "=", input.staffId).where("phone", "=", "").execute();
+      }
+    }
+    let emailedTo: string | null = null;
+    if (wantEmail && url && input.email) {
       await sendAppEmail({
         to: input.email,
         fromName: ctx.businessName,
@@ -52,9 +75,13 @@ export async function handle(request: Request) {
           cta: { label: "Create my login", url },
         }),
         text: `${ctx.user.displayName} invited you to ${ctx.businessName}. Create your login: ${url}`,
-      }).catch((e) => console.error("Invite email failed", e instanceof Error ? e.message : e));
+      })
+        .then(() => {
+          emailedTo = input.email!;
+        })
+        .catch((e) => console.error("Invite email failed", e instanceof Error ? e.message : e));
     }
-    return new Response(superjson.stringify(row satisfies OutputType));
+    return new Response(superjson.stringify({ ...row, emailedTo, textedTo, smsError } satisfies OutputType));
   } catch (error) {
     return errorResponse(error);
   }
