@@ -17,6 +17,7 @@ import { TeamCard } from "../components/TeamCard";
 import { DeleteAccountButton } from "../components/DeleteAccountButton";
 import { NotificationsCard } from "../components/NotificationsCard";
 import { MessagePrefsCard } from "../components/MessagePrefsCard";
+import { JobRemindersCard } from "../components/JobRemindersCard";
 import { useAuth } from "../helpers/useAuth";
 import styles from "./settings.module.css";
 
@@ -181,6 +182,11 @@ export default function SettingsPage() {
                 <div className={styles.teamWrap}>
                   <SectionLabel>How clients hear from you</SectionLabel>
                   <MessagePrefsCard />
+                </div>
+
+                <div className={styles.teamWrap}>
+                  <SectionLabel>Job reminders</SectionLabel>
+                  <JobRemindersCard />
                 </div>
 
                 <div className={styles.teamWrap}>

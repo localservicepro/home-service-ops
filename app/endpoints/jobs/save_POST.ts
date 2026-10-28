@@ -88,6 +88,12 @@ export async function handle(request: Request) {
       }
 
       if (input.status && input.status !== existing?.status) values.statusChangedAt = new Date();
+      // A new date or time means a new reminder (the old one may already have gone).
+      const moved =
+        existing &&
+        ((input.scheduledDate !== undefined && input.scheduledDate !== prevDate) ||
+          (input.scheduledTime !== undefined && input.scheduledTime !== existing.scheduledTime));
+      if (moved) Object.assign(values, { reminderStatus: null, reminderSentAt: null, reminderSentTo: null });
 
       // Link to (or create) the client record for new jobs / changed customers.
       const customer = input.customer ?? existing?.customer;

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FileText, Receipt, Star, Info } from "lucide-react";
+import { FileText, Receipt, Star, Info, BellRing } from "lucide-react";
 import { getMessageSettings } from "../endpoints/settings/messages_GET.schema";
 import { postMessageSettings } from "../endpoints/settings/messages_POST.schema";
 import type { MessageKind, MessagePrefs } from "../helpers/messagePrefsShared";
@@ -16,6 +16,7 @@ const ROWS: { k: MessageKind; label: string; hint: string; Icon: typeof FileText
   { k: "quotes", label: "Quotes", hint: "With a link to view and accept", Icon: FileText },
   { k: "invoices", label: "Invoices & receipts", hint: "With a link to view and pay", Icon: Receipt },
   { k: "reviews", label: "Google review requests", hint: "Sent automatically after a job", Icon: Star },
+  { k: "reminders", label: "Job reminders", hint: "Before a scheduled job (turn on below)", Icon: BellRing },
 ];
 
 // Settings: how clients get quotes, invoices and review requests (Email / SMS / Both).

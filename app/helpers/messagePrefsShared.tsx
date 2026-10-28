@@ -1,11 +1,11 @@
 // Shared by the browser and the api: how a business sends each kind of client message.
 
 export type Channel = "email" | "sms" | "both";
-export type MessageKind = "quotes" | "invoices" | "reviews";
+export type MessageKind = "quotes" | "invoices" | "reviews" | "reminders";
 export type MessagePrefs = Record<MessageKind, Channel>;
 
-export const MESSAGE_KINDS: MessageKind[] = ["quotes", "invoices", "reviews"];
-export const DEFAULT_MESSAGE_PREFS: MessagePrefs = { quotes: "email", invoices: "email", reviews: "email" };
+export const MESSAGE_KINDS: MessageKind[] = ["quotes", "invoices", "reviews", "reminders"];
+export const DEFAULT_MESSAGE_PREFS: MessagePrefs = { quotes: "email", invoices: "email", reviews: "email", reminders: "email" };
 
 const isChannel = (x: unknown): x is Channel => x === "email" || x === "sms" || x === "both";
 
@@ -20,6 +20,7 @@ export function readMessagePrefs(raw: unknown, legacy?: { docsDefault?: unknown;
     quotes: pick("quotes", legacy?.docsDefault),
     invoices: pick("invoices", legacy?.docsDefault),
     reviews: pick("reviews", legacy?.reviews),
+    reminders: pick("reminders", undefined),
   };
 }
 

@@ -17,6 +17,9 @@ export const schema = z.object({
   reviewTrigger: z.enum(["done", "paid"]).optional(),
   reviewDelayMinutes: z.number().int().min(0).max(10080).optional(),
   reviewMessage: z.string().trim().max(600).nullable().optional(),
+  remindersEnabled: z.boolean().optional(),
+  reminderHours: z.union([z.literal(2), z.literal(24), z.literal(48)]).optional(),
+  reminderMessage: z.string().trim().max(300).nullable().optional(),
 });
 export type InputType = z.infer<typeof schema>;
 export type OutputType = { ok: true };

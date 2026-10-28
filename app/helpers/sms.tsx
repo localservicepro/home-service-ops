@@ -186,7 +186,7 @@ export async function listDevices(businessId: number): Promise<Device[]> {
 
 // ---------- send ----------
 
-export type SmsKind = "quote" | "invoice" | "review" | "owner_alert" | "invite" | "test" | "reply";
+export type SmsKind = "quote" | "invoice" | "review" | "owner_alert" | "invite" | "test" | "reply" | "reminder";
 export type SmsResult = { ok: true; to: string; messageId: string | null } | { ok: false; error: string };
 
 /** Sends one text from the business's chosen workspace and logs it. Never throws. */

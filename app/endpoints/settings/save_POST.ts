@@ -14,6 +14,7 @@ export async function handle(request: Request) {
       if (!cur?.reviewRequestsEnabled) patch.reviewEnabledAt = new Date();
     }
     if (patch.reviewMessage === "") patch.reviewMessage = null;
+    if (patch.reminderMessage === "") patch.reminderMessage = null;
     await db
       .insertInto("settings")
       .values({ businessId: ctx.businessId, ...patch })

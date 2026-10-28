@@ -3,7 +3,7 @@ import superjson from "superjson";
 import { apiFetch } from "../../helpers/apiFetch";
 
 const channel = z.enum(["email", "sms", "both"]);
-export const schema = z.object({ quotes: channel, invoices: channel, reviews: channel });
+export const schema = z.object({ quotes: channel, invoices: channel, reviews: channel, reminders: channel.default("email") });
 export type InputType = z.infer<typeof schema>;
 export type OutputType = { ok: true };
 

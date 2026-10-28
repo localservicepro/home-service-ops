@@ -199,6 +199,9 @@ export interface Jobs {
   requestEmail: string | null;
   reviewRequestedAt: Timestamp | null;
   reviewStatus: string | null;
+  reminderSentAt: Timestamp | null;
+  reminderSentTo: string | null;
+  reminderStatus: string | null;
   scheduledDate: Timestamp | null;
   scheduledTime: Generated<string>;
   service: Generated<string>;
@@ -394,6 +397,9 @@ export interface Settings {
   directDebit: Generated<boolean>;
   messagePrefs: Generated<Json>;
   owner: Generated<Json>;
+  reminderHours: Generated<number>;
+  reminderMessage: string | null;
+  remindersEnabled: Generated<boolean>;
   reviewDelayMinutes: Generated<number>;
   reviewEnabledAt: Timestamp | null;
   reviewMessage: string | null;
