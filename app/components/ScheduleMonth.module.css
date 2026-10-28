@@ -1,0 +1,162 @@
+.wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px 18px 14px;
+  box-shadow: var(--shadow);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.head h2 {
+  margin: 0;
+  font: 800 20px var(--font-family-display);
+  color: var(--navy-900);
+  letter-spacing: -0.01em;
+}
+.nav {
+  display: flex;
+  gap: 6px;
+}
+.nav button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--navy-700);
+  cursor: pointer;
+}
+.nav button:hover {
+  background: var(--muted);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.dow {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.cell {
+  min-height: 118px;
+  padding: 7px 7px 8px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  min-width: 0;
+  container-type: inline-size;
+}
+.cell:hover {
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.weekend {
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+.out {
+  background: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.out .date {
+  color: color-mix(in srgb, var(--muted-foreground) 60%, transparent);
+}
+.selected {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+.cellTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.date {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--navy-900);
+}
+.today .date {
+  background: var(--signal-gradient, var(--primary));
+  color: #fff;
+  box-shadow: var(--shadow-glow);
+}
+.count {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--muted-foreground);
+}
+.chips {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 6px 3px 5px;
+  border: 0;
+  border-left: 3px solid var(--c);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--c) 13%, var(--card));
+  color: var(--navy-900);
+  font: 600 11.5px var(--font-family-base);
+  text-align: left;
+  cursor: pointer;
+}
+.chip:hover {
+  background: color-mix(in srgb, var(--c) 24%, var(--card));
+}
+.chipDone {
+  opacity: 0.6;
+}
+.chipTime {
+  flex: none;
+  font: 600 10.5px var(--font-family-monospace);
+  color: color-mix(in srgb, var(--c) 70%, var(--navy-900));
+}
+.chipName {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.more {
+  padding-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Narrow day cells: the service name is worth more than the time. */
+@container (max-width: 110px) {
+  .chipTime {
+    display: none;
+  }
+}

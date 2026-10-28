@@ -1,0 +1,10 @@
+.loading {
+  padding: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.skel {
+  height: 130px;
+  border-radius: 18px;
+}

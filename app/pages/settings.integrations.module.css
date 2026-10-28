@@ -1,0 +1,96 @@
+.wrap {
+  padding: var(--spacing-3) var(--spacing-5, 20px) var(--spacing-8);
+}
+.section {
+  scroll-margin-top: 16px;
+}
+/* Providers without keys hide their cards; hide the category too when nothing is left. */
+.section:has(> .cards:empty) {
+  display: none;
+}
+.section + .section {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--navy-700);
+}
+.head h2 {
+  margin: 0;
+  font: 800 15px/1.25 var(--font-family-heading, var(--font-family-base));
+  color: var(--navy-900);
+}
+.head p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+/* Cards keep their own height; the grid adds columns as the page widens. */
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.cards > * {
+  min-width: 0;
+  container-type: inline-size;
+}
+/* An open card gets the whole row, so its settings have room. */
+.cards > [data-open] {
+  grid-column: 1 / -1;
+}
+.cards > *:empty {
+  display: none;
+}
+@media (min-width: 768px) {
+  .wrap {
+    padding: 0 0 var(--spacing-8);
+  }
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+/* Desktop: category header in a left column, its cards beside it. */
+@media (min-width: 1100px) {
+  .section {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 28px;
+  }
+  .section + .section {
+    margin-top: 28px;
+    padding-top: 28px;
+  }
+  .head {
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    position: sticky;
+    top: 16px;
+    align-self: start;
+  }
+  .head h2 {
+    font-size: 16px;
+  }
+  .cards {
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 14px;
+  }
+}
