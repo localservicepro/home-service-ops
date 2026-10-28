@@ -11,12 +11,15 @@ let cachedKey: { value: string | null; at: number } | null = null;
 async function cronKey(): Promise<string | null> {
   const fromEnv = env("CRON_KEY");
   if (fromEnv) return fromEnv;
-  if (cachedKey && Date.now() - cachedKey.at < 10 * 60_000) return cachedKey.value;
+  // A found key is kept for 10 minutes; a miss only briefly, so a hiccup doesn't lock the cron out.
+  if (cachedKey && Date.now() - cachedKey.at < (cachedKey.value ? 10 * 60_000 : 30_000)) return cachedKey.value;
   let value: string | null = null;
   try {
-    const r = await sql<{ decrypted_secret: string }>`select decrypted_secret from vault.decrypted_secrets where name = 'hso_cron_key' limit 1`.execute(db);
-    value = r.rows[0]?.decrypted_secret ?? null;
-  } catch {
+    // Aliased to a single word: the db helper camelCases result columns (decrypted_secret → decryptedSecret).
+    const r = await sql<{ key: string }>`select decrypted_secret as "key" from vault.decrypted_secrets where name = 'hso_cron_key' limit 1`.execute(db);
+    value = r.rows[0]?.key?.trim() || null;
+  } catch (e) {
+    console.error("cron key lookup failed", e instanceof Error ? e.message : e);
     value = null;
   }
   cachedKey = { value, at: Date.now() };
