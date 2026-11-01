@@ -162,12 +162,18 @@ export async function loadDemo() {
         })
         .execute();
 
-      // A year of monthly subscription payments (after a 14-day trial).
+      // Monthly subscription payments on the same day each month, starting after a 14-day trial.
       if (subscribed) {
         const end = cancelledAt?.getTime() ?? now;
-        let n = 0;
-        for (let t = created.getTime() + 14 * DAY; t <= end; t += 30 * DAY, n++) {
-          const last = t + 30 * DAY > end;
+        const first = new Date(created.getTime() + 14 * DAY);
+        const charges: number[] = [];
+        for (let m = 0; ; m++) {
+          const t = new Date(first.getFullYear(), first.getMonth() + m, Math.min(first.getDate(), 28), 9 + (i % 8), 15).getTime();
+          if (t > end) break;
+          charges.push(t);
+        }
+        for (const [n, t] of charges.entries()) {
+          const last = n === charges.length - 1;
           const failedNow = d.kind === "past_due" && last;
           const retried = !failedNow && n === 2 && i % 4 === 1; // one failed attempt, paid three days later
           if (retried) {

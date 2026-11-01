@@ -137,19 +137,20 @@ export async function listCustomers(): Promise<AdminCustomer[]> {
 
 const HAS_ACCESS: CustomerAccess[] = ["paying", "past_due", "trial", "included", "free"];
 
+// Day, week and month boundaries in Brisbane time (UTC+10, no daylight saving), where the
+// business and its customers are, rather than the server's UTC.
+const TZ = 10 * 3_600_000;
 function startOfDay(t: number) {
-  const d = new Date(t);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
+  return Math.floor((t + TZ) / DAY) * DAY - TZ;
 }
 function startOfWeek(t: number) {
-  const d = new Date(startOfDay(t));
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return d.getTime();
+  const d = startOfDay(t);
+  const dow = new Date(d + TZ).getUTCDay(); // 0 = Sunday
+  return d - ((dow + 6) % 7) * DAY;
 }
 function startOfMonth(t: number, back = 0) {
-  const d = new Date(t);
-  return new Date(d.getFullYear(), d.getMonth() - back, 1).getTime();
+  const d = new Date(t + TZ);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - back, 1) - TZ;
 }
 
 /** Buckets dates into a series: daily (n days), weekly (n weeks) or monthly (n months), oldest first. */
