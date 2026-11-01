@@ -103,6 +103,28 @@ The app pushes account, payment and support-ticket changes to Sales Brain (`POST
 - `account.upserted` goes out on sign-up, plan change, every status change, profile changes, and once a day for usage (from the 15-minute `/cron/tick`). `payment.recorded` comes from Stripe `invoice.paid`, `invoice.payment_failed` and `charge.refunded`. `ticket.upserted` comes from Settings → Help & support and the staff replies in `/admin`.
 - Add `charge.refunded` to the Stripe billing webhook's events so refunds reach Sales Brain.
 
+**Free access from Sales Brain (Sales Brain → this app).** When a customer buys a Local Service Pro website or marketing plan, Sales Brain can give them the app for free, creating their account if they don't have one. Sales Brain sends `POST https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/salesbrain/accounts`, signed exactly like our outgoing calls: same `LSP_APP_SHARED_SECRET`, `x-lsp-timestamp` and `x-lsp-signature: sha256=<hex HMAC-SHA256 of "<timestamp>.<raw body>">`, within 5 minutes.
+
+```json
+{
+  "action": "grant",
+  "external_id": "sb_customer_123",
+  "email": "owner@bobsplumbing.com.au",
+  "business_name": "Bob's Plumbing",
+  "owner_name": "Bob Smith",
+  "phone": "0400 000 000",
+  "address": "1 Main St, Brisbane QLD 4000",
+  "website": "https://bobsplumbing.com.au",
+  "abn": "12 345 678 901",
+  "note": "Included with your Local Service Pro website plan",
+  "send_email": true
+}
+```
+
+- `grant` needs `external_id`, `email` and `business_name`. It finds the account by `external_id`, then `account_id` (if sent), then the owner's email. If there's none, it creates the login and business and emails a welcome with a link to choose a password. It never overwrites details the customer already entered. If they were paying, their subscription is set not to renew. Repeating a grant is safe.
+- `revoke` needs only `external_id` (or `account_id`). It turns free access off and leaves `grace_days` (default 14, 0 to 90) of full access to choose a plan, then emails the owner. It only removes access that Sales Brain gave; staff-given access returns 409.
+- Responses: `201`/`200` `{"ok":true,"status":"created|granted|unchanged|revoked","account_id":"42","email":"…","login":"new|existing","email_sent":true}`. `400` bad body, `401` bad signature or timestamp, `404` no matching account (revoke), `409` the email belongs to a crew member of another business or is linked to a different Sales Brain customer, `503` secret not set. Every change also sends `account.upserted` back (status `active`, plan `Team (complimentary)`, `mrr_cents` 0).
+
 **Test the connection.** Sign in as a staff user (`users.role = 'admin'`) and open `/admin` → Sales Brain → **Test Sales Brain connection**. It sends a signed GET with an empty body and expects `200 {"ok":true}`. The same tab shows the queue, events that were rejected or held, and **Resend held & rejected** once the cause is fixed.
 
 **Backfill (run once, after the secret is set).** `/admin` → Sales Brain → **Run backfill**, or from SQL:

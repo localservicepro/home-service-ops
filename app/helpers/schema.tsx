@@ -67,6 +67,8 @@ export interface Businesses {
   cancelledAt: Timestamp | null;
   cancelReason: string | null;
   comp: Generated<boolean>;
+  compNote: string | null;
+  compSource: string | null;
   createdAt: Generated<Timestamp>;
   currentPeriodEnd: Timestamp | null;
   id: Generated<number>;
@@ -75,6 +77,7 @@ export interface Businesses {
   name: string;
   onboardedAt: Timestamp | null;
   plan: Generated<string>;
+  sbExternalId: string | null;
   sbFingerprint: string | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;

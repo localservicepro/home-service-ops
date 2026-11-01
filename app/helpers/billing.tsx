@@ -93,6 +93,7 @@ export async function getBilling(businessId: number): Promise<BillingSummary> {
     officeUsed: seats.filter((s) => s.role !== "crew").length,
     crewUsed: seats.filter((s) => s.role === "crew").length,
     hasCustomer: !!b.stripeCustomerId,
+    compNote: b.comp ? b.compNote : null,
   };
 }
 
