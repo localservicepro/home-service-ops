@@ -28,7 +28,7 @@ export async function handle(request: Request) {
       console.error("[auth/session] couldn't link user", user.id, e instanceof Error ? e.message : e);
     }
     // Include the business/role summary so the app can render without a second round trip.
-    const me = await requireMember(request, ANY_MEMBER)
+    const me = await requireMember(request, ANY_MEMBER, { allowSuspended: true })
       .then(loadMe)
       .catch(() => undefined);
     return new Response(superjson.stringify({ user: user satisfies User, me }), { headers: { "Content-Type": "application/json" } });

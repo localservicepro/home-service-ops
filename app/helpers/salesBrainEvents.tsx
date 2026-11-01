@@ -46,6 +46,7 @@ export type AccountSource = {
   compSource?: string | null; // "salesbrain" = the free plan included with Sales Brain
   compEndsAt?: Date | null; // free access stops at this time
   salesBrainCustomerId?: string | null;
+  suspendedAt?: Date | null; // staff suspended the account: nobody can use the app
   trialEndsAt: Date | null;
   subscriptionStatus: string | null; // Stripe: trialing | active | past_due | unpaid | paused | canceled | incomplete…
   cancelAtPeriodEnd: boolean;
@@ -85,8 +86,12 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
   let cancelledAt: string | null = null;
   let cancelReason: string | null = src.cancelReason?.trim() || null;
 
+  const suspended = !!src.suspendedAt;
   const ended = !!src.salesBrainCustomerId && !!src.compEndsAt && new Date(src.compEndsAt).getTime() <= now.getTime();
-  if (compActive(src, now) && src.compSource === "salesbrain") {
+  if (suspended) {
+    status = "paused";
+    plan = subscribed ? PLANS[subscribed].name : compActive(src, now) && src.compSource === "salesbrain" ? INCLUDED_PLAN_NAME : "Suspended";
+  } else if (compActive(src, now) && src.compSource === "salesbrain") {
     status = "active";
     plan = INCLUDED_PLAN_NAME;
     cancelReason = null;

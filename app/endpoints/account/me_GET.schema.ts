@@ -19,6 +19,8 @@ export type OutputType = {
   trade: string;
   /** Local Service Pro staff: can open /admin. */
   platformAdmin: boolean;
+  /** Suspended by Local Service Pro staff: the app shows a notice instead of the business. */
+  suspended: { at: Date; reason: string | null } | null;
 };
 
 export const getAccountMe = async (init?: RequestInit): Promise<OutputType> => {

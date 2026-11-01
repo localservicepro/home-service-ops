@@ -6,7 +6,7 @@ import { schema, OutputType } from "./reply_POST.schema";
 
 export async function handle(request: Request) {
   try {
-    const ctx = await requireMember(request, undefined, { allowExpired: true });
+    const ctx = await requireMember(request, undefined, { allowExpired: true, allowSuspended: true });
     const input = schema.parse(superjson.parse(await request.text()));
     await addMessage({
       ticketId: input.ticketId,

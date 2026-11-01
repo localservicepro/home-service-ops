@@ -34,21 +34,25 @@ export const ANY_MEMBER: MemberRole[] = ["owner", "admin", "crew"];
 export async function requireMember(
   request: Request,
   roles: MemberRole[] = OFFICE,
-  opts: { allowExpired?: boolean } = {},
+  opts: { allowExpired?: boolean; allowSuspended?: boolean } = {},
 ): Promise<MemberCtx> {
   const { user } = await getServerUserSession(request);
   const m = await db
     .selectFrom("memberships")
     .innerJoin("businesses", "businesses.id", "memberships.businessId")
-    .select(["memberships.businessId", "memberships.role", "memberships.staffId", "businesses.name as businessName"])
+    .select(["memberships.businessId", "memberships.role", "memberships.staffId", "businesses.name as businessName", "businesses.suspendedAt"])
     .where("memberships.userId", "=", user.id)
     .executeTakeFirst();
   if (!m) throw new ForbiddenError("Your login isn't linked to a business yet.");
   if (!roles.includes(m.role)) throw new ForbiddenError();
+  // Suspended by Local Service Pro staff: only the account summary and support stay open.
+  if (m.suspendedAt && !opts.allowSuspended) throw new ForbiddenError(SUSPENDED_MESSAGE);
   touchActive(m.businessId);
   if (request.method !== "GET" && !opts.allowExpired) await assertNotReadOnly(m.businessId);
   return { user, businessId: m.businessId, businessName: m.businessName, role: m.role, staffId: m.staffId };
 }
+
+export const SUSPENDED_MESSAGE = "This account has been suspended by Local Service Pro. Message support or email support@localservicepro.com.au.";
 
 export const isOffice = (ctx: MemberCtx) => ctx.role === "owner" || ctx.role === "admin";
 

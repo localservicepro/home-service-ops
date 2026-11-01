@@ -47,6 +47,13 @@ export const brisbaneDate = (d = new Date()) => new Intl.DateTimeFormat("en-CA",
 
 export async function enqueue(exec: Exec, events: { id?: string; type: SbEventType; occurredAt?: Date; data: Record<string, unknown> }[]) {
   if (!events.length) return;
+  // Demo customers (Admin → Demo data) never reach Sales Brain.
+  const ids = [...new Set(events.map((e) => Number(e.data.account_id)).filter((n) => Number.isInteger(n) && n > 0))];
+  if (ids.length) {
+    const demo = new Set((await exec.selectFrom("businesses").select("id").where("id", "in", ids).where("isDemo", "=", true).execute()).map((b) => String(b.id)));
+    if (demo.size) events = events.filter((e) => !demo.has(String(e.data.account_id)));
+    if (!events.length) return;
+  }
   const rows = events.map((e) => {
     const event: SbEvent = { id: e.id ?? newEventId(), type: e.type, occurred_at: (e.occurredAt ?? new Date()).toISOString(), data: e.data };
     return { id: event.id, type: event.type, payload: event as unknown as Json };
@@ -95,6 +102,7 @@ async function loadAccount(exec: Exec, businessId: number): Promise<(AccountSour
     compSource: b.compSource,
     compEndsAt: b.compEndsAt,
     salesBrainCustomerId: b.salesBrainCustomerId,
+    suspendedAt: b.suspendedAt,
     trialEndsAt: b.trialEndsAt,
     subscriptionStatus: b.subscriptionStatus,
     cancelAtPeriodEnd: b.cancelAtPeriodEnd,
@@ -173,13 +181,33 @@ type StripeCharge = { id: string; customer?: string | null; refunds?: { data?: S
  * Records a platform-billing payment (invoice.paid, invoice.payment_failed, charge.refunded) for
  * Sales Brain, keyed so that Stripe's own webhook retries can't send it twice.
  */
+/** The admin's payments ledger (hso.billing_payments): latest state per payment id. */
+async function recordLedger(exec: Exec, businessId: number, d: Record<string, unknown>) {
+  const row = {
+    id: String(d.payment_id),
+    businessId,
+    amountCents: Number(d.amount_cents) || 0,
+    status: String(d.status),
+    kind: String(d.kind),
+    description: String(d.description ?? ""),
+    paidAt: new Date(String(d.paid_at)),
+  };
+  await exec
+    .insertInto("billingPayments")
+    .values(row)
+    .onConflict((oc) => oc.column("id").doUpdateSet({ amountCents: row.amountCents, status: row.status, kind: row.kind, description: row.description, paidAt: row.paidAt }))
+    .execute();
+}
+
 export async function recordBillingPayment(event: StripeEvent, businessId: number) {
   const obj = event.data.object;
   if (event.type === "invoice.paid" || event.type === "invoice.payment_failed") {
     const inv = obj as unknown as StripeInvoiceLite & { customer?: string };
     const outcome = event.type === "invoice.paid" ? "paid" : "failed";
     await db.transaction().execute(async (trx) => {
-      await enqueue(trx, [{ id: `stripe-${event.id}`, type: "payment.recorded", occurredAt: new Date(event.created * 1000), data: paymentFromInvoice(businessId, inv, outcome, event.created) }]);
+      const data = paymentFromInvoice(businessId, inv, outcome, event.created);
+      await enqueue(trx, [{ id: `stripe-${event.id}`, type: "payment.recorded", occurredAt: new Date(event.created * 1000), data }]);
+      await recordLedger(trx, businessId, data);
       // A regular monthly charge is the best measure of what they pay (with GST, after discounts).
       if (outcome === "paid" && (inv.billing_reason === "subscription_cycle" || inv.billing_reason === "subscription_create") && (inv.amount_paid ?? 0) > 0) {
         await trx.updateTable("businesses").set({ lastInvoiceCents: inv.amount_paid! }).where("id", "=", businessId).execute();
@@ -198,6 +226,7 @@ export async function recordBillingPayment(event: StripeEvent, businessId: numbe
         trx,
         refunds.map((r) => ({ id: `refund-${r.id}`, type: "payment.recorded" as const, occurredAt: new Date(r.created * 1000), data: paymentFromRefund(businessId, { ...r, charge: charge.id }) })),
       );
+      for (const r of refunds) await recordLedger(trx, businessId, paymentFromRefund(businessId, { ...r, charge: charge.id }));
     });
   }
 }

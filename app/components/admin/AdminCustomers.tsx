@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Mail, Phone, ExternalLink, Gift, CalendarPlus, Ban, Send, Trash2, StickyNote } from "lucide-react";
+import { ArrowLeft, Search, Mail, Phone, ExternalLink, Gift, CalendarPlus, Ban, Send, Trash2, StickyNote, PauseCircle, PlayCircle, FlaskConical, ShieldAlert } from "lucide-react";
 import { getAdminCustomers } from "../../endpoints/admin/customers_GET.schema";
 import { getAdminCustomer } from "../../endpoints/admin/customer_GET.schema";
 import { postAdminCustomerAction, type InputType as ActionInput } from "../../endpoints/admin/customer_action_POST.schema";
 import { postAdminTicketCreate } from "../../endpoints/admin/ticket_create_POST.schema";
-import { ACCESS_LABEL, aud, type AdminCustomer, type AdminCustomerDetail, type CustomerAccess } from "../../helpers/adminShared";
+import { ACCESS_LABEL, TRADE_LABEL, aud, type AdminCustomer, type AdminCustomerDetail, type CustomerAccess } from "../../helpers/adminShared";
 import { TICKET_PRIORITIES, priorityLabel, staffStatusLabel, type TicketPriority } from "../../helpers/supportShared";
 import { opsFormat } from "../../helpers/opsFormat";
 import { Button } from "../Button";
@@ -24,6 +24,7 @@ const FILTERS: { k: CustomerAccess | "all"; label: string }[] = [
   { k: "included", label: "Sales Brain" },
   { k: "free", label: "Free" },
   { k: "past_due", label: "Overdue" },
+  { k: "suspended", label: "Suspended" },
   { k: "none", label: "Not subscribed" },
 ];
 const SORTS = { newest: "Newest", active: "Last active", mrr: "Revenue", name: "Name" } as const;
@@ -127,7 +128,9 @@ function CustomerList() {
               {rows.map((c) => (
                 <tr key={c.id} onClick={() => navigate(`/admin?tab=customers&c=${c.id}`)} className={styles.clickRow}>
                   <td>
-                    <b>{c.name}</b>
+                    <b>
+                      {c.name} {c.demo && <span className={styles.demoTag}>Demo</span>}
+                    </b>
                     <small>
                       {c.ownerName || "—"} · {c.email || "no email"}
                     </small>
@@ -159,6 +162,8 @@ function CustomerDetail({ id }: { id: number }) {
   const { data: c, isLoading, error } = useQuery({ queryKey: key, queryFn: () => getAdminCustomer({ id }) });
   const [compOpen, setCompOpen] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
+  const [suspendOpen, setSuspendOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [note, setNote] = useState("");
 
   const act = useMutation({
@@ -184,7 +189,9 @@ function CustomerDetail({ id }: { id: number }) {
       </Link>
       <div className={styles.custHead}>
         <div>
-          <h2>{c.name}</h2>
+          <h2>
+            {c.name} {c.demo && <span className={styles.demoTag}><FlaskConical size={11} /> Demo</span>}
+          </h2>
           <p className={styles.muted}>
             Account {c.id} · signed up {date(c.signedUpAt)} · last active {ago(c.lastActiveAt)}
             {c.salesBrain ? " · linked to Sales Brain" : ""}
@@ -195,6 +202,19 @@ function CustomerDetail({ id }: { id: number }) {
           <b className={styles.mrr}>{c.mrrCents ? `${aud(c.mrrCents)}/mo` : "$0/mo"}</b>
         </div>
       </div>
+
+      {c.suspendedAt && (
+        <div className={styles.suspendedBox}>
+          <PauseCircle size={18} />
+          <span>
+            <b>Access suspended {date(c.suspendedAt)}</b>
+            {c.suspendedReason ? ` · ${c.suspendedReason}` : ""}. Nobody at this business can use the app; they can still message support.
+          </span>
+          <Button size="sm" onClick={() => act.mutate({ action: "reinstate" })} disabled={act.isPending}>
+            <PlayCircle size={14} /> Reinstate
+          </Button>
+        </div>
+      )}
 
       <div className={styles.cards}>
         <section className={styles.panel}>
@@ -207,7 +227,7 @@ function CustomerDetail({ id }: { id: number }) {
             <dt>Phone</dt>
             <dd>{c.phone ? <a href={`tel:${c.phone}`}><Phone size={13} /> {c.phone}</a> : "—"}</dd>
             <dt>Trade</dt>
-            <dd>{c.trade || "—"}</dd>
+            <dd>{TRADE_LABEL[c.trade] ?? c.trade ?? "—"}</dd>
             <dt>ABN</dt>
             <dd>{c.details.abn || "—"}</dd>
             <dt>Address</dt>
@@ -251,6 +271,8 @@ function CustomerDetail({ id }: { id: number }) {
             </dd>
             <dt>Last charge</dt>
             <dd>{b.lastInvoiceCents ? aud(b.lastInvoiceCents) : "—"}</dd>
+            <dt>Lifetime paid</dt>
+            <dd>{aud(b.lifetimeCents)}</dd>
             {c.cancelReason && (
               <>
                 <dt>Cancel reason</dt>
@@ -365,6 +387,38 @@ function CustomerDetail({ id }: { id: number }) {
         </section>
 
         <section className={`${styles.panel} ${styles.wide}`}>
+          <h3>Payments ({c.payments.length})</h3>
+          {c.payments.length ? (
+            <div className={styles.tableWrapFlat}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th className={styles.num}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {c.payments.map((p) => (
+                    <tr key={p.id}>
+                      <td>{date(p.paidAt)}</td>
+                      <td>{p.description || p.kind}</td>
+                      <td>
+                        <span className={`${styles.payPill} ${styles[`pay_${p.status}`] ?? ""}`}>{p.status === "paid" ? "Paid" : p.status === "failed" ? "Failed" : "Refunded"}</span>
+                      </td>
+                      <td className={styles.num}>{p.status === "refunded" ? `−${aud(p.amountCents)}` : aud(p.amountCents)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className={styles.muted}>No payments recorded.</p>
+          )}
+        </section>
+
+        <section className={`${styles.panel} ${styles.wide}`}>
           <div className={styles.panelHead}>
             <h3>Support ({c.tickets.length})</h3>
             <Button size="sm" onClick={() => setMessageOpen(true)}>
@@ -373,7 +427,7 @@ function CustomerDetail({ id }: { id: number }) {
           </div>
           {c.tickets.length ? (
             c.tickets.map((t) => (
-              <Link key={t.id} to={`/admin?tab=support&t=${t.id}`} className={styles.miniRow}>
+              <Link key={t.id} to={`/admin?tab=tickets&t=${t.id}`} className={styles.miniRow}>
                 <span>
                   <b>{t.subject}</b>
                   <small>
@@ -424,8 +478,62 @@ function CustomerDetail({ id }: { id: number }) {
         </section>
       </div>
 
+      <section className={styles.danger}>
+        <h3>
+          <ShieldAlert size={16} /> Access & account
+        </h3>
+        <div className={styles.dangerRow}>
+          <span>
+            <b>{c.suspendedAt ? "Reinstate access" : "Suspend access"}</b>
+            <small>{c.suspendedAt ? "Let everyone at this business use the app again." : "Nobody at this business can use the app until you reinstate it. Their data is kept; they can still message support."}</small>
+          </span>
+          {c.suspendedAt ? (
+            <Button size="sm" variant="outline" onClick={() => act.mutate({ action: "reinstate" })} disabled={act.isPending}>
+              <PlayCircle size={14} /> Reinstate
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setSuspendOpen(true)} disabled={act.isPending}>
+              <PauseCircle size={14} /> Suspend access
+            </Button>
+          )}
+        </div>
+        <div className={styles.dangerRow}>
+          <span>
+            <b>Delete account</b>
+            <small>Deletes the business and everything in it: jobs, quotes, clients, invoices, payments, support history. Their subscription is cancelled and logins only used here are removed. This can't be undone.</small>
+          </span>
+          <Button size="sm" variant="destructive" onClick={() => setDeleteOpen(true)} disabled={act.isPending}>
+            <Trash2 size={14} /> Delete account
+          </Button>
+        </div>
+      </section>
+
+      <SuspendSheet
+        open={suspendOpen}
+        onOpenChange={setSuspendOpen}
+        live={live}
+        pending={act.isPending}
+        onSave={(reason, cancelSubscription) => act.mutate({ action: "suspend", reason, cancelSubscription }, { onSuccess: () => setSuspendOpen(false) })}
+      />
+      <DeleteSheet
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        name={c.name}
+        pending={act.isPending}
+        onDelete={(confirmName) =>
+          act.mutate(
+            { action: "delete", confirmName },
+            {
+              onSuccess: () => {
+                setDeleteOpen(false);
+                navigate("/admin?tab=customers");
+              },
+            },
+          )
+        }
+      />
       <CompSheet open={compOpen} onOpenChange={setCompOpen} pending={act.isPending} onSave={(note, endsAt) => act.mutate({ action: "comp_on", note, endsAt }, { onSuccess: () => setCompOpen(false) })} />
-      <MessageSheet customer={c} open={messageOpen} onOpenChange={setMessageOpen} onSent={(tid) => navigate(`/admin?tab=support&t=${tid}`)} />
+      <MessageSheet customer={c} open={messageOpen} onOpenChange={setMessageOpen} onSent={(tid) => navigate(`/admin?tab=tickets&t=${tid}`)} />
     </div>
   );
 }
@@ -507,6 +615,64 @@ function MessageSheet({ customer, open, onOpenChange, onSent }: { customer: Admi
               </option>
             ))}
           </select>
+        </label>
+      </div>
+    </BottomSheet>
+  );
+}
+
+function SuspendSheet({ open, onOpenChange, onSave, pending, live }: { open: boolean; onOpenChange: (o: boolean) => void; onSave: (reason: string, cancelSubscription: boolean) => void; pending: boolean; live: boolean }) {
+  const [reason, setReason] = useState("");
+  const [cancel, setCancel] = useState(false);
+  return (
+    <BottomSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Suspend access"
+      description="Everyone at this business is locked out of the app until you reinstate it. Nothing is deleted."
+      footer={
+        <Button size="lg" variant="destructive" disabled={pending} onClick={() => onSave(reason.trim(), cancel)}>
+          {pending ? "Suspending…" : "Suspend access"}
+        </Button>
+      }
+    >
+      <div className={styles.sheetForm}>
+        <label>
+          <span>Reason (they see this)</span>
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Unpaid invoices, chargeback under review" maxLength={300} />
+        </label>
+        {live && (
+          <label className={styles.checkRow}>
+            <input type="checkbox" checked={cancel} onChange={(e) => setCancel(e.target.checked)} />
+            <span>Also cancel their subscription now (no further charges)</span>
+          </label>
+        )}
+      </div>
+    </BottomSheet>
+  );
+}
+
+function DeleteSheet({ open, onOpenChange, onDelete, pending, name }: { open: boolean; onOpenChange: (o: boolean) => void; onDelete: (confirmName: string) => void; pending: boolean; name: string }) {
+  const [typed, setTyped] = useState("");
+  const ok = typed.trim().toLowerCase() === name.trim().toLowerCase();
+  return (
+    <BottomSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Delete ${name}?`}
+      description="This permanently deletes the business, all its data and logins used only here, and cancels their subscription. It can't be undone."
+      footer={
+        <Button size="lg" variant="destructive" disabled={!ok || pending} onClick={() => onDelete(typed)}>
+          {pending ? "Deleting…" : "Delete account forever"}
+        </Button>
+      }
+    >
+      <div className={styles.sheetForm}>
+        <label>
+          <span>
+            Type <b>{name}</b> to confirm
+          </span>
+          <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={name} autoComplete="off" />
         </label>
       </div>
     </BottomSheet>

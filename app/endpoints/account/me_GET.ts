@@ -7,7 +7,7 @@ import type { OutputType } from "./me_GET.schema";
 /** The signed-in member's business, role and billing summary (also returned by auth/session). */
 export async function loadMe(ctx: MemberCtx): Promise<OutputType> {
   const [biz, billing] = await Promise.all([
-    db.selectFrom("businesses").select(["onboardedAt", "trade"]).where("id", "=", ctx.businessId).executeTakeFirstOrThrow(),
+    db.selectFrom("businesses").select(["onboardedAt", "trade", "suspendedAt", "suspendedReason"]).where("id", "=", ctx.businessId).executeTakeFirstOrThrow(),
     getBilling(ctx.businessId),
   ]);
   return {
@@ -22,12 +22,13 @@ export async function loadMe(ctx: MemberCtx): Promise<OutputType> {
     onboarded: !!biz.onboardedAt,
     trade: biz.trade,
     platformAdmin: ctx.user.role === "admin",
+    suspended: biz.suspendedAt ? { at: biz.suspendedAt, reason: biz.suspendedReason } : null,
   };
 }
 
 export async function handle(request: Request) {
   try {
-    const ctx = await requireMember(request, ANY_MEMBER);
+    const ctx = await requireMember(request, ANY_MEMBER, { allowSuspended: true });
     return new Response(superjson.stringify(await loadMe(ctx)));
   } catch (error) {
     return errorResponse(error);

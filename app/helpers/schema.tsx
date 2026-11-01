@@ -73,6 +73,7 @@ export interface Businesses {
   createdAt: Generated<Timestamp>;
   currentPeriodEnd: Timestamp | null;
   id: Generated<number>;
+  isDemo: Generated<boolean>;
   lastActiveAt: Timestamp | null;
   lastInvoiceCents: number | null;
   name: string;
@@ -83,6 +84,8 @@ export interface Businesses {
   sbFingerprint: string | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
+  suspendedAt: Timestamp | null;
+  suspendedReason: string | null;
   subscriptionStatus: string | null;
   trade: Generated<string>;
   trialEndsAt: Generated<Timestamp | null>;
@@ -520,6 +523,17 @@ export interface XeroOauthStates {
   state: string;
 }
 
+export interface BillingPayments {
+  amountCents: number;
+  businessId: number;
+  createdAt: Generated<Timestamp>;
+  description: Generated<string>;
+  id: string;
+  kind: string;
+  paidAt: Timestamp;
+  status: string;
+}
+
 export interface CustomerNotes {
   authorId: number | null;
   body: string;
@@ -577,6 +591,7 @@ export interface SupportMessages {
 }
 
 export interface DB {
+  billingPayments: BillingPayments;
   customerNotes: CustomerNotes;
   salesbrainInbound: SalesbrainInbound;
   salesbrainOutbox: SalesbrainOutbox;

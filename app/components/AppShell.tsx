@@ -219,6 +219,29 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
       </div>
     );
   }
+  // Suspended by Local Service Pro: a notice instead of the business; support stays open.
+  if (me.suspended) {
+    return (
+      <div className={styles.stage}>
+        <div className={styles.orphan}>
+          <h1>Account suspended</h1>
+          <p>
+            Local Service Pro has suspended {me.businessName ? <b>{me.businessName}</b> : "this account"}
+            {me.suspended.reason ? `: ${me.suspended.reason}` : "."} Your data is kept. Message us to sort it out.
+          </p>
+          {me.role !== "crew" ? (
+            <Button onClick={() => setSupportOpen(true)}>
+              <LifeBuoy size={16} /> Message support
+            </Button>
+          ) : (
+            <p>Ask the business owner, or email support@localservicepro.com.au.</p>
+          )}
+          <Button variant="outline" onClick={async () => { await logout(); navigate("/login"); }}>Sign out</Button>
+        </div>
+        {me.role !== "crew" && <SupportRequestSheet open={supportOpen} onOpenChange={setSupportOpen} showListLink={false} />}
+      </div>
+    );
+  }
   // A new owner finishes setup before using the app.
   if (me.role === "owner" && !me.onboarded) return <Navigate to="/onboarding" replace />;
 

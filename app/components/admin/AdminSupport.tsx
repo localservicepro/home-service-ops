@@ -48,7 +48,7 @@ export function AdminSupport() {
   }, [search]);
   const set = (k: string, v: string | null) => {
     const p = new URLSearchParams(params);
-    p.set("tab", "support");
+    p.set("tab", "tickets");
     if (v === null) p.delete(k);
     else p.set(k, v);
     setParams(p);
