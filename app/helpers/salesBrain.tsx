@@ -205,7 +205,9 @@ type OutboxRow = { id: string; type: string; payload: SbEvent; attempts: number;
 
 /** Takes due events, pushing their next attempt a few minutes out so a parallel run skips them. */
 async function claim(limit: number, alone: boolean): Promise<OutboxRow[]> {
-  const r = await sql<OutboxRow>`
+  // The payload comes back as text: the camelCase plugin would otherwise rename the keys inside
+  // it (account_id → accountId) and Sales Brain would reject every event.
+  const r = await sql<Omit<OutboxRow, "payload"> & { body: string }>`
     update hso.salesbrain_outbox o
        set next_attempt_at = now() + interval '3 minutes'
      where o.id in (
@@ -214,8 +216,10 @@ async function claim(limit: number, alone: boolean): Promise<OutboxRow[]> {
         order by created_at
         limit ${limit}
         for update skip locked)
-    returning o.id, o.type, o.payload, o.attempts, o.created_at`.execute(db);
-  return [...r.rows].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    returning o.id, o.type, o.payload::text as body, o.attempts, o.created_at`.execute(db);
+  return r.rows
+    .map(({ body, ...row }) => ({ ...row, payload: JSON.parse(body) as SbEvent }))
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }
 
 async function post(body: string): Promise<{ status: number | null; json: unknown; error?: string }> {
