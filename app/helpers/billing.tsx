@@ -3,6 +3,7 @@ import { db } from "./db";
 import { stripeApi, isStripeConfigured } from "./stripeConnect";
 import { PLANS, type BillingStatus, type BillingSummary, type PlanKey } from "./plans";
 import { API_URL } from "./serverEnv";
+import { compActive } from "./salesBrainEvents";
 import { queueAccountSync, recordBillingPayment } from "./salesBrain";
 
 // Server-only. Subscriptions for businesses using the app, billed on the LSP platform
@@ -51,7 +52,7 @@ export async function getBilling(businessId: number): Promise<BillingSummary> {
   const trialLive = !!b.trialEndsAt && b.trialEndsAt.getTime() > Date.now();
   let status: BillingStatus;
   let plan: PlanKey;
-  if (b.comp) {
+  if (compActive(b)) {
     status = "comp";
     plan = "team";
   } else if (subscribedPlan && b.subscriptionStatus && ACTIVE_SUB.includes(b.subscriptionStatus)) {
@@ -93,7 +94,8 @@ export async function getBilling(businessId: number): Promise<BillingSummary> {
     officeUsed: seats.filter((s) => s.role !== "crew").length,
     crewUsed: seats.filter((s) => s.role === "crew").length,
     hasCustomer: !!b.stripeCustomerId,
-    compNote: b.comp ? b.compNote : null,
+    compNote: compActive(b) ? b.compNote : null,
+    compEndsAt: compActive(b) ? b.compEndsAt : null,
   };
 }
 

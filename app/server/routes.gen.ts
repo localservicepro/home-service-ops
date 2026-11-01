@@ -52,40 +52,40 @@ import * as r49 from "../endpoints/inbox/read_POST";
 import * as r50 from "../endpoints/inbox/reply_POST";
 import * as r51 from "../endpoints/inbox/thread_GET";
 import * as r52 from "../endpoints/inbox/threads_GET";
-import * as r53 from "../endpoints/invites/info_GET";
-import * as r54 from "../endpoints/invites/join_POST";
-import * as r55 from "../endpoints/jobs/photo_POST";
-import * as r56 from "../endpoints/jobs/save_POST";
-import * as r57 from "../endpoints/jobs/send_invoice_POST";
-import * as r58 from "../endpoints/jobs/work_POST";
-import * as r59 from "../endpoints/leadform/get_GET";
-import * as r60 from "../endpoints/leadform/save_POST";
-import * as r61 from "../endpoints/onboarding/apply_POST";
-import * as r62 from "../endpoints/onboarding/complete_POST";
-import * as r63 from "../endpoints/ops/snapshot_GET";
-import * as r64 from "../endpoints/payments/check_POST";
-import * as r65 from "../endpoints/payments/dd_POST";
-import * as r66 from "../endpoints/payments/link_POST";
-import * as r67 from "../endpoints/payments/sync_POST";
-import * as r68 from "../endpoints/public/doc_GET";
-import * as r69 from "../endpoints/public/invoice_dd_POST";
-import * as r70 from "../endpoints/public/invoice_pay_POST";
-import * as r71 from "../endpoints/public/lead_form_GET";
-import * as r72 from "../endpoints/public/lead_submit_POST";
-import * as r73 from "../endpoints/public/lead_upload_POST";
-import * as r74 from "../endpoints/public/quote_respond_POST";
-import * as r75 from "../endpoints/public/review_optout_GET";
-import * as r76 from "../endpoints/push/prefs_POST";
-import * as r77 from "../endpoints/push/register_POST";
-import * as r78 from "../endpoints/push/status_GET";
-import * as r79 from "../endpoints/push/test_POST";
-import * as r80 from "../endpoints/push/unregister_POST";
-import * as r81 from "../endpoints/quotes/book_POST";
-import * as r82 from "../endpoints/quotes/save_POST";
-import * as r83 from "../endpoints/quotes/send_POST";
-import * as r84 from "../endpoints/reminders/settings_GET";
-import * as r85 from "../endpoints/reminders/test_POST";
-import * as r86 from "../endpoints/salesbrain/accounts_POST";
+import * as r53 from "../endpoints/integrations/sales-brain_POST";
+import * as r54 from "../endpoints/invites/info_GET";
+import * as r55 from "../endpoints/invites/join_POST";
+import * as r56 from "../endpoints/jobs/photo_POST";
+import * as r57 from "../endpoints/jobs/save_POST";
+import * as r58 from "../endpoints/jobs/send_invoice_POST";
+import * as r59 from "../endpoints/jobs/work_POST";
+import * as r60 from "../endpoints/leadform/get_GET";
+import * as r61 from "../endpoints/leadform/save_POST";
+import * as r62 from "../endpoints/onboarding/apply_POST";
+import * as r63 from "../endpoints/onboarding/complete_POST";
+import * as r64 from "../endpoints/ops/snapshot_GET";
+import * as r65 from "../endpoints/payments/check_POST";
+import * as r66 from "../endpoints/payments/dd_POST";
+import * as r67 from "../endpoints/payments/link_POST";
+import * as r68 from "../endpoints/payments/sync_POST";
+import * as r69 from "../endpoints/public/doc_GET";
+import * as r70 from "../endpoints/public/invoice_dd_POST";
+import * as r71 from "../endpoints/public/invoice_pay_POST";
+import * as r72 from "../endpoints/public/lead_form_GET";
+import * as r73 from "../endpoints/public/lead_submit_POST";
+import * as r74 from "../endpoints/public/lead_upload_POST";
+import * as r75 from "../endpoints/public/quote_respond_POST";
+import * as r76 from "../endpoints/public/review_optout_GET";
+import * as r77 from "../endpoints/push/prefs_POST";
+import * as r78 from "../endpoints/push/register_POST";
+import * as r79 from "../endpoints/push/status_GET";
+import * as r80 from "../endpoints/push/test_POST";
+import * as r81 from "../endpoints/push/unregister_POST";
+import * as r82 from "../endpoints/quotes/book_POST";
+import * as r83 from "../endpoints/quotes/save_POST";
+import * as r84 from "../endpoints/quotes/send_POST";
+import * as r85 from "../endpoints/reminders/settings_GET";
+import * as r86 from "../endpoints/reminders/test_POST";
 import * as r87 from "../endpoints/settings/messages_GET";
 import * as r88 from "../endpoints/settings/messages_POST";
 import * as r89 from "../endpoints/settings/save_POST";
@@ -176,40 +176,40 @@ export const routes: Record<string, { handle: (request: Request) => Promise<Resp
   "POST inbox/reply": r50,
   "GET inbox/thread": r51,
   "GET inbox/threads": r52,
-  "GET invites/info": r53,
-  "POST invites/join": r54,
-  "POST jobs/photo": r55,
-  "POST jobs/save": r56,
-  "POST jobs/send_invoice": r57,
-  "POST jobs/work": r58,
-  "GET leadform/get": r59,
-  "POST leadform/save": r60,
-  "POST onboarding/apply": r61,
-  "POST onboarding/complete": r62,
-  "GET ops/snapshot": r63,
-  "POST payments/check": r64,
-  "POST payments/dd": r65,
-  "POST payments/link": r66,
-  "POST payments/sync": r67,
-  "GET public/doc": r68,
-  "POST public/invoice_dd": r69,
-  "POST public/invoice_pay": r70,
-  "GET public/lead_form": r71,
-  "POST public/lead_submit": r72,
-  "POST public/lead_upload": r73,
-  "POST public/quote_respond": r74,
-  "GET public/review_optout": r75,
-  "POST push/prefs": r76,
-  "POST push/register": r77,
-  "GET push/status": r78,
-  "POST push/test": r79,
-  "POST push/unregister": r80,
-  "POST quotes/book": r81,
-  "POST quotes/save": r82,
-  "POST quotes/send": r83,
-  "GET reminders/settings": r84,
-  "POST reminders/test": r85,
-  "POST salesbrain/accounts": r86,
+  "POST integrations/sales-brain": r53,
+  "GET invites/info": r54,
+  "POST invites/join": r55,
+  "POST jobs/photo": r56,
+  "POST jobs/save": r57,
+  "POST jobs/send_invoice": r58,
+  "POST jobs/work": r59,
+  "GET leadform/get": r60,
+  "POST leadform/save": r61,
+  "POST onboarding/apply": r62,
+  "POST onboarding/complete": r63,
+  "GET ops/snapshot": r64,
+  "POST payments/check": r65,
+  "POST payments/dd": r66,
+  "POST payments/link": r67,
+  "POST payments/sync": r68,
+  "GET public/doc": r69,
+  "POST public/invoice_dd": r70,
+  "POST public/invoice_pay": r71,
+  "GET public/lead_form": r72,
+  "POST public/lead_submit": r73,
+  "POST public/lead_upload": r74,
+  "POST public/quote_respond": r75,
+  "GET public/review_optout": r76,
+  "POST push/prefs": r77,
+  "POST push/register": r78,
+  "GET push/status": r79,
+  "POST push/test": r80,
+  "POST push/unregister": r81,
+  "POST quotes/book": r82,
+  "POST quotes/save": r83,
+  "POST quotes/send": r84,
+  "GET reminders/settings": r85,
+  "POST reminders/test": r86,
   "GET settings/messages": r87,
   "POST settings/messages": r88,
   "POST settings/save": r89,

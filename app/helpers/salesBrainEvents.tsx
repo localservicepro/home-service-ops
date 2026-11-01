@@ -43,6 +43,9 @@ export type AccountSource = {
   createdAt: Date;
   plan: string; // businesses.plan: "trial" until they subscribe, then "solo" | "team"
   comp: boolean;
+  compSource?: string | null; // "salesbrain" = the free plan included with Sales Brain
+  compEndsAt?: Date | null; // free access stops at this time
+  salesBrainCustomerId?: string | null;
   trialEndsAt: Date | null;
   subscriptionStatus: string | null; // Stripe: trialing | active | past_due | unpaid | paused | canceled | incomplete…
   cancelAtPeriodEnd: boolean;
@@ -58,6 +61,13 @@ export type AccountSource = {
 };
 
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
+
+/** The free plan Sales Brain clients get (also in salesBrainInbound.tsx). */
+export const INCLUDED_PLAN_NAME = "Included with Sales Brain";
+
+/** Free access that is on right now (a scheduled end counts from its time). */
+export const compActive = (b: { comp: boolean; compEndsAt?: Date | null }, now = new Date()) =>
+  b.comp && (!b.compEndsAt || new Date(b.compEndsAt).getTime() > now.getTime());
 const planKey = (p: string): PlanKey | null => (p === "solo" || p === "team" ? p : null);
 
 /** Monthly price with GST, in cents: the last regular charge when we have one, else list price + 10%. */
@@ -75,7 +85,12 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
   let cancelledAt: string | null = null;
   let cancelReason: string | null = src.cancelReason?.trim() || null;
 
-  if (src.comp) {
+  const ended = !!src.salesBrainCustomerId && !!src.compEndsAt && new Date(src.compEndsAt).getTime() <= now.getTime();
+  if (compActive(src, now) && src.compSource === "salesbrain") {
+    status = "active";
+    plan = INCLUDED_PLAN_NAME;
+    cancelReason = null;
+  } else if (compActive(src, now)) {
     status = "active";
     plan = "Team (complimentary)";
   } else if (subscribed && (sub === "active" || sub === "past_due" || sub === "unpaid")) {
@@ -94,7 +109,12 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
   } else {
     status = "cancelled";
     plan = subscribed ? PLANS[subscribed].name : "Trial";
-    if (subscribed && sub) {
+    if (ended && !(subscribed && sub && src.cancelledAt && new Date(src.cancelledAt) > new Date(src.compEndsAt!))) {
+      // Their Sales Brain plan stopped including the app.
+      plan = INCLUDED_PLAN_NAME;
+      cancelledAt = iso(src.compEndsAt);
+      cancelReason = cancelReason ?? "Sales Brain plan no longer includes the app";
+    } else if (subscribed && sub) {
       // Had a subscription that ended.
       cancelledAt = iso(src.cancelledAt) ?? iso(src.trialEndsAt);
     } else {
@@ -106,6 +126,7 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
 
   return {
     account_id: String(src.id),
+    ...(src.salesBrainCustomerId ? { sales_brain_customer_id: src.salesBrainCustomerId } : {}),
     business_name: src.name,
     owner_name: src.ownerName || null,
     email: src.email || null,
@@ -124,7 +145,7 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
 
 /** The fields whose change is worth telling Sales Brain about (usage and activity are sent daily). */
 export function accountFingerprint(data: Record<string, unknown>): string {
-  const keys = ["business_name", "owner_name", "email", "phone", "plan", "status", "mrr_cents", "cancelled_at", "cancel_reason"];
+  const keys = ["sales_brain_customer_id", "business_name", "owner_name", "email", "phone", "plan", "status", "mrr_cents", "cancelled_at", "cancel_reason"];
   return JSON.stringify(keys.map((k) => data[k] ?? null));
 }
 

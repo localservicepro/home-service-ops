@@ -161,7 +161,7 @@ export default function BillingPage() {
       : b.status === "expired"
         ? "No active plan"
         : b.status === "comp"
-          ? "Team (complimentary)"
+          ? b.compNote || "Team (complimentary)"
           : `${PLANS[b.plan].name} plan`;
 
   // Rough prorated upgrade cost for the rest of the current period (Stripe calculates the exact figure).
@@ -210,7 +210,10 @@ export default function BillingPage() {
                 <p className={styles.heroNote}>
                   {b.status === "trial" &&
                     `${daysUntil(b.trialEndsAt)} days left — ends ${fmtDate(b.trialEndsAt)}. You have everything in Team until then. Pick a plan any time; you won't be charged until the trial ends.`}
-                  {b.status === "comp" && (b.compNote ? `${b.compNote}: the Team plan is free while it lasts.` : "This business is on a complimentary Team plan from Local Service Pro.")}
+                  {b.status === "comp" &&
+                    (b.compNote
+                      ? `Your Sales Brain plan includes the Team plan at no cost: no card, no charges.${b.compEndsAt ? ` Included until ${new Date(b.compEndsAt).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}; choose a plan before then to keep going.` : ""}`
+                      : "This business is on a complimentary Team plan from Local Service Pro.")}
                   {b.status === "active" &&
                     (b.cancelAtPeriodEnd
                       ? `Your plan ends on ${fmtDate(b.currentPeriodEnd)}. Resume any time before then to keep it.`

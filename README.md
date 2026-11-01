@@ -103,27 +103,30 @@ The app pushes account, payment and support-ticket changes to Sales Brain (`POST
 - `account.upserted` goes out on sign-up, plan change, every status change, profile changes, and once a day for usage (from the 15-minute `/cron/tick`). `payment.recorded` comes from Stripe `invoice.paid`, `invoice.payment_failed` and `charge.refunded`. `ticket.upserted` comes from Settings → Help & support and the staff replies in `/admin`.
 - Add `charge.refunded` to the Stripe billing webhook's events so refunds reach Sales Brain.
 
-**Free access from Sales Brain (Sales Brain → this app).** When a customer buys a Local Service Pro website or marketing plan, Sales Brain can give them the app for free, creating their account if they don't have one. Sales Brain sends `POST https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/salesbrain/accounts`, signed exactly like our outgoing calls: same `LSP_APP_SHARED_SECRET`, `x-lsp-timestamp` and `x-lsp-signature: sha256=<hex HMAC-SHA256 of "<timestamp>.<raw body>">`, within 5 minutes.
+**Accounts from Sales Brain (Sales Brain → this app).** Sales Brain creates app accounts for clients whose plan includes the app, and ends that free access when their plan stops. It sends `POST https://home.localservicepro.com.au/api/integrations/sales-brain` (Vercel forwards `/api/integrations/*` to the `api` function; the direct URL `https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/integrations/sales-brain` works too). Sales Brain's `LSP_APP_URL` is `https://home.localservicepro.com.au`.
+
+Requests are verified exactly like Sales Brain verifies ours: `x-lsp-timestamp` (unix seconds, within 5 minutes) and `x-lsp-signature: sha256=<hex HMAC-SHA256 of "<timestamp>.<raw body>" with LSP_APP_SHARED_SECRET>`, compared in constant time. Wrong or stale gives 401.
 
 ```json
-{
-  "action": "grant",
-  "external_id": "sb_customer_123",
-  "email": "owner@bobsplumbing.com.au",
-  "business_name": "Bob's Plumbing",
-  "owner_name": "Bob Smith",
-  "phone": "0400 000 000",
-  "address": "1 Main St, Brisbane QLD 4000",
-  "website": "https://bobsplumbing.com.au",
-  "abn": "12 345 678 901",
-  "note": "Included with your Local Service Pro website plan",
-  "send_email": true
-}
+{ "events": [
+  { "id": "sb-1234-provision", "type": "account.provision", "data": {
+      "sales_brain_customer_id": "3f6c2a1e-8b4d-4c2a-9f1e-2d7b6a5c4e3f",
+      "business_name": "Bob's Lawns", "owner_name": "Bob Smith", "email": "bob@bobslawns.com.au",
+      "phone": "0400 000 000", "abn": "12 345 678 901", "address": "1 Main St, Brisbane QLD 4000",
+      "trade": "Lawn & Garden", "services": ["Lawn mowing & edging"], "service_areas": ["Brisbane North"],
+      "website": "https://bobslawns.com.au", "google_profile": "https://g.page/bobslawns",
+      "plan": "Growth", "access": "included" } },
+  { "id": "sb-1234-ended", "type": "account.access_ended", "data": {
+      "sales_brain_customer_id": "3f6c2a1e-8b4d-4c2a-9f1e-2d7b6a5c4e3f", "account_id": "101",
+      "email": "bob@bobslawns.com.au", "ends_at": "2026-12-01T00:00:00+10:00" } }
+] }
 ```
 
-- `grant` needs `external_id`, `email` and `business_name`. It finds the account by `external_id`, then `account_id` (if sent), then the owner's email. If there's none, it creates the login and business and emails a welcome with a link to choose a password. It never overwrites details the customer already entered. If they were paying, their subscription is set not to renew. Repeating a grant is safe.
-- `revoke` needs only `external_id` (or `account_id`). It turns free access off and leaves `grace_days` (default 14, 0 to 90) of full access to choose a plan, then emails the owner. It only removes access that Sales Brain gave; staff-given access returns 409.
-- Responses: `201`/`200` `{"ok":true,"status":"created|granted|unchanged|revoked","account_id":"42","email":"…","login":"new|existing","email_sent":true}`. `400` bad body, `401` bad signature or timestamp, `404` no matching account (revoke), `409` the email belongs to a crew member of another business or is linked to a different Sales Brain customer, `503` secret not set. Every change also sends `account.upserted` back (status `active`, plan `Team (complimentary)`, `mrr_cents` 0).
+- `account.provision` finds the account by `sales_brain_customer_id`, then by the owner's email. With none, it creates the business and owner login from the details: name, ABN, address, trade (matched to the app's trades), services (priced from that trade's starter list when the name matches, otherwise $0), service areas, phone and website. The owner gets the app's normal invite email ("Create my login", 14 days). Status `created`. An existing account is linked instead: its subscription is cancelled now with no further charges, and it moves to the free plan. Status `linked`. Either way the account is on **Included with Sales Brain**: no card, no trial end, no charges.
+- `account.access_ended` keeps the account and all its data. From `ends_at` it comes off the free plan and is treated like an account without a subscription, so the app asks them to subscribe. Status `ended`. The 15-minute tick switches it off; billing checks honour `ends_at` to the second. A later `account.provision` gives free access again.
+- Each event id is processed once (`hso.salesbrain_inbound`). The same id again returns the stored result.
+- Reply `200 {"results":[{"id","account_id","status"}]}`. If any event's data is wrong, `400` with `{"id","error"}` for that event (the others are still processed and listed). A problem on our side is `503`, and the event isn't stored, so resending works.
+- After each change an `account.upserted` goes back to Sales Brain with `sales_brain_customer_id`, `plan` "Included with Sales Brain" and `mrr_cents` 0. After access ends it reports `status` cancelled with `cancelled_at` = `ends_at`.
 
 **Test the connection.** Sign in as a staff user (`users.role = 'admin'`) and open `/admin` → Sales Brain → **Test Sales Brain connection**. It sends a signed GET with an empty body and expects `200 {"ok":true}`. The same tab shows the queue, events that were rejected or held, and **Resend held & rejected** once the cause is fixed.
 

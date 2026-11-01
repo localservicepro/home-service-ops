@@ -57,7 +57,8 @@ export type BillingSummary = {
   officeUsed: number;
   crewUsed: number;
   hasCustomer: boolean;
-  compNote: string | null; // why access is free, e.g. "Included with your Local Service Pro plan"
+  compNote: string | null; // why access is free, e.g. "Included with Sales Brain"
+  compEndsAt: Date | null; // free access stops then
 };
 
 export const statusLabel = (s: BillingStatus) =>

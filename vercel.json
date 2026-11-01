@@ -63,6 +63,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/integrations/:path*",
+      "destination": "https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/integrations/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -92,6 +92,9 @@ async function loadAccount(exec: Exec, businessId: number): Promise<(AccountSour
     createdAt: b.createdAt,
     plan: b.plan,
     comp: b.comp,
+    compSource: b.compSource,
+    compEndsAt: b.compEndsAt,
+    salesBrainCustomerId: b.salesBrainCustomerId,
     trialEndsAt: b.trialEndsAt,
     subscriptionStatus: b.subscriptionStatus,
     cancelAtPeriodEnd: b.cancelAtPeriodEnd,
@@ -371,7 +374,26 @@ export async function testConnection() {
  * Every 15 minutes: queue accounts whose state changed without a hook (a trial running out, a
  * Stripe change seen on sync), and once a day per account the full state with fresh usage.
  */
+/** Free access with an end time that has come: off the free plan (account and data stay). */
+export async function endDueFreeAccess() {
+  const due = await db.selectFrom("businesses").select("id").where("comp", "=", true).where("compEndsAt", "<=", new Date()).execute();
+  for (const b of due) {
+    await db.transaction().execute(async (trx) => {
+      const r = await trx
+        .updateTable("businesses")
+        .set({ comp: false, compSource: null, compNote: null })
+        .where("id", "=", b.id)
+        .where("comp", "=", true)
+        .where("compEndsAt", "<=", new Date())
+        .executeTakeFirst();
+      if (Number(r.numUpdatedRows) > 0) await queueAccountSync(trx, b.id, { force: true });
+    });
+  }
+  return due.length;
+}
+
 export async function syncAllAccounts() {
+  await endDueFreeAccess().catch((e) => console.error("[salesbrain] ending free access failed", e instanceof Error ? e.message : e));
   const date = brisbaneDate();
   const bizs = await db.selectFrom("businesses").select("id").orderBy("id").execute();
   if (!bizs.length) return { queued: 0 };

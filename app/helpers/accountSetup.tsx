@@ -75,8 +75,20 @@ export async function ensureLinked(
 ) {
   if (!opts.inviteToken && !opts.businessName) return null;
   // Fast path: almost every call is for someone who is already linked.
-  const linked = await db.selectFrom("memberships").select("id").where("userId", "=", user.id).executeTakeFirst();
-  if (linked) return null;
+  const linked = await db.selectFrom("memberships").select(["id", "businessId"]).where("userId", "=", user.id).executeTakeFirst();
+  if (linked) {
+    // Accounts set up for their owner (Sales Brain) already have the membership; mark the invite used.
+    if (opts.inviteToken) {
+      await db
+        .updateTable("invites")
+        .set({ acceptedAt: new Date(), acceptedUserId: user.id })
+        .where("token", "=", opts.inviteToken)
+        .where("businessId", "=", linked.businessId)
+        .where("acceptedAt", "is", null)
+        .execute();
+    }
+    return null;
+  }
   return db.transaction().execute(async (trx) => {
     await sql`select pg_advisory_xact_lock(${user.id})`.execute(trx);
     const existing = await trx.selectFrom("memberships").select("id").where("userId", "=", user.id).executeTakeFirst();

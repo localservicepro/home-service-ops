@@ -6,6 +6,7 @@ import {
   accountFingerprint,
   batchBody,
   classifyResponse,
+  compActive,
   paymentFromInvoice,
   paymentFromRefund,
   retryDelayMs,
@@ -117,6 +118,43 @@ describe("account.upserted", () => {
 
   it("complimentary accounts are active at $0", () => {
     expect(accountData({ ...base, comp: true }, NOW)).toMatchObject({ status: "active", plan: "Team (complimentary)", mrr_cents: 0 });
+  });
+
+  const SB = "3f6c2a1e-8b4d-4c2a-9f1e-2d7b6a5c4e3f";
+  const included = { ...base, comp: true, compSource: "salesbrain", salesBrainCustomerId: SB, trialEndsAt: null };
+
+  it("Sales Brain's included plan: active, its plan name, $0, with sales_brain_customer_id", () => {
+    const d = accountData({ ...included, cancelReason: "old reason" }, NOW);
+    expect(d).toMatchObject({ account_id: "42", sales_brain_customer_id: SB, status: "active", plan: "Included with Sales Brain", mrr_cents: 0, cancel_reason: null });
+    // Accounts not from Sales Brain don't carry the field.
+    expect(accountData(base, NOW)).not.toHaveProperty("sales_brain_customer_id");
+  });
+
+  it("still included until ends_at, then like an account without a subscription", () => {
+    const later = accountData({ ...included, compEndsAt: new Date("2026-12-01T00:00:00Z") }, NOW);
+    expect(later).toMatchObject({ status: "active", plan: "Included with Sales Brain" });
+    const after = accountData({ ...included, compEndsAt: new Date("2026-10-31T00:00:00Z") }, NOW);
+    expect(after).toMatchObject({
+      sales_brain_customer_id: SB,
+      status: "cancelled",
+      plan: "Included with Sales Brain",
+      mrr_cents: 0,
+      cancelled_at: "2026-10-31T00:00:00.000Z",
+      cancel_reason: "Sales Brain plan no longer includes the app",
+    });
+    // Once the tick has switched it off, the same.
+    expect(accountData({ ...included, comp: false, compSource: null, compEndsAt: new Date("2026-10-31T00:00:00Z") }, NOW)).toMatchObject({ status: "cancelled" });
+    // And if they then subscribe, they're simply active on that plan.
+    expect(
+      accountData({ ...included, comp: false, compSource: null, compEndsAt: new Date("2026-10-31T00:00:00Z"), plan: "solo", subscriptionStatus: "active" }, NOW),
+    ).toMatchObject({ status: "active", plan: "Solo", sales_brain_customer_id: SB });
+  });
+
+  it("compActive honours a scheduled end", () => {
+    expect(compActive({ comp: true }, NOW)).toBe(true);
+    expect(compActive({ comp: true, compEndsAt: new Date("2026-11-01T00:00:01Z") }, NOW)).toBe(true);
+    expect(compActive({ comp: true, compEndsAt: NOW }, NOW)).toBe(false);
+    expect(compActive({ comp: false }, NOW)).toBe(false);
   });
 
   it("fingerprint ignores usage and activity but not status, plan or price", () => {

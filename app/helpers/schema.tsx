@@ -67,6 +67,7 @@ export interface Businesses {
   cancelledAt: Timestamp | null;
   cancelReason: string | null;
   comp: Generated<boolean>;
+  compEndsAt: Timestamp | null;
   compNote: string | null;
   compSource: string | null;
   createdAt: Generated<Timestamp>;
@@ -77,7 +78,8 @@ export interface Businesses {
   name: string;
   onboardedAt: Timestamp | null;
   plan: Generated<string>;
-  sbExternalId: string | null;
+  salesBrainCustomerId: string | null;
+  salesBrainPlan: string | null;
   sbFingerprint: string | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
@@ -518,6 +520,13 @@ export interface XeroOauthStates {
   state: string;
 }
 
+export interface SalesbrainInbound {
+  createdAt: Generated<Timestamp>;
+  id: string;
+  result: Json;
+  type: string;
+}
+
 export interface SalesbrainOutbox {
   alertedAt: Timestamp | null;
   attempts: Generated<number>;
@@ -557,6 +566,7 @@ export interface SupportMessages {
 }
 
 export interface DB {
+  salesbrainInbound: SalesbrainInbound;
   salesbrainOutbox: SalesbrainOutbox;
   supportTickets: SupportTickets;
   supportMessages: SupportMessages;
