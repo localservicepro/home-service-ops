@@ -437,10 +437,22 @@ export async function customerDetail(id: number): Promise<AdminCustomerDetail> {
       .limit(50)
       .execute(),
   ]);
+  const sessions = await db
+    .selectFrom("supportSessions as s")
+    .innerJoin("users as u", "u.id", "s.staffId")
+    .select((eb) => [
+      "s.id", "u.displayName as staffName", "s.reason", "s.allowChanges", "s.startedAt", "s.endedAt", "s.expiresAt",
+      eb.selectFrom("supportSessionActions as a").select((x) => x.fn.countAll<string>().as("n")).whereRef("a.sessionId", "=", "s.id").as("changes"),
+    ])
+    .where("s.businessId", "=", id)
+    .orderBy("s.startedAt", "desc")
+    .limit(20)
+    .execute();
   const b = row.b;
   const sb = row.settingsBusiness;
   return {
     ...toCustomer(row),
+    supportSessions: sessions.map((s) => ({ ...s, changes: Number(s.changes ?? 0) })),
     onboardedAt: b.onboardedAt,
     suspendedAt: b.suspendedAt,
     suspendedReason: b.suspendedReason,

@@ -102,6 +102,8 @@ Local Service Pro staff run the app from `https://home.localservicepro.com.au/ad
 
 Revenue comes from the payments ledger `hso.billing_payments`, filled from Stripe's `invoice.paid`, `invoice.payment_failed` and `charge.refunded` events.
 
+**View as customer.** On a customer's page (or beside a ticket), "View as customer" opens their account in that browser tab as its owner, with the staff member's own login: no customer password, and the customer's own sessions aren't touched. Staff give a reason and a time limit (30 minutes to 2 hours). It's read-only unless "Allow changes" is ticked; then every change (method and path) is recorded. A banner shows on every page with an Exit button. Each view is noted on the account and listed under "Support views" with its change count (`hso.support_sessions`, `hso.support_session_actions`). It works for suspended and expired accounts too. Deleting a login and creating a web link are refused while viewing.
+
 **Demo data.** The sidebar's Demo data card loads 24 sample customers with a year of payments, jobs and support conversations, resets them, or removes them. Demo businesses are flagged `is_demo`: they never reach Sales Brain, have no logins and use example.com addresses. Removing them deletes only demo rows.
 
 Customers reach support from the **Support** button (the life-ring in the top bar on phones, the sidebar on larger screens) or Settings → Help & support. A badge shows when support has replied.

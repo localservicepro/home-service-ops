@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Mail, Phone, ExternalLink, Gift, CalendarPlus, Ban, Send, Trash2, StickyNote, PauseCircle, PlayCircle, FlaskConical, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Search, Mail, Phone, ExternalLink, Gift, CalendarPlus, Ban, Send, Trash2, StickyNote, PauseCircle, PlayCircle, FlaskConical, ShieldAlert, Eye } from "lucide-react";
+import { postAdminViewAs } from "../../endpoints/admin/view_as_POST.schema";
+import { enterSupportView } from "../../helpers/supportView";
 import { getAdminCustomers } from "../../endpoints/admin/customers_GET.schema";
 import { getAdminCustomer } from "../../endpoints/admin/customer_GET.schema";
 import { postAdminCustomerAction, type InputType as ActionInput } from "../../endpoints/admin/customer_action_POST.schema";
@@ -164,6 +166,7 @@ function CustomerDetail({ id }: { id: number }) {
   const [messageOpen, setMessageOpen] = useState(false);
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const [note, setNote] = useState("");
 
   const act = useMutation({
@@ -198,6 +201,9 @@ function CustomerDetail({ id }: { id: number }) {
           </p>
         </div>
         <div className={styles.custHeadRight}>
+          <Button size="sm" onClick={() => setViewOpen(true)}>
+            <Eye size={14} /> View as customer
+          </Button>
           <AccessBadge access={c.access} />
           <b className={styles.mrr}>{c.mrrCents ? `${aud(c.mrrCents)}/mo` : "$0/mo"}</b>
         </div>
@@ -479,6 +485,44 @@ function CustomerDetail({ id }: { id: number }) {
         </section>
       </div>
 
+      <section className={`${styles.panel} ${styles.wide}`}>
+        <h3>
+          <Eye size={15} /> Support views ({c.supportSessions.length})
+        </h3>
+        <p className={styles.muted}>Every time staff open this account with "View as customer", and how many changes they made.</p>
+        {c.supportSessions.length ? (
+          <div className={styles.tableWrapFlat}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Started</th>
+                  <th>Staff</th>
+                  <th>Reason</th>
+                  <th>Mode</th>
+                  <th className={styles.num}>Changes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {c.supportSessions.map((v) => (
+                  <tr key={v.id}>
+                    <td>
+                      {date(v.startedAt)} {new Date(v.startedAt).toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" })}
+                      <small>{v.endedAt ? "ended" : new Date(v.expiresAt).getTime() > Date.now() ? "open now" : "expired"}</small>
+                    </td>
+                    <td>{v.staffName}</td>
+                    <td className={styles.wrapCell}>{v.reason}</td>
+                    <td>{v.allowChanges ? "Changes allowed" : "Read-only"}</td>
+                    <td className={styles.num}>{v.changes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className={styles.muted}>Nobody has viewed this account yet.</p>
+        )}
+      </section>
+
       <section className={styles.danger}>
         <h3>
           <ShieldAlert size={16} /> Access & account
@@ -509,6 +553,7 @@ function CustomerDetail({ id }: { id: number }) {
         </div>
       </section>
 
+      <ViewAsSheet open={viewOpen} onOpenChange={setViewOpen} customer={c} />
       <SuspendSheet
         open={suspendOpen}
         onOpenChange={setSuspendOpen}
@@ -674,6 +719,61 @@ function DeleteSheet({ open, onOpenChange, onDelete, pending, name }: { open: bo
             Type <b>{name}</b> to confirm
           </span>
           <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={name} autoComplete="off" />
+        </label>
+      </div>
+    </BottomSheet>
+  );
+}
+
+/** Opens the customer's account in this tab as its owner, with the staff member's own login. */
+export function ViewAsSheet({
+  open,
+  onOpenChange,
+  customer,
+  reason: initialReason = "",
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  customer: { id: number; name: string };
+  reason?: string;
+}) {
+  const [reason, setReason] = useState(initialReason);
+  const [allowChanges, setAllowChanges] = useState(false);
+  const [minutes, setMinutes] = useState(60);
+  const start = useMutation({
+    mutationFn: () => postAdminViewAs({ businessId: customer.id, reason: reason.trim(), allowChanges, minutes }),
+    onSuccess: (r) =>
+      enterSupportView({ id: r.sessionId, businessId: r.businessId, businessName: r.businessName, allowChanges: r.allowChanges, expiresAt: new Date(r.expiresAt).toISOString() }),
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't open the account"),
+  });
+  return (
+    <BottomSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`View ${customer.name} as the customer`}
+      description="Opens their account in this tab with your own login, as if you were the owner. A banner shows while you're in it; Exit brings you back here. It's recorded on the account."
+      footer={
+        <Button size="lg" disabled={reason.trim().length < 3 || start.isPending} onClick={() => start.mutate()}>
+          <Eye size={16} /> {start.isPending ? "Opening…" : "Open their account"}
+        </Button>
+      }
+    >
+      <div className={styles.sheetForm}>
+        <label>
+          <span>Why (kept on the account)</span>
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Ticket #22: checking their quote settings" maxLength={300} autoFocus />
+        </label>
+        <label>
+          <span>For</span>
+          <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className={styles.select}>
+            <option value={30}>30 minutes</option>
+            <option value={60}>1 hour</option>
+            <option value={120}>2 hours</option>
+          </select>
+        </label>
+        <label className={styles.checkRow}>
+          <input type="checkbox" checked={allowChanges} onChange={(e) => setAllowChanges(e.target.checked)} />
+          <span>Allow changes (otherwise read-only). Every change is recorded.</span>
         </label>
       </div>
     </BottomSheet>

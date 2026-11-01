@@ -220,7 +220,7 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
     );
   }
   // Suspended by Local Service Pro: a notice instead of the business; support stays open.
-  if (me.suspended) {
+  if (me.suspended && !me.supportView) {
     return (
       <div className={styles.stage}>
         <div className={styles.orphan}>

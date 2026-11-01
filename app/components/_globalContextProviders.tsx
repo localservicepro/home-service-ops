@@ -5,6 +5,7 @@ import { TooltipProvider } from "./Tooltip";
 import { SonnerToaster } from "./SonnerToaster";
 import { ScrollToHashElement } from "./ScrollToHashElement";
 import { AuthProvider } from "../helpers/useAuth";
+import { SupportViewBar } from "./SupportViewBar";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,7 @@ export const GlobalContextProviders = ({
         <ThemeModeProvider>
           <ScrollToHashElement />
           <TooltipProvider>
+            <SupportViewBar />
             {children}
             <SonnerToaster />
           </TooltipProvider>

@@ -3,7 +3,7 @@ import { NotAuthenticatedError } from "../../helpers/getSetServerSession";
 import type { User } from "../../helpers/User";
 import { getServerUserSession } from "../../helpers/getServerUserSession";
 import { ensureLinked } from "../../helpers/accountSetup";
-import { ANY_MEMBER, requireMember } from "../../helpers/tenant";
+import { ANY_MEMBER, VIEW_AS_HEADER, requireMember } from "../../helpers/tenant";
 import { loadMe } from "../account/me_GET";
 
 // The signed-in user's profile. On first sign-in this also links them to their business:
@@ -23,7 +23,7 @@ export async function handle(request: Request) {
         // placeholder name that onboarding asks them to replace.
         (s(meta.business_name) ?? s(q.get("business")) ?? `${first}'s business`);
     try {
-      await ensureLinked(user, { inviteToken, businessName });
+      if (!request.headers.get(VIEW_AS_HEADER)) await ensureLinked(user, { inviteToken, businessName });
     } catch (e) {
       console.error("[auth/session] couldn't link user", user.id, e instanceof Error ? e.message : e);
     }

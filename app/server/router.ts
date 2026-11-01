@@ -6,7 +6,7 @@ import { routes } from "./routes.gen";
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info, x-hso-view-as",
   "Access-Control-Max-Age": "86400",
 };
 

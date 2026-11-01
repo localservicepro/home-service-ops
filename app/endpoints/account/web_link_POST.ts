@@ -1,11 +1,12 @@
 import superjson from "superjson";
 import { getServerUserSession } from "../../helpers/getServerUserSession";
 import { APP_URL, AUTH_URL, env } from "../../helpers/serverEnv";
-import { errorResponse } from "../../helpers/tenant";
+import { errorResponse, refuseInSupportView } from "../../helpers/tenant";
 import { schema, OutputType } from "./web_link_POST.schema";
 
 export async function handle(request: Request) {
   try {
+    refuseInSupportView(request);
     const { authUser } = await getServerUserSession(request);
     const input = schema.parse(superjson.parse(await request.text()));
     if (!authUser.email) throw new Error("Your login has no email address.");

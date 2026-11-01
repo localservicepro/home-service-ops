@@ -76,6 +76,8 @@ export type AdminCustomerDetail = AdminCustomer & {
   usage: { clients: number; quotes: number; jobs: number; jobs30d: number; lastJobAt: Date | null };
   tickets: TicketSummary[];
   notes: { id: number; body: string; createdAt: Date; authorName: string }[];
+  /** Support views of this account, newest first. */
+  supportSessions: { id: string; staffName: string; reason: string; allowChanges: boolean; startedAt: Date; endedAt: Date | null; expiresAt: Date; changes: number }[];
 };
 
 export type Point = { at: Date; value: number };

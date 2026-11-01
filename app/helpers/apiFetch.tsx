@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from "./supabaseClient";
+import { getSupportView } from "./supportView";
 
 // Browser-only. Calls the `api` Edge Function: /functions/v1/api/<route>, with the signed-in
 // user's access token (or the anon key for public pages).
@@ -19,5 +20,8 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
   headers.set("apikey", SUPABASE_ANON_KEY);
+  // Support view (staff looking at a customer's account in this tab), except for the admin itself.
+  const view = !path.startsWith("/admin/") ? getSupportView() : null;
+  if (view) headers.set("x-hso-view-as", view.id);
   return fetch(apiUrl(path), { ...init, headers, credentials: "omit" });
 }

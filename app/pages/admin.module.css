@@ -1678,3 +1678,18 @@
     opacity: 0;
   }
 }
+
+/* support view */
+.custStripRow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.custStripRow .custStrip {
+  flex: 1;
+  min-width: 0;
+}
+.wrapCell {
+  white-space: normal !important;
+  min-width: 200px;
+}

@@ -23,6 +23,7 @@ export async function loadMe(ctx: MemberCtx): Promise<OutputType> {
     trade: biz.trade,
     platformAdmin: ctx.user.role === "admin",
     suspended: biz.suspendedAt ? { at: biz.suspendedAt, reason: biz.suspendedReason } : null,
+    supportView: ctx.supportSession ? { allowChanges: ctx.supportSession.allowChanges, expiresAt: ctx.supportSession.expiresAt } : null,
   };
 }
 

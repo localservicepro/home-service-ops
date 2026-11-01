@@ -5,12 +5,13 @@ import { cancelSubscriptionNow } from "../../helpers/billing";
 import { isStripeConfigured } from "../../helpers/stripeConnect";
 import { deleteFolder } from "../../helpers/storage";
 import { AUTH_URL, env } from "../../helpers/serverEnv";
-import { errorResponse } from "../../helpers/tenant";
+import { errorResponse, refuseInSupportView } from "../../helpers/tenant";
 import { schema, OutputType } from "./delete_POST.schema";
 import { queueAccountClosed } from "../../helpers/salesBrain";
 
 export async function handle(request: Request) {
   try {
+    refuseInSupportView(request);
     const { user, authUser } = await getServerUserSession(request);
     schema.parse(superjson.parse(await request.text()));
 

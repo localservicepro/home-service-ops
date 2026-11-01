@@ -21,6 +21,8 @@ export type OutputType = {
   platformAdmin: boolean;
   /** Suspended by Local Service Pro staff: the app shows a notice instead of the business. */
   suspended: { at: Date; reason: string | null } | null;
+  /** Local Service Pro staff viewing this account as its owner (see helpers/supportView). */
+  supportView: { allowChanges: boolean; expiresAt: Date } | null;
 };
 
 export const getAccountMe = async (init?: RequestInit): Promise<OutputType> => {

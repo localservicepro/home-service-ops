@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Send, Lock, Building2, X } from "lucide-react";
+import { ArrowLeft, Search, Send, Lock, Building2, X, Eye } from "lucide-react";
 import { getAdminTickets } from "../../endpoints/admin/tickets_GET.schema";
 import { getAdminTicket } from "../../endpoints/admin/ticket_GET.schema";
 import { postAdminTicketReply } from "../../endpoints/admin/ticket_reply_POST.schema";
@@ -15,7 +15,7 @@ import { Button } from "../Button";
 import { Textarea } from "../Textarea";
 import { Skeleton } from "../Skeleton";
 import { TicketThread } from "../TicketThread";
-import { AccessBadge } from "./AdminCustomers";
+import { AccessBadge, ViewAsSheet } from "./AdminCustomers";
 import { Segmented } from "./AdminCharts";
 import { PipelineBoard, BoardCard, type BoardColumn, type BoardTone } from "../PipelineBoard";
 import styles from "../../pages/admin.module.css";
@@ -234,6 +234,7 @@ function TicketAdmin({ id, staff, meId, onBack }: { id: number; staff: { id: num
   const customer = useQuery({ queryKey: ["admin", "customer", data?.businessId], queryFn: () => getAdminCustomer({ id: data!.businessId }), enabled: !!data?.businessId });
   const [reply, setReply] = useState("");
   const [internal, setInternal] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const refresh = () => {
     qc.invalidateQueries({ queryKey: key });
     qc.invalidateQueries({ queryKey: ["admin", "tickets"] });
@@ -267,14 +268,20 @@ function TicketAdmin({ id, staff, meId, onBack }: { id: number; staff: { id: num
         {data.firstResponseAt ? ` · first reply ${opsFormat.timeAgo(data.firstResponseAt)}` : " · no reply yet"}
       </p>
 
-      <Link to={`/admin?tab=customers&c=${data.businessId}`} className={styles.custStrip}>
-        <Building2 size={16} />
-        <span>
-          <b>{data.businessName}</b>
-          <small>{c ? `${c.ownerName || c.email} · ${c.plan}${c.mrrCents ? ` · ${aud(c.mrrCents)}/mo` : ""} · ${c.jobs30d} jobs in 30 days` : `Account ${data.businessId}`}</small>
-        </span>
-        {c && <AccessBadge access={c.access} />}
-      </Link>
+      <div className={styles.custStripRow}>
+        <Link to={`/admin?tab=customers&c=${data.businessId}`} className={styles.custStrip}>
+          <Building2 size={16} />
+          <span>
+            <b>{data.businessName}</b>
+            <small>{c ? `${c.ownerName || c.email} · ${c.plan}${c.mrrCents ? ` · ${aud(c.mrrCents)}/mo` : ""} · ${c.jobs30d} jobs in 30 days` : `Account ${data.businessId}`}</small>
+          </span>
+          {c && <AccessBadge access={c.access} />}
+        </Link>
+        <Button size="sm" variant="outline" onClick={() => setViewOpen(true)}>
+          <Eye size={14} /> View account
+        </Button>
+      </div>
+      <ViewAsSheet key={data.id} open={viewOpen} onOpenChange={setViewOpen} customer={{ id: data.businessId, name: data.businessName ?? "this customer" }} reason={`Ticket #${data.id}: ${data.subject}`.slice(0, 300)} />
 
       <div className={styles.controls}>
         <label>

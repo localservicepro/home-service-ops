@@ -24,7 +24,41 @@ export type MemberCtx = {
   businessName: string;
   role: MemberRole;
   staffId: number | null;
+  /** Set when Local Service Pro staff are viewing this business as its owner (support view). */
+  supportSession?: { id: string; allowChanges: boolean; expiresAt: Date };
 };
+
+/** The header the app sends from a tab that's in support view: the support session id. */
+export const VIEW_AS_HEADER = "x-hso-view-as";
+
+/** Refuses actions on the signed-in person's own login while they're viewing someone else's account. */
+export function refuseInSupportView(request: Request) {
+  if (request.headers.get(VIEW_AS_HEADER)) throw new ForbiddenError("Not available while viewing a customer's account. Exit the support view first.");
+}
+
+/**
+ * Staff viewing a business as its owner: the session must be theirs, open and not expired.
+ * Read-only unless the session allows changes; every change is recorded.
+ */
+async function supportContext(request: Request, user: User, sessionId: string): Promise<MemberCtx> {
+  if (user.role !== "admin") throw new ForbiddenError("Only Local Service Pro staff can view customer accounts.");
+  if (!/^[0-9a-f-]{36}$/i.test(sessionId)) throw new ForbiddenError("This support view has ended.");
+  const s = await db
+    .selectFrom("supportSessions as s")
+    .innerJoin("businesses as b", "b.id", "s.businessId")
+    .select(["s.id", "s.businessId", "s.allowChanges", "s.expiresAt", "s.endedAt", "s.staffId", "b.name"])
+    .where("s.id", "=", sessionId)
+    .executeTakeFirst();
+  if (!s || s.staffId !== user.id || s.endedAt || s.expiresAt.getTime() <= Date.now()) {
+    throw new ForbiddenError("This support view has ended. Start it again from the admin.");
+  }
+  if (request.method !== "GET") {
+    if (!s.allowChanges) throw new ForbiddenError("Read-only support view: you can look but not change anything. Restart it with changes allowed if you need to.");
+    await db.insertInto("supportSessionActions").values({ sessionId: s.id, method: request.method, path: new URL(request.url).pathname.replace(/^.*\/api\//, "") }).execute();
+  }
+  db.updateTable("supportSessions").set({ lastSeenAt: new Date() }).where("id", "=", s.id).execute().catch(() => undefined);
+  return { user, businessId: s.businessId, businessName: s.name, role: "owner", staffId: null, supportSession: { id: s.id, allowChanges: s.allowChanges, expiresAt: s.expiresAt } };
+}
 
 export const OFFICE: MemberRole[] = ["owner", "admin"];
 export const ANY_MEMBER: MemberRole[] = ["owner", "admin", "crew"];
@@ -37,6 +71,13 @@ export async function requireMember(
   opts: { allowExpired?: boolean; allowSuspended?: boolean } = {},
 ): Promise<MemberCtx> {
   const { user } = await getServerUserSession(request);
+  const viewAs = request.headers.get(VIEW_AS_HEADER);
+  if (viewAs) {
+    const ctx = await supportContext(request, user, viewAs);
+    if (!roles.includes(ctx.role)) throw new ForbiddenError();
+    // Staff looking around isn't customer activity, and a trial that ended doesn't stop support.
+    return ctx;
+  }
   const m = await db
     .selectFrom("memberships")
     .innerJoin("businesses", "businesses.id", "memberships.businessId")

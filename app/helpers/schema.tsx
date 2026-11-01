@@ -580,6 +580,26 @@ export interface SupportTickets {
   updatedAt: Generated<Timestamp>;
 }
 
+export interface SupportSessions {
+  allowChanges: Generated<boolean>;
+  businessId: number;
+  endedAt: Timestamp | null;
+  expiresAt: Timestamp;
+  id: Generated<string>;
+  lastSeenAt: Timestamp | null;
+  reason: string;
+  staffId: number;
+  startedAt: Generated<Timestamp>;
+}
+
+export interface SupportSessionActions {
+  at: Generated<Timestamp>;
+  id: Generated<Int8>;
+  method: string;
+  path: string;
+  sessionId: string;
+}
+
 export interface SupportMessages {
   authorId: number | null;
   body: string;
@@ -597,6 +617,8 @@ export interface DB {
   salesbrainOutbox: SalesbrainOutbox;
   supportTickets: SupportTickets;
   supportMessages: SupportMessages;
+  supportSessionActions: SupportSessionActions;
+  supportSessions: SupportSessions;
   addons: Addons;
   authEmailLog: AuthEmailLog;
   businesses: Businesses;
