@@ -9,7 +9,7 @@ export async function handle(request: Request) {
     const user = await requirePlatformAdmin(request);
     const sp = new URL(request.url).searchParams;
     const input = schema.parse({ status: sp.get("status") ?? undefined, assigned: sp.get("assigned") ?? undefined, q: sp.get("q") ?? undefined });
-    const status = input.status === "all" ? undefined : input.status === "active" ? ["open", "pending"] : [input.status];
+    const status = input.status === "all" ? undefined : input.status === "active" ? ["open", "in_progress", "pending"] : [input.status];
     const assignedTo = input.assigned === "me" ? user.id : input.assigned === "none" ? ("none" as const) : undefined;
     const [tickets, counts, staff] = await Promise.all([
       listTickets({ status, assignedTo, q: input.q }),

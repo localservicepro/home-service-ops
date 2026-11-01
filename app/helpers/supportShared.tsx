@@ -1,7 +1,11 @@
 // Shared by the browser and the api: support ticket choices.
 
-export const TICKET_STATUSES = ["open", "pending", "solved", "closed"] as const;
+/** The pipeline, in order: new → in progress → waiting on customer → solved → closed. */
+export const TICKET_STATUSES = ["open", "in_progress", "pending", "solved", "closed"] as const;
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
+/** Still being worked on (shown as open to Sales Brain, which has no "in progress"). */
+export const ACTIVE_STATUSES: TicketStatus[] = ["open", "in_progress", "pending"];
+export const NEEDS_US: TicketStatus[] = ["open", "in_progress"];
 export const TICKET_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
 export const TICKET_CATEGORIES = [
@@ -18,9 +22,9 @@ export const TICKET_CATEGORIES = [
 export type TicketCategory = (typeof TICKET_CATEGORIES)[number]["k"];
 
 export const statusLabel = (s: string) =>
-  ({ open: "Open", pending: "Waiting on you", solved: "Solved", closed: "Closed" })[s as TicketStatus] ?? s;
+  ({ open: "Open", in_progress: "In progress", pending: "Waiting on you", solved: "Solved", closed: "Closed" })[s as TicketStatus] ?? s;
 export const staffStatusLabel = (s: string) =>
-  ({ open: "Open", pending: "Pending (waiting on customer)", solved: "Solved", closed: "Closed" })[s as TicketStatus] ?? s;
+  ({ open: "New", in_progress: "In progress", pending: "Waiting on customer", solved: "Solved", closed: "Closed" })[s as TicketStatus] ?? s;
 export const priorityLabel = (p: string) => ({ low: "Low", normal: "Normal", high: "High", urgent: "Urgent" })[p as TicketPriority] ?? p;
 export const categoryLabel = (c: string) => TICKET_CATEGORIES.find((x) => x.k === c)?.label ?? c;
 

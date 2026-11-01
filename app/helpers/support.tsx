@@ -223,7 +223,8 @@ export async function addMessage(opts: {
       }
       return cur;
     }
-    const status: TicketStatus = opts.status ?? (opts.fromStaff ? "pending" : "open");
+    // Staff replies wait on the customer; a customer reply puts it back with us (staying "in progress" if it was).
+    const status: TicketStatus = opts.status ?? (opts.fromStaff ? "pending" : cur.status === "in_progress" ? "in_progress" : "open");
     const now = new Date();
     await trx
       .updateTable("supportTickets")

@@ -5,7 +5,7 @@ import type { TicketSummary } from "../../helpers/supportShared";
 
 // Staff: support requests from every business, filtered by status, assignee and a search.
 export const schema = z.object({
-  status: z.enum(["active", "open", "pending", "solved", "closed", "all"]).default("active"),
+  status: z.enum(["active", "open", "in_progress", "pending", "solved", "closed", "all"]).default("active"),
   assigned: z.enum(["all", "me", "none"]).default("all"),
   q: z.string().trim().max(100).default(""),
 });

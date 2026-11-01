@@ -49,7 +49,7 @@ async function loadRows(onlyId?: number) {
       .selectFrom("supportTickets")
       .select(["businessId", (eb) => eb.fn.countAll<string>().as("n")])
       .where("businessId", "in", ids)
-      .where("status", "in", ["open", "pending"])
+      .where("status", "in", ["open", "in_progress", "pending"])
       .groupBy("businessId")
       .execute(),
   ]);
@@ -253,10 +253,10 @@ export async function overview(): Promise<AdminOverview> {
     db
       .selectFrom("supportTickets")
       .select([
-        sql<string>`count(*) filter (where status = 'open')`.as("open"),
+        sql<string>`count(*) filter (where status in ('open','in_progress'))`.as("open"),
         sql<string>`count(*) filter (where status = 'pending')`.as("pending"),
-        sql<string>`count(*) filter (where status in ('open','pending') and priority in ('urgent','high'))`.as("urgent"),
-        sql<string>`count(*) filter (where status in ('open','pending') and assigned_to is null)`.as("unassigned"),
+        sql<string>`count(*) filter (where status in ('open','in_progress','pending') and priority in ('urgent','high'))`.as("urgent"),
+        sql<string>`count(*) filter (where status in ('open','in_progress','pending') and assigned_to is null)`.as("unassigned"),
       ])
       .executeTakeFirstOrThrow(),
     db
@@ -337,7 +337,7 @@ export async function overview(): Promise<AdminOverview> {
       solved30: Number(solved30.n),
       avgFirstResponseHours: frt.hours == null ? null : Math.round(Number(frt.hours) * 10) / 10,
     },
-    recentTickets: await listTickets({ status: ["open", "pending"], limit: 6 }),
+    recentTickets: await listTickets({ status: ["open", "in_progress", "pending"], limit: 6 }),
   };
 }
 
@@ -347,10 +347,10 @@ export async function supportOverview(): Promise<SupportOverview> {
   const recent = await db
     .selectFrom("supportTickets")
     .select(["id", "status", "priority", "category", "assignedTo", "openedAt", "solvedAt", "firstResponseAt"])
-    .where((eb) => eb.or([eb("openedAt", ">=", since), eb("solvedAt", ">=", since), eb("status", "in", ["open", "pending"])]))
+    .where((eb) => eb.or([eb("openedAt", ">=", since), eb("solvedAt", ">=", since), eb("status", "in", ["open", "in_progress", "pending"])]))
     .execute();
   const ts = (d: Date | null) => (d ? new Date(d).getTime() : 0);
-  const active = recent.filter((t) => t.status === "open" || t.status === "pending");
+  const active = recent.filter((t) => t.status === "open" || t.status === "in_progress" || t.status === "pending");
   const inLast = (d: Date | null, days: number, offset = 0) => !!d && now - ts(d) >= offset * DAY && now - ts(d) < (days + offset) * DAY;
   const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
   const days = Array.from({ length: 14 }, (_, i) => startOfDay(now) - (13 - i) * DAY);
@@ -369,13 +369,13 @@ export async function supportOverview(): Promise<SupportOverview> {
   const cats = new Map<string, { open: number; total30: number }>();
   for (const t of recent) {
     const e = cats.get(t.category) ?? { open: 0, total30: 0 };
-    if (t.status === "open" || t.status === "pending") e.open++;
+    if (t.status !== "solved" && t.status !== "closed") e.open++;
     if (inLast(t.openedAt, 30)) e.total30++;
     cats.set(t.category, e);
   }
   const staff = await listStaff();
   return {
-    open: active.filter((t) => t.status === "open").length,
+    open: active.filter((t) => t.status === "open" || t.status === "in_progress").length,
     pending: active.filter((t) => t.status === "pending").length,
     urgent: active.filter((t) => t.priority === "urgent" || t.priority === "high").length,
     unassigned: active.filter((t) => !t.assignedTo).length,
@@ -394,7 +394,7 @@ export async function supportOverview(): Promise<SupportOverview> {
       open: active.filter((t) => t.assignedTo === s.id).length,
       solved30: recent.filter((t) => t.assignedTo === s.id && (t.status === "solved" || t.status === "closed") && inLast(t.solvedAt, 30)).length,
     })),
-    oldest: (await listTickets({ status: ["open"], limit: 300 })).sort((a, b) => ts(a.updatedAt) - ts(b.updatedAt)).slice(0, 6),
+    oldest: (await listTickets({ status: ["open", "in_progress"], limit: 300 })).sort((a, b) => ts(a.updatedAt) - ts(b.updatedAt)).slice(0, 6),
   };
 }
 

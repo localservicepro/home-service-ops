@@ -234,7 +234,8 @@ export function ticketData(t: TicketSource): Record<string, unknown> {
     ticket_id: String(t.id),
     subject: t.subject,
     body: t.body,
-    status: t.status,
+    // Sales Brain knows open | pending | solved | closed; "in progress" is still open there.
+    status: t.status === "in_progress" ? "open" : t.status,
     priority: t.priority,
     category: t.category,
     last_message: t.lastMessage,

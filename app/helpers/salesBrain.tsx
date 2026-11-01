@@ -544,7 +544,7 @@ export async function runBackfill() {
     }
   }
 
-  const open = await db.selectFrom("supportTickets").selectAll().where("status", "in", ["open", "pending"]).execute();
+  const open = await db.selectFrom("supportTickets").selectAll().where("status", "in", ["open", "in_progress", "pending"]).execute();
   await enqueue(
     db,
     open.map((t) => ({ id: `backfill-ticket-${t.id}-${date}`, type: "ticket.upserted" as const, occurredAt: t.updatedAt, data: ticketData(t) })),

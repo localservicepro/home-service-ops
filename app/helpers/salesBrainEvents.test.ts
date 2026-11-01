@@ -246,6 +246,14 @@ describe("ticket.upserted", () => {
   });
 });
 
+describe("ticket.upserted status", () => {
+  it("sends this app's in-progress stage as open (Sales Brain has no in progress)", () => {
+    const base = { id: 1, businessId: 2, subject: "s", body: "b", priority: "normal", category: "app", lastMessage: null, openedAt: NOW, updatedAt: NOW, solvedAt: null };
+    expect(ticketData({ ...base, status: "in_progress" }).status).toBe("open");
+    expect(ticketData({ ...base, status: "pending" }).status).toBe("pending");
+  });
+});
+
 describe("responses and retries", () => {
   const ids = ["a", "b", "c"];
 

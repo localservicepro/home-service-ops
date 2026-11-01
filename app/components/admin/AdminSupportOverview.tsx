@@ -20,10 +20,10 @@ export function AdminSupportOverview() {
   return (
     <div className={styles.dash}>
       <section className={styles.kpiStrip}>
-        <Stat icon={<Inbox size={17} />} label="Open, waiting on us" value={d.open} to="/admin?tab=tickets&status=open" bad={d.open > 0} />
-        <Stat icon={<Clock size={17} />} label="Waiting on customer" value={d.pending} to="/admin?tab=tickets&status=pending" />
+        <Stat icon={<Inbox size={17} />} label="Open, waiting on us" value={d.open} to="/admin?tab=tickets&view=list&status=open" bad={d.open > 0} />
+        <Stat icon={<Clock size={17} />} label="Waiting on customer" value={d.pending} to="/admin?tab=tickets&view=list&status=pending" />
         <Stat icon={<AlertTriangle size={17} />} label="Urgent or high" value={d.urgent} to="/admin?tab=tickets" bad={d.urgent > 0} />
-        <Stat icon={<UserX size={17} />} label="Unassigned" value={d.unassigned} to="/admin?tab=tickets&assigned=none" />
+        <Stat icon={<UserX size={17} />} label="Unassigned" value={d.unassigned} to="/admin?tab=tickets&view=list&assigned=none" />
         <Stat icon={<Timer size={17} />} label="Avg first reply (30d)" value={hours(d.avgFirstReplyHours)} />
         <Stat icon={<CheckCircle2 size={17} />} label="Avg time to solve (30d)" value={hours(d.avgResolveHours)} />
       </section>
@@ -94,7 +94,7 @@ export function AdminSupportOverview() {
         <section className={styles.card}>
           <div className={styles.cardHead}>
             <h3>Waiting longest</h3>
-            <Link to="/admin?tab=tickets&status=open" className={styles.cardLink}>
+            <Link to="/admin?tab=tickets&view=list&status=open" className={styles.cardLink}>
               All open
             </Link>
           </div>
