@@ -48,10 +48,10 @@ export function AdminDashboard({ data: d }: { data: AdminOverview }) {
       {/* Headline numbers */}
       <section className={styles.kpiStrip}>
         <Kpi label="Monthly recurring revenue" value={aud(k.mrrCents)} hint={`${k.paying} paying · ${aud(k.arpaCents)} average`} />
-        <Kpi label="Revenue this month" value={aud(k.revenueMtdCents)} trend={pctChange(k.revenueMtdCents, k.revenuePrevMtdCents)} hint={`vs ${aud(k.revenuePrevMtdCents)} same days last month`} />
+        <Kpi label="Revenue, last 30 days" value={aud(k.revenue30Cents)} trend={pctChange(k.revenue30Cents, k.revenuePrev30Cents)} hint={`vs ${aud(k.revenuePrev30Cents)} the 30 days before`} />
         <Kpi label="Customers with access" value={k.withAccess.toLocaleString("en-AU")} trend={pctChange(k.withAccess, k.withAccessPrev)} hint={`${totalCustomers} accounts in total`} />
         <Kpi label="New sign-ups (30 days)" value={k.signups30.toLocaleString("en-AU")} trend={pctChange(k.signups30, k.signupsPrev30)} hint={`${k.signupsPrev30} the 30 days before`} />
-        <Kpi label="Cancelled (30 days)" value={k.churned30.toLocaleString("en-AU")} trend={pctChange(k.churned30, k.churnedPrev30)} invert hint={k.withAccessPrev ? `${((k.churned30 / Math.max(1, k.withAccessPrev)) * 100).toFixed(1)}% churn` : undefined} />
+        <Kpi label="Lost (30 days)" value={k.churned30.toLocaleString("en-AU")} trend={pctChange(k.churned30, k.churnedPrev30)} invert hint={`cancelled or trial ended · ${((k.churned30 / Math.max(1, k.withAccessPrev)) * 100).toFixed(1)}% churn`} />
       </section>
 
       <div className={styles.grid2}>
@@ -60,7 +60,7 @@ export function AdminDashboard({ data: d }: { data: AdminOverview }) {
             <div>
               <h3>Revenue</h3>
               <p className={styles.cardSub}>
-                <b>{aud(revTotal)}</b> {revRange === "12m" ? "in the last 12 months, after refunds" : "in the last 30 days"}
+                <b>{aud(revTotal)}</b> {revRange === "12m" ? "over these 12 months, after refunds" : "in the last 30 days"}
               </p>
             </div>
             <Segmented value={revRange} onChange={setRevRange} options={[{ k: "12m", label: "12 months" }, { k: "30d", label: "30 days" }]} />

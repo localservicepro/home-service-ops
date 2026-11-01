@@ -119,7 +119,8 @@ export async function loadDemo() {
       const email = `${d.owner.split(" ")[0].toLowerCase().replace(/[^a-z]/g, "")}@${slug}.example.com`;
       const phone = `04${String(10_000_000 + Math.floor(rand() * 89_999_999)).slice(0, 2)} ${String(Math.floor(rand() * 900) + 100)} ${String(Math.floor(rand() * 900) + 100)}`;
       const lastActive = d.kind === "cancelled" || d.kind === "expired" ? new Date(now - (25 + rand() * 40) * DAY) : new Date(now - rand() * (i % 7 === 6 ? 20 : 4) * DAY);
-      const cancelledAt = d.kind === "cancelled" ? new Date(now - (8 + i * 11) * DAY) : null;
+      // The three cancellations: 5, 19 and 33 days ago.
+      const cancelledAt = d.kind === "cancelled" ? new Date(now - (5 + (i - 19) * 14) * DAY - 5 * 3_600_000) : null;
       const subscribed = ["team", "solo", "past_due", "cancelled", "suspended"].includes(d.kind);
 
       const biz = await trx

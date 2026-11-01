@@ -92,14 +92,19 @@ Then click **Verify**. These records sit on a subdomain and a DKIM selector, so 
 
 ## Staff admin (/admin)
 
-Local Service Pro staff run the app from `https://home.localservicepro.com.au/admin`. It works on this app's own data; Sales Brain only receives a copy for central tracking. Staff are users with `role = 'admin'` (info@ and support@localservicepro.com.au; add someone with `update hso.users set role = 'admin' where email = '…'`).
+Local Service Pro staff run the app from `https://home.localservicepro.com.au/admin`. It works on this app's own data; Sales Brain only receives a copy for central tracking. Staff are users with `role = 'admin'` (add someone with `update hso.users set role = 'admin' where email = '…'`).
 
-- **Dashboard:** revenue per month, customers by access (paying, trial, included with Sales Brain, free, overdue, not subscribed), sign-ups per week, activity, trials ending, overdue payments, and support load (open, urgent, unassigned, average first reply).
-- **Customers:** search and filter every business. Each one shows contact and business details, plan and billing (with a Stripe link), usage, team and invites, its support requests and staff-only notes. Staff can give or remove free access (optionally until a date), extend or give a trial, cancel a subscription now, and message the customer.
-- **Support:** the help desk. Filter by status and assignee, search, assign ("Take it"), change status and priority, reply (the customer is emailed) or add an internal note the customer never sees. The customer's account is shown beside every request.
-- **Sales Brain sync:** delivery status of the feed, the connection test, resend and backfill.
+- **Dashboard:** monthly recurring revenue, revenue for the last 30 days, customers with access, sign-ups and lost customers, each with a trend against the previous period. Charts for revenue (12 months or 30 days) and sign-ups (day, week, month), the customer mix, top trades, recent payments, plans and payment health, trials ending, overdue payments, recent cancellations, cancel reasons, activity and a support snapshot. Times are in Brisbane time.
+- **Customers:** search and filter every business. Each one shows details, plan and billing, payment history, usage, team, support requests and staff notes. Staff can give or remove free access, extend a trial, cancel a subscription, **suspend access** (nobody at the business can use the app until it's reinstated; they can still message support) and **delete the account** (typed confirmation; cancels billing and removes logins used only there).
+- **Support overview:** open, waiting, urgent and unassigned counts, average first reply and time to solve, requests per day (new vs solved), categories, priorities, team workload and the requests waiting longest.
+- **Tickets:** the help desk: search, status and assignee filters, assignment, replies (emailed to the customer) and internal notes (never shown to the customer).
+- **Sales Brain sync:** delivery status of the feed.
 
-Customers reach support from the **Support** button (the life-ring in the top bar on phones, the sidebar on larger screens) or Settings → Help & support. A badge shows when support has replied and is waiting on them.
+Revenue comes from the payments ledger `hso.billing_payments`, filled from Stripe's `invoice.paid`, `invoice.payment_failed` and `charge.refunded` events.
+
+**Demo data.** The sidebar's Demo data card loads 24 sample customers with a year of payments, jobs and support conversations, resets them, or removes them. Demo businesses are flagged `is_demo`: they never reach Sales Brain, have no logins and use example.com addresses. Removing them deletes only demo rows.
+
+Customers reach support from the **Support** button (the life-ring in the top bar on phones, the sidebar on larger screens) or Settings → Help & support. A badge shows when support has replied.
 
 ## Sales Brain
 

@@ -189,12 +189,16 @@ export async function overview(): Promise<AdminOverview> {
   const by = (a: CustomerAccess) => customers.filter((c) => c.access === a).length;
   const within = (d: Date | string | null, from: number, to: number) => !!d && now - ts(d) >= from && now - ts(d) < to;
 
-  const payments = await ledger(new Date(startOfMonth(now, 11)));
+  const payments = await ledger(new Date(Math.min(startOfMonth(now, 12), now - 60 * DAY)));
   const paid = payments.filter((p) => p.status === "paid");
   const refunded = payments.filter((p) => p.status === "refunded");
   const failed = payments.filter((p) => p.status === "failed");
-  const monthStarts = Array.from({ length: 12 }, (_, i) => startOfMonth(now, 11 - i));
+  // The last 12 full months, plus this month once it's a week in (a near-empty last point reads as a crash).
+  const showCurrent = now - startOfMonth(now) >= 6 * DAY;
+  const monthStarts = Array.from({ length: 12 }, (_, i) => startOfMonth(now, (showCurrent ? 11 : 12) - i));
+  const monthEnd = showCurrent ? now + 1 : startOfMonth(now);
   const monthOf = (t: number) => {
+    if (t >= monthEnd) return -1;
     for (let i = 11; i >= 0; i--) if (t >= monthStarts[i]) return i;
     return -1;
   };
@@ -210,9 +214,6 @@ export async function overview(): Promise<AdminOverview> {
   }
   const net = (list: typeof payments, from: number, to: number) =>
     list.filter((p) => ts(p.paidAt) >= from && ts(p.paidAt) < to).reduce((s, p) => s + (p.status === "refunded" ? -p.amountCents : p.amountCents), 0);
-  const thisMonth = startOfMonth(now);
-  const lastMonth = startOfMonth(now, 1);
-  const elapsed = now - thisMonth;
   const paidOrRefunded = [...paid, ...refunded];
 
   const paying = customers.filter((c) => c.access === "paying" || c.access === "past_due");
@@ -278,8 +279,8 @@ export async function overview(): Promise<AdminOverview> {
       mrrCents,
       arpaCents: paying.length ? Math.round(mrrCents / paying.length) : 0,
       paying: paying.length,
-      revenueMtdCents: net(paidOrRefunded, thisMonth, now + 1),
-      revenuePrevMtdCents: net(paidOrRefunded, lastMonth, lastMonth + elapsed),
+      revenue30Cents: net(paidOrRefunded, now - 30 * DAY, now + 1),
+      revenuePrev30Cents: net(paidOrRefunded, now - 60 * DAY, now - 30 * DAY),
       withAccess: withAccess.length,
       withAccessPrev: withAccess.filter((c) => now - ts(c.signedUpAt) >= 30 * DAY).length + churned30,
       signups30: customers.filter((c) => within(c.signedUpAt, 0, 30 * DAY)).length,

@@ -115,7 +115,10 @@ export default function AdminPage() {
         </header>
         {ov.data.demo && (
           <div className={styles.demoBanner}>
-            <FlaskConical size={15} /> You're looking at demo data mixed with real accounts. Demo customers are marked <b>Demo</b>; remove them from the sidebar when you're done.
+            <FlaskConical size={15} />
+            <span>
+              Demo data is loaded alongside real accounts. Demo customers are marked <b>Demo</b>. Remove them from the sidebar when you're done.
+            </span>
           </div>
         )}
         <main className={styles.content}>

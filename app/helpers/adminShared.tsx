@@ -86,8 +86,8 @@ export type AdminOverview = {
     mrrCents: number;
     arpaCents: number;
     paying: number;
-    revenueMtdCents: number;
-    revenuePrevMtdCents: number; // last month, same number of days
+    revenue30Cents: number; // last 30 days, after refunds
+    revenuePrev30Cents: number; // the 30 days before
     withAccess: number; // paying, overdue, trial, included or free
     withAccessPrev: number; // the same 30 days ago
     signups30: number;

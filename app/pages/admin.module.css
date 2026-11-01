@@ -1209,7 +1209,7 @@
 }
 .demoBanner {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin: 6px 28px 0;
   padding: 10px 14px;
@@ -1308,7 +1308,7 @@
 /* KPI strip */
 .kpiStrip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
   border-radius: 18px;
   background: var(--card);
   border: 1px solid var(--border);

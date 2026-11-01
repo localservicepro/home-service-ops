@@ -366,6 +366,7 @@ function CustomerDetail({ id }: { id: number }) {
 
         <section className={styles.panel}>
           <h3>Team ({c.members.length})</h3>
+          {!c.members.length && !c.invites.length && <p className={styles.muted}>{c.demo ? "Demo accounts have no logins." : "No logins yet."}</p>}
           {c.members.map((m) => (
             <div key={m.id} className={styles.memberRow}>
               <span>
