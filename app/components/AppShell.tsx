@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Smartphone,
   X,
+  LifeBuoy,
 } from "lucide-react";
 import { useAuth } from "../helpers/useAuth";
 import { useMe } from "../helpers/useMe";
@@ -31,6 +32,9 @@ import { enablePush, isNativeApp } from "../helpers/nativeApp";
 import { DeleteAccountButton } from "./DeleteAccountButton";
 import { useInboxThreads } from "../helpers/useInbox";
 import { isAndroidBrowser } from "../helpers/appDownload";
+import { useQuery } from "@tanstack/react-query";
+import { getSupportList } from "../endpoints/support/list_GET.schema";
+import { SupportRequestSheet } from "./SupportRequestSheet";
 
 // Only signed-out visitors see the marketing page; keep it out of the app's first download.
 const LandingPage = lazy(() => import("./LandingPage").then((m) => ({ default: m.LandingPage })));
@@ -134,6 +138,16 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   const qc = useQueryClient();
   // Unread client texts for the Inbox badge (office only; quiet until SMS Gateway is set up).
   const inbox = useInboxThreads({ enabled: !!me && me.role !== "crew" && me.onboarded });
+  // Support: replies from Local Service Pro waiting on this business (office only).
+  const [supportOpen, setSupportOpen] = useState(false);
+  const support = useQuery({
+    queryKey: ["support", "list"],
+    queryFn: () => getSupportList(),
+    enabled: !!me && me.role !== "crew" && me.onboarded,
+    refetchInterval: 3 * 60 * 1000,
+    staleTime: 60 * 1000,
+  });
+  const supportWaiting = support.data?.tickets.filter((t) => t.status === "pending").length ?? 0;
 
   // Android app: register this phone for alerts once signed in (asks for permission the first time).
   const meId = me?.userId;
@@ -245,6 +259,13 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
             );
           })}
         </nav>
+        {!crew && (
+          <button type="button" className={`${styles.sideItem} ${styles.sideSupport}`} onClick={() => setSupportOpen(true)} title="Message Local Service Pro support">
+            <LifeBuoy size={19} strokeWidth={1.9} />
+            <span>Support</span>
+            {supportWaiting > 0 && <i className={styles.sideBadge} title="Replies waiting">{supportWaiting}</i>}
+          </button>
+        )}
         <div className={styles.sideFoot}>
           <Link to={crew ? "/field/profile" : "/settings"} className={styles.sideAccount} title="Your account">
             <span className={styles.sideAvatar}>{opsFormat.initials(me.displayName || me.email)}</span>
@@ -277,15 +298,24 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
               <span className={styles.brandTag}>HOME SERVICE OPS</span>
             </span>
           </Link>
-          <Link to={crew ? "/field/profile" : "/settings"} className={styles.account} aria-label="Your account">
-            {opsFormat.initials(me.displayName || me.email)}
-          </Link>
+          <span className={styles.headActions}>
+            {!crew && (
+              <button type="button" className={styles.supportBtn} onClick={() => setSupportOpen(true)} aria-label="Message support">
+                <LifeBuoy size={19} strokeWidth={1.9} />
+                {supportWaiting > 0 && <i className={styles.navBadge}>{supportWaiting}</i>}
+              </button>
+            )}
+            <Link to={crew ? "/field/profile" : "/settings"} className={styles.account} aria-label="Your account">
+              {opsFormat.initials(me.displayName || me.email)}
+            </Link>
+          </span>
         </header>
         <GetAppBanner />
         {!crew && <BillingBanner billing={me.billing} />}
         <main className={styles.main}>
           <div className={`${styles.content} ${width}`}>{children}</div>
         </main>
+        {!crew && <SupportRequestSheet open={supportOpen} onOpenChange={setSupportOpen} />}
         <nav className={styles.nav} aria-label="Main">
           {nav.map((n) => {
             const active = n.match(pathname);

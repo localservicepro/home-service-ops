@@ -14,7 +14,7 @@ export function TicketThread({ messages, mine }: { messages: TicketMessage[]; mi
       {messages.map((m) => {
         const ours = mine === "staff" ? m.fromStaff : !m.fromStaff;
         return (
-          <div key={m.id} className={`${styles.msg} ${ours ? styles.ours : styles.theirs}`}>
+          <div key={m.id} className={`${styles.msg} ${ours ? styles.ours : styles.theirs} ${m.internal ? styles.internal : ""}`}>
             <small>
               {m.authorName} · {stamp(m.createdAt)}
             </small>

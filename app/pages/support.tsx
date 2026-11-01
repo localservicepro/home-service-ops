@@ -6,18 +6,15 @@ import { toast } from "sonner";
 import { ArrowLeft, LifeBuoy, Plus, Send, CheckCircle2, RotateCcw } from "lucide-react";
 import { getSupportList } from "../endpoints/support/list_GET.schema";
 import { getSupportTicket } from "../endpoints/support/ticket_GET.schema";
-import { postSupportCreate } from "../endpoints/support/create_POST.schema";
 import { postSupportReply } from "../endpoints/support/reply_POST.schema";
 import { postSupportStatus } from "../endpoints/support/status_POST.schema";
-import { TICKET_CATEGORIES, TICKET_PRIORITIES, categoryLabel, priorityLabel, statusLabel, type TicketCategory, type TicketPriority } from "../helpers/supportShared";
+import { categoryLabel, priorityLabel, statusLabel } from "../helpers/supportShared";
 import { opsFormat } from "../helpers/opsFormat";
 import { PageHeader } from "../components/PageHeader";
 import { Button } from "../components/Button";
-import { Chip } from "../components/Chip";
-import { Input } from "../components/Input";
 import { Textarea } from "../components/Textarea";
 import { Skeleton } from "../components/Skeleton";
-import { BottomSheet } from "../components/BottomSheet";
+import { SupportRequestSheet } from "../components/SupportRequestSheet";
 import { TicketThread } from "../components/TicketThread";
 import styles from "./support.module.css";
 
@@ -42,7 +39,7 @@ export default function SupportPage() {
         right={
           !selected ? (
             <Button size="sm" onClick={() => setCreating(true)}>
-              <Plus size={15} /> New request
+              <Plus size={15} /> New message
             </Button>
           ) : undefined
         }
@@ -80,7 +77,7 @@ export default function SupportPage() {
           </div>
         )}
       </div>
-      <NewRequestSheet open={creating} onOpenChange={setCreating} onCreated={(id) => setParams({ t: String(id) })} />
+      <SupportRequestSheet open={creating} onOpenChange={setCreating} onCreated={(id) => setParams({ t: String(id) })} showListLink={false} />
     </div>
   );
 }
@@ -147,72 +144,5 @@ function TicketView({ id, onBack }: { id: number; onBack: () => void }) {
         </div>
       )}
     </div>
-  );
-}
-
-function NewRequestSheet({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated: (id: number) => void }) {
-  const qc = useQueryClient();
-  const [category, setCategory] = useState<TicketCategory | null>(null);
-  const [priority, setPriority] = useState<TicketPriority>("normal");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const create = useMutation({
-    mutationFn: () => postSupportCreate({ subject: subject.trim(), body: body.trim(), category: category ?? "other", priority, origin: window.location.origin }),
-    onSuccess: (r) => {
-      toast.success("Request sent. We'll reply here and by email.");
-      qc.invalidateQueries({ queryKey: LIST_KEY });
-      onOpenChange(false);
-      setCategory(null);
-      setPriority("normal");
-      setSubject("");
-      setBody("");
-      onCreated(r.id);
-    },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Couldn't send"),
-  });
-  const valid = !!category && subject.trim().length >= 3 && body.trim().length >= 5;
-  return (
-    <BottomSheet
-      open={open}
-      onOpenChange={onOpenChange}
-      title="New support request"
-      footer={
-        <Button size="lg" onClick={() => create.mutate()} disabled={!valid || create.isPending}>
-          {create.isPending ? "Sending…" : "Send request"}
-        </Button>
-      }
-    >
-      <div className={styles.form}>
-        <div className={styles.field}>
-          <span>What's it about?</span>
-          <div className={styles.chips}>
-            {TICKET_CATEGORIES.map((c) => (
-              <Chip key={c.k} selected={category === c.k} onClick={() => setCategory(c.k)}>
-                {c.label}
-              </Chip>
-            ))}
-          </div>
-        </div>
-        <label className={styles.field}>
-          <span>Subject</span>
-          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Can't send a quote" maxLength={140} />
-        </label>
-        <label className={styles.field}>
-          <span>What's happening?</span>
-          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} placeholder="What were you doing, what did you expect, and what happened instead?" />
-        </label>
-        <div className={styles.field}>
-          <span>How urgent is it?</span>
-          <div className={styles.segs} role="radiogroup" aria-label="How urgent">
-            {TICKET_PRIORITIES.map((p) => (
-              <button key={p} type="button" role="radio" aria-checked={priority === p} className={priority === p ? styles.segOn : styles.seg} onClick={() => setPriority(p)}>
-                {priorityLabel(p)}
-              </button>
-            ))}
-          </div>
-          <small>Urgent = you can't work. We'll look at it first.</small>
-        </div>
-      </div>
-    </BottomSheet>
   );
 }

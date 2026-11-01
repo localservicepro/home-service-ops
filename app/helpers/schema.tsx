@@ -520,6 +520,14 @@ export interface XeroOauthStates {
   state: string;
 }
 
+export interface CustomerNotes {
+  authorId: number | null;
+  body: string;
+  businessId: number;
+  createdAt: Generated<Timestamp>;
+  id: Generated<number>;
+}
+
 export interface SalesbrainInbound {
   createdAt: Generated<Timestamp>;
   id: string;
@@ -542,10 +550,12 @@ export interface SalesbrainOutbox {
 }
 
 export interface SupportTickets {
+  assignedTo: number | null;
   body: Generated<string>;
   businessId: number;
   category: Generated<string>;
   createdBy: number | null;
+  firstResponseAt: Timestamp | null;
   id: Generated<number>;
   lastMessage: string | null;
   openedAt: Generated<Timestamp>;
@@ -562,10 +572,12 @@ export interface SupportMessages {
   createdAt: Generated<Timestamp>;
   fromStaff: Generated<boolean>;
   id: Generated<number>;
+  internal: Generated<boolean>;
   ticketId: number;
 }
 
 export interface DB {
+  customerNotes: CustomerNotes;
   salesbrainInbound: SalesbrainInbound;
   salesbrainOutbox: SalesbrainOutbox;
   supportTickets: SupportTickets;

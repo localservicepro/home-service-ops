@@ -13,6 +13,7 @@ export async function handle(request: Request) {
       author: user,
       body: input.body,
       fromStaff: true,
+      internal: input.internal,
       status: input.status,
       origin: input.origin && isValidOrigin(input.origin) ? input.origin : undefined,
     });

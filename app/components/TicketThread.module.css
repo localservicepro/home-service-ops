@@ -39,3 +39,10 @@
   color: #fff;
   border-bottom-right-radius: 6px;
 }
+
+/* Staff-only notes in /admin: never shown to the customer. */
+.internal .bubble {
+  background: color-mix(in srgb, #f5b40b 16%, var(--card));
+  border: 1px dashed color-mix(in srgb, #d98a1f 70%, transparent);
+  color: var(--foreground);
+}

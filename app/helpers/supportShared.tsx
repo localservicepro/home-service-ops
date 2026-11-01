@@ -36,6 +36,16 @@ export type TicketSummary = {
   solvedAt: Date | null;
   businessId: number;
   businessName?: string;
+  assignedTo?: number | null;
+  assigneeName?: string | null;
+  firstResponseAt?: Date | null;
 };
-export type TicketMessage = { id: number; body: string; fromStaff: boolean; authorName: string; createdAt: Date };
+/** internal = a staff-only note: never sent to or shown to the customer. */
+export type TicketMessage = { id: number; body: string; fromStaff: boolean; internal?: boolean; authorName: string; createdAt: Date };
 export type TicketDetail = TicketSummary & { body: string; messages: TicketMessage[]; createdByEmail: string | null };
+
+/** A subject from the first line of a message (the quick "Message us" form has no subject field). */
+export function subjectFrom(body: string, max = 80) {
+  const line = body.trim().split(/\n/)[0].trim();
+  return line.length <= max ? line : `${line.slice(0, max - 1).trimEnd()}…`;
+}

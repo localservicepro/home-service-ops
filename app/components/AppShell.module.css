@@ -452,3 +452,48 @@
     margin-left: auto;
   }
 }
+
+/* Support: opens "Message support" (header icon on phones, sidebar item on wider screens). */
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.headActions .account {
+  margin-left: 0;
+}
+.supportBtn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+}
+.supportBtn .navBadge {
+  top: -4px;
+  right: -6px;
+}
+.sideSupport {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-family-base);
+  cursor: pointer;
+  margin-top: auto;
+  margin-bottom: 6px;
+}
+.sideSupport:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+@media (min-width: 768px) {
+  .sideSupport + .sideFoot {
+    margin-top: 0;
+  }
+}

@@ -84,3 +84,11 @@ describe("workspace details", () => {
     ]);
   });
 });
+
+import { subjectFrom } from "./supportShared";
+describe("support subject from a message", () => {
+  it("uses the first line, shortened", () => {
+    expect(subjectFrom("Can't send a quote\nIt just spins")).toBe("Can't send a quote");
+    expect(subjectFrom("x".repeat(100), 20)).toBe(`${"x".repeat(19)}…`);
+  });
+});

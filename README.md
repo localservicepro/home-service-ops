@@ -90,6 +90,17 @@ In Resend, go to **Domains → Add domain** and enter `home.localservicepro.com.
 
 Then click **Verify**. These records sit on a subdomain and a DKIM selector, so the domain's existing mail isn't affected.
 
+## Staff admin (/admin)
+
+Local Service Pro staff run the app from `https://home.localservicepro.com.au/admin`. It works on this app's own data; Sales Brain only receives a copy for central tracking. Staff are users with `role = 'admin'` (info@ and support@localservicepro.com.au; add someone with `update hso.users set role = 'admin' where email = '…'`).
+
+- **Dashboard:** revenue per month, customers by access (paying, trial, included with Sales Brain, free, overdue, not subscribed), sign-ups per week, activity, trials ending, overdue payments, and support load (open, urgent, unassigned, average first reply).
+- **Customers:** search and filter every business. Each one shows contact and business details, plan and billing (with a Stripe link), usage, team and invites, its support requests and staff-only notes. Staff can give or remove free access (optionally until a date), extend or give a trial, cancel a subscription now, and message the customer.
+- **Support:** the help desk. Filter by status and assignee, search, assign ("Take it"), change status and priority, reply (the customer is emailed) or add an internal note the customer never sees. The customer's account is shown beside every request.
+- **Sales Brain sync:** delivery status of the feed, the connection test, resend and backfill.
+
+Customers reach support from the **Support** button (the life-ring in the top bar on phones, the sidebar on larger screens) or Settings → Help & support. A badge shows when support has replied and is waiting on them.
+
 ## Sales Brain
 
 The app pushes account, payment and support-ticket changes to Sales Brain (`POST https://app.salesbrain.com.au/api/integrations/lsp-app`). Sales Brain only receives; this app stays the source of truth.
