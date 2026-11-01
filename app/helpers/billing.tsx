@@ -3,6 +3,7 @@ import { db } from "./db";
 import { stripeApi, isStripeConfigured } from "./stripeConnect";
 import { PLANS, type BillingStatus, type BillingSummary, type PlanKey } from "./plans";
 import { API_URL } from "./serverEnv";
+import { queueAccountSync, recordBillingPayment } from "./salesBrain";
 
 // Server-only. Subscriptions for businesses using the app, billed on the LSP platform
 // Stripe account, plus the plan limits the app enforces.
@@ -145,6 +146,8 @@ type Sub = {
   status: string;
   cancel_at_period_end: boolean;
   current_period_end?: number;
+  canceled_at?: number | null;
+  ended_at?: number | null;
   items: { data: { id: string; price: Price; current_period_end?: number }[] };
   metadata?: Record<string, string>;
   pending_update?: unknown;
@@ -227,29 +230,56 @@ function planFromSub(sub: Sub): PlanKey | null {
   return meta === "solo" || meta === "team" ? meta : null;
 }
 
-async function applySub(businessId: number, sub: Sub | null) {
-  if (!sub) {
-    await db
-      .updateTable("businesses")
-      .set({ stripeSubscriptionId: null, subscriptionStatus: null, currentPeriodEnd: null, cancelAtPeriodEnd: false, billingSyncedAt: new Date() })
-      .where("id", "=", businessId)
-      .execute();
-    return;
-  }
-  const end = sub.current_period_end ?? sub.items.data[0]?.current_period_end;
-  const plan = planFromSub(sub);
-  await db
-    .updateTable("businesses")
-    .set({
-      stripeSubscriptionId: sub.id,
-      subscriptionStatus: sub.status,
-      currentPeriodEnd: end ? new Date(end * 1000) : null,
-      cancelAtPeriodEnd: sub.cancel_at_period_end,
-      billingSyncedAt: new Date(),
-      ...(plan ? { plan } : {}),
-    })
-    .where("id", "=", businessId)
-    .execute();
+const ENDED_SUB = ["canceled", "incomplete_expired"];
+
+/**
+ * Saves the subscription state and, in the same transaction, tells Sales Brain if anything it
+ * reports on changed. `cancelReason`: the owner's answer when cancelling (null clears it on resume).
+ */
+async function applySub(businessId: number, sub: Sub | null, opts: { cancelReason?: string | null } = {}) {
+  await db.transaction().execute(async (trx) => {
+    const prev = await trx.selectFrom("businesses").select(["subscriptionStatus", "cancelledAt"]).where("id", "=", businessId).executeTakeFirstOrThrow();
+    const reason = opts.cancelReason !== undefined ? { cancelReason: opts.cancelReason } : {};
+    if (!sub) {
+      await trx
+        .updateTable("businesses")
+        .set({
+          stripeSubscriptionId: null,
+          subscriptionStatus: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          billingSyncedAt: new Date(),
+          // The subscription is gone: if it had been running, that's a cancellation.
+          ...(prev.subscriptionStatus && !ENDED_SUB.includes(prev.subscriptionStatus) && !prev.cancelledAt ? { cancelledAt: new Date() } : {}),
+          ...reason,
+        })
+        .where("id", "=", businessId)
+        .execute();
+    } else {
+      const end = sub.current_period_end ?? sub.items.data[0]?.current_period_end;
+      const plan = planFromSub(sub);
+      const ended = ENDED_SUB.includes(sub.status);
+      const endedAt = sub.ended_at ?? sub.canceled_at;
+      await trx
+        .updateTable("businesses")
+        .set({
+          stripeSubscriptionId: sub.id,
+          subscriptionStatus: sub.status,
+          currentPeriodEnd: end ? new Date(end * 1000) : null,
+          cancelAtPeriodEnd: sub.cancel_at_period_end,
+          billingSyncedAt: new Date(),
+          ...(plan ? { plan } : {}),
+          // Ended: stamp when (once). Running again (reactivated or resumed): clear it.
+          ...(ended ? (prev.cancelledAt ? {} : { cancelledAt: endedAt ? new Date(endedAt * 1000) : new Date() }) : { cancelledAt: null }),
+          // Back on a plan that isn't set to end: last cancellation's reason no longer applies.
+          ...(!ended && !sub.cancel_at_period_end && opts.cancelReason === undefined && prev.subscriptionStatus && ENDED_SUB.includes(prev.subscriptionStatus) ? { cancelReason: null } : {}),
+          ...reason,
+        })
+        .where("id", "=", businessId)
+        .execute();
+    }
+    await queueAccountSync(trx, businessId);
+  });
 }
 
 /** Pulls the latest subscription for a business from Stripe. */
@@ -262,16 +292,19 @@ export async function syncSubscription(businessId: number) {
   await applySub(businessId, best);
 }
 
-/** Platform webhook: subscription changes. */
-export async function handleBillingEvent(event: { type: string; data: { object: { customer?: string; object?: string } } }) {
-  if (!event.type.startsWith("customer.subscription.") && event.type !== "checkout.session.completed" && event.type !== "invoice.paid" && event.type !== "invoice.payment_failed") {
+const PAYMENT_EVENTS = ["invoice.paid", "invoice.payment_failed", "charge.refunded"];
+
+/** Platform webhook: subscription changes, and payments for Sales Brain. */
+export async function handleBillingEvent(event: { id: string; type: string; created: number; data: { object: { customer?: string; object?: string } } }) {
+  if (!event.type.startsWith("customer.subscription.") && event.type !== "checkout.session.completed" && !PAYMENT_EVENTS.includes(event.type)) {
     return "ignored";
   }
   const customer = event.data.object.customer;
   if (!customer) return "no customer";
   const b = await db.selectFrom("businesses").select("id").where("stripeCustomerId", "=", customer).executeTakeFirst();
   if (!b) return "unknown customer";
-  await syncSubscription(b.id);
+  if (PAYMENT_EVENTS.includes(event.type)) await recordBillingPayment(event as Parameters<typeof recordBillingPayment>[0], b.id);
+  if (event.type !== "charge.refunded") await syncSubscription(b.id);
   return "synced";
 }
 
@@ -414,11 +447,14 @@ export async function cancelSubscriptionNow(businessId: number) {
   await stripeApi(`/subscriptions/${b.stripeSubscriptionId}`, { method: "DELETE" });
 }
 
-/** Cancel at the end of the paid period, or undo a pending cancellation. */
-export async function setCancelAtPeriodEnd(businessId: number, cancel: boolean) {
+/** Cancel at the end of the paid period (with the owner's reason), or undo a pending cancellation. */
+export async function setCancelAtPeriodEnd(businessId: number, cancel: boolean, reason?: string) {
   const sub = await liveSub(businessId);
-  const updated = await stripeApi<Sub>(`/subscriptions/${sub.id}`, { method: "POST", params: { cancel_at_period_end: cancel } });
-  await applySub(businessId, updated);
+  const updated = await stripeApi<Sub>(`/subscriptions/${sub.id}`, {
+    method: "POST",
+    params: { cancel_at_period_end: cancel, ...(cancel && reason ? { cancellation_details: { comment: reason.slice(0, 500) } } : {}) },
+  });
+  await applySub(businessId, updated, { cancelReason: cancel ? reason?.trim() || null : null });
   const end = updated.current_period_end ?? updated.items.data[0]?.current_period_end;
   const date = end ? new Date(end * 1000).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "the end of this period";
   return { message: cancel ? `Your plan will end on ${date}. You can resume any time before then.` : "Your subscription will keep renewing." };

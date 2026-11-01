@@ -16,6 +16,8 @@ import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { Skeleton } from "../components/Skeleton";
 import { BottomSheet } from "../components/BottomSheet";
+import { Chip } from "../components/Chip";
+import { Textarea } from "../components/Textarea";
 import styles from "./settings.billing.module.css";
 import { isNativeApp, openInBrowser, openPopupWindow } from "../helpers/nativeApp";
 import { postAccountWebLink } from "../endpoints/account/web_link_POST.schema";
@@ -46,6 +48,7 @@ function Meter({ label, used, limit }: { label: string; used: number; limit: num
 }
 
 type Confirm = { kind: "change"; plan: PlanKey } | { kind: "cancel" } | null;
+const CANCEL_REASONS = ["Too expensive", "Missing a feature I need", "Switching to another app", "Not using it enough", "Business closing or slowing down", "Other"];
 const EMPTY_DETAILS = { name: "", email: "", line1: "", city: "", state: "", postcode: "" };
 
 export default function BillingPage() {
@@ -61,6 +64,10 @@ export default function BillingPage() {
   const plansRef = useRef<HTMLDivElement | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [confirm, setConfirm] = useState<Confirm>(null);
+  // Cancel flow: why they're leaving (goes to Stripe and Sales Brain).
+  const [cancelWhy, setCancelWhy] = useState<string | null>(null);
+  const [cancelMore, setCancelMore] = useState("");
+  const cancelReason = cancelWhy ? (cancelMore.trim() ? `${cancelWhy}: ${cancelMore.trim()}` : cancelWhy) : cancelMore.trim();
   const [details, setDetails] = useState(EMPTY_DETAILS);
 
   useEffect(() => {
@@ -481,7 +488,11 @@ export default function BillingPage() {
                   <b>Cancel subscription</b>
                   <small>You keep access until {fmtDate(b.currentPeriodEnd)}. Your data stays safe and you can come back any time.</small>
                 </div>
-                <Button variant="outline" className={styles.cancelBtn} onClick={() => setConfirm({ kind: "cancel" })} disabled={busy}>
+                <Button variant="outline" className={styles.cancelBtn} onClick={() => {
+                    setCancelWhy(null);
+                    setCancelMore("");
+                    setConfirm({ kind: "cancel" });
+                  }} disabled={busy}>
                   Cancel plan
                 </Button>
               </section>
@@ -513,7 +524,11 @@ export default function BillingPage() {
               {confirm?.kind === "cancel" ? "Keep my plan" : "Not now"}
             </Button>
             {confirm?.kind === "cancel" ? (
-              <Button variant="destructive" onClick={() => manageMut.mutate({ action: "cancel" })} disabled={manageMut.isPending}>
+              <Button
+                variant="destructive"
+                onClick={() => manageMut.mutate({ action: "cancel", reason: cancelReason })}
+                disabled={manageMut.isPending || cancelReason.length < 2 || (cancelWhy === "Other" && cancelMore.trim().length < 2)}
+              >
                 {manageMut.isPending ? "Cancelling…" : "Cancel at period end"}
               </Button>
             ) : confirmPlan ? (
@@ -534,6 +549,23 @@ export default function BillingPage() {
               read-only; nothing is deleted.
             </p>
             <p>You can resume any time before then with one click.</p>
+            <div className={styles.cancelWhy}>
+              <b>What's the main reason you're cancelling?</b>
+              <div className={styles.cancelChips}>
+                {CANCEL_REASONS.map((r) => (
+                  <Chip key={r} selected={cancelWhy === r} onClick={() => setCancelWhy(r)}>
+                    {r}
+                  </Chip>
+                ))}
+              </div>
+              <Textarea
+                value={cancelMore}
+                onChange={(e) => setCancelMore(e.target.value)}
+                rows={3}
+                maxLength={400}
+                placeholder={cancelWhy === "Other" ? "Tell us a bit more (required)" : "Anything else we should know? (optional)"}
+              />
+            </div>
           </div>
         )}
         {b && confirmPlan && (

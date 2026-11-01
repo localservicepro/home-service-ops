@@ -1,6 +1,7 @@
 import superjson from "superjson";
 import { db } from "../../helpers/db";
 import { errorResponse, requireMember } from "../../helpers/tenant";
+import { queueAccountSync } from "../../helpers/salesBrain";
 import { schema, OutputType } from "./save_POST.schema";
 
 export async function handle(request: Request) {
@@ -15,14 +16,18 @@ export async function handle(request: Request) {
     }
     if (patch.reviewMessage === "") patch.reviewMessage = null;
     if (patch.reminderMessage === "") patch.reminderMessage = null;
-    await db
-      .insertInto("settings")
-      .values({ businessId: ctx.businessId, ...patch })
-      .onConflict((oc) => oc.column("businessId").doUpdateSet(patch))
-      .execute();
-    // Keep the business record's name in step with the business details.
-    const name = (input.business as { name?: string } | undefined)?.name?.trim();
-    if (name) await db.updateTable("businesses").set({ name }).where("id", "=", ctx.businessId).execute();
+    await db.transaction().execute(async (trx) => {
+      await trx
+        .insertInto("settings")
+        .values({ businessId: ctx.businessId, ...patch })
+        .onConflict((oc) => oc.column("businessId").doUpdateSet(patch))
+        .execute();
+      // Keep the business record's name in step with the business details.
+      const name = (input.business as { name?: string } | undefined)?.name?.trim();
+      if (name) await trx.updateTable("businesses").set({ name }).where("id", "=", ctx.businessId).execute();
+      // Name, owner or contact details changed: Sales Brain's copy too (only if something it shows changed).
+      if (input.business || input.owner) await queueAccountSync(trx, ctx.businessId);
+    });
     return new Response(superjson.stringify({ ok: true } satisfies OutputType));
   } catch (error) {
     return errorResponse(error);

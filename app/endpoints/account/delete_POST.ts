@@ -7,6 +7,7 @@ import { deleteFolder } from "../../helpers/storage";
 import { AUTH_URL, env } from "../../helpers/serverEnv";
 import { errorResponse } from "../../helpers/tenant";
 import { schema, OutputType } from "./delete_POST.schema";
+import { queueAccountClosed } from "../../helpers/salesBrain";
 
 export async function handle(request: Request) {
   try {
@@ -39,7 +40,10 @@ export async function handle(request: Request) {
       for (const folder of ["job-photos", "lead-photos", "form-logos"]) {
         await deleteFolder(`${folder}/${businessId}`).catch(() => 0);
       }
-      await db.deleteFrom("businesses").where("id", "=", businessId).execute();
+      await db.transaction().execute(async (trx) => {
+        await queueAccountClosed(trx, businessId);
+        await trx.deleteFrom("businesses").where("id", "=", businessId).execute();
+      });
     }
 
     // Removing the Supabase login cascades to hso.users and any remaining memberships.

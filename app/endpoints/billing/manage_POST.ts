@@ -15,7 +15,7 @@ export async function handle(request: Request) {
         out = await changePlan(ctx.businessId, input.plan);
         break;
       case "cancel":
-        out = await setCancelAtPeriodEnd(ctx.businessId, true);
+        out = await setCancelAtPeriodEnd(ctx.businessId, true, input.reason);
         break;
       case "resume":
         out = await setCancelAtPeriodEnd(ctx.businessId, false);

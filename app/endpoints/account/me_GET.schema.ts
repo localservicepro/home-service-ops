@@ -17,6 +17,8 @@ export type OutputType = {
   billing: BillingSummary;
   onboarded: boolean;
   trade: string;
+  /** Local Service Pro staff: can open /admin. */
+  platformAdmin: boolean;
 };
 
 export const getAccountMe = async (init?: RequestInit): Promise<OutputType> => {

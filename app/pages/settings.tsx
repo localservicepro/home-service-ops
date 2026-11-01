@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { ChevronRight, Leaf, CreditCard, Receipt, LogOut, Plug, Globe, HardHat, Smartphone } from "lucide-react";
+import { ChevronRight, Leaf, CreditCard, Receipt, LogOut, Plug, Globe, HardHat, Smartphone, LifeBuoy, ShieldCheck } from "lucide-react";
+import { useMe } from "../helpers/useMe";
 import { isNativeApp } from "../helpers/nativeApp";
 import type { Settings } from "../endpoints/ops/snapshot_GET.schema";
 import { useOpsData } from "../helpers/useOpsData";
@@ -60,6 +61,7 @@ const BIZ_FIELDS: { k: keyof Business; label: string; ph?: string; type?: string
 ];
 
 export default function SettingsPage() {
+  const { data: me } = useMe();
   const { data } = useOpsData();
   const [owner, setOwner] = useState<Owner | null>(null);
   const [biz, setBiz] = useState<Business | null>(null);
@@ -145,6 +147,18 @@ export default function SettingsPage() {
                     <span className={styles.linkText}><b>Services & add-ons</b><small>{data?.services.length ?? 0} services · {data?.addons.length ?? 0} add-ons</small></span>
                     <ChevronRight size={16} className={styles.chev} />
                   </Link>
+                  <Link to="/support" className={styles.linkRow}>
+                    <span className={styles.linkIcon}><LifeBuoy size={16} /></span>
+                    <span className={styles.linkText}><b>Help & support</b><small>Ask Local Service Pro a question or report a problem</small></span>
+                    <ChevronRight size={16} className={styles.chev} />
+                  </Link>
+                  {me?.platformAdmin && (
+                    <Link to="/admin" className={styles.linkRow}>
+                      <span className={styles.linkIcon}><ShieldCheck size={16} /></span>
+                      <span className={styles.linkText}><b>Staff admin</b><small>Support requests from every business · Sales Brain</small></span>
+                      <ChevronRight size={16} className={styles.chev} />
+                    </Link>
+                  )}
                   <Link to="/crew" className={styles.linkRow}>
                     <span className={styles.linkIcon}><HardHat size={16} /></span>
                     <span className={styles.linkText}><b>Crew</b><small>Your team, rates and who's available</small></span>

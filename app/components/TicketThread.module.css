@@ -1,0 +1,41 @@
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: min(86%, 620px);
+}
+.msg small {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.theirs {
+  align-self: flex-start;
+}
+.theirs .bubble {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  border-bottom-left-radius: 6px;
+}
+.ours {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.ours .bubble {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+}

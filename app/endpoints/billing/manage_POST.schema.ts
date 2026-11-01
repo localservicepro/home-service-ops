@@ -7,7 +7,7 @@ const origin = z.string().url().refine((u) => /^https:\/\/[^/]+$/.test(u) || /^h
 // Owner only: change plan, cancel/resume, update billing details, or get a secure card-update link.
 export const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("change_plan"), plan: z.enum(["solo", "team"]) }),
-  z.object({ action: z.literal("cancel") }),
+  z.object({ action: z.literal("cancel"), reason: z.string().trim().min(2, "Tell us why you're cancelling").max(500) }),
   z.object({ action: z.literal("resume") }),
   z.object({
     action: z.literal("details"),

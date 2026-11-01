@@ -64,13 +64,18 @@ export interface AuthEmailLog {
 export interface Businesses {
   billingSyncedAt: Timestamp | null;
   cancelAtPeriodEnd: Generated<boolean>;
+  cancelledAt: Timestamp | null;
+  cancelReason: string | null;
   comp: Generated<boolean>;
   createdAt: Generated<Timestamp>;
   currentPeriodEnd: Timestamp | null;
   id: Generated<number>;
+  lastActiveAt: Timestamp | null;
+  lastInvoiceCents: number | null;
   name: string;
   onboardedAt: Timestamp | null;
   plan: Generated<string>;
+  sbFingerprint: string | null;
   stripeCustomerId: string | null;
   stripeSubscriptionId: string | null;
   subscriptionStatus: string | null;
@@ -510,7 +515,48 @@ export interface XeroOauthStates {
   state: string;
 }
 
+export interface SalesbrainOutbox {
+  alertedAt: Timestamp | null;
+  attempts: Generated<number>;
+  createdAt: Generated<Timestamp>;
+  id: string;
+  lastError: string | null;
+  nextAttemptAt: Generated<Timestamp>;
+  payload: Json;
+  sendAlone: Generated<boolean>;
+  sentAt: Timestamp | null;
+  status: Generated<string>;
+  type: string;
+}
+
+export interface SupportTickets {
+  body: Generated<string>;
+  businessId: number;
+  category: Generated<string>;
+  createdBy: number | null;
+  id: Generated<number>;
+  lastMessage: string | null;
+  openedAt: Generated<Timestamp>;
+  priority: Generated<string>;
+  solvedAt: Timestamp | null;
+  status: Generated<string>;
+  subject: string;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface SupportMessages {
+  authorId: number | null;
+  body: string;
+  createdAt: Generated<Timestamp>;
+  fromStaff: Generated<boolean>;
+  id: Generated<number>;
+  ticketId: number;
+}
+
 export interface DB {
+  salesbrainOutbox: SalesbrainOutbox;
+  supportTickets: SupportTickets;
+  supportMessages: SupportMessages;
   addons: Addons;
   authEmailLog: AuthEmailLog;
   businesses: Businesses;

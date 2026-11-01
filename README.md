@@ -90,6 +90,35 @@ In Resend, go to **Domains → Add domain** and enter `home.localservicepro.com.
 
 Then click **Verify**. These records sit on a subdomain and a DKIM selector, so the domain's existing mail isn't affected.
 
+## Sales Brain
+
+The app pushes account, payment and support-ticket changes to Sales Brain (`POST https://app.salesbrain.com.au/api/integrations/lsp-app`). Sales Brain only receives; this app stays the source of truth.
+
+**Secret.** Set `LSP_APP_SHARED_SECRET` as a Supabase Edge Function secret (Dashboard → Edge Functions → Secrets, or `supabase secrets set LSP_APP_SHARED_SECRET=…`). It is read server-side only, never logged, and never sent to the browser. Until it's set, events queue up and nothing is sent. Optional: `SALES_BRAIN_ALERT_EMAIL` (who hears about events that keep failing, default info@localservicepro.com.au) and `SUPPORT_EMAIL` (new support tickets, default support@localservicepro.com.au).
+
+**How it works.**
+- Each change writes an event to `hso.salesbrain_outbox` in the same transaction, with its id fixed at that point, so retries resend the same id.
+- The `hso-salesbrain` pg_cron job calls `API/cron/salesbrain` every minute. It sends up to 500 events per request, signed with `x-lsp-timestamp` and `x-lsp-signature: sha256=HMAC("<timestamp>.<body>")`.
+- 200 marks them sent. 207 marks only the named events as rejected. A 400 on a batch resends each event alone to find the bad one. 401 holds everything until the secret or clock is fixed. 503, other 5xx and network errors back off 1m, 5m, 30m, 2h, then email an alert and keep retrying every 2h.
+- `account.upserted` goes out on sign-up, plan change, every status change, profile changes, and once a day for usage (from the 15-minute `/cron/tick`). `payment.recorded` comes from Stripe `invoice.paid`, `invoice.payment_failed` and `charge.refunded`. `ticket.upserted` comes from Settings → Help & support and the staff replies in `/admin`.
+- Add `charge.refunded` to the Stripe billing webhook's events so refunds reach Sales Brain.
+
+**Test the connection.** Sign in as a staff user (`users.role = 'admin'`) and open `/admin` → Sales Brain → **Test Sales Brain connection**. It sends a signed GET with an empty body and expects `200 {"ok":true}`. The same tab shows the queue, events that were rejected or held, and **Resend held & rejected** once the cause is fixed.
+
+**Backfill (run once, after the secret is set).** `/admin` → Sales Brain → **Run backfill**, or from SQL:
+
+```sql
+select net.http_post(
+  url := 'https://gcuzmuztikisxsmkgtbi.supabase.co/functions/v1/api/cron/salesbrain_backfill',
+  headers := jsonb_build_object('Content-Type', 'application/json',
+    'x-cron-key', (select decrypted_secret from vault.decrypted_secrets where name = 'hso_cron_key')),
+  body := '{}'::jsonb, timeout_milliseconds := 120000);
+```
+
+It queues every account, the last 90 days of Stripe payments and refunds, and every open or pending ticket. Ids are deterministic (`backfill-account-<id>-<YYYY-MM-DD>`, `backfill-payment-<invoice>-paid`, `refund-<id>`, `backfill-ticket-<id>-<YYYY-MM-DD>`), so running it twice on the same day queues nothing new. The cron sends the queue over the next few minutes.
+
+**Tests.** `npm test` covers the signature (a known secret, timestamp and body give a fixed hex), every payload shape, and the response handling and backoff. They never call the real endpoint.
+
 ## Local development
 
 The whole stack runs without Docker: Postgres, the Supabase Auth server (`auth` binary from github.com/supabase/auth releases), the API under Deno, and Vite.

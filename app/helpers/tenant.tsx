@@ -4,6 +4,7 @@ import { getServerUserSession } from "./getServerUserSession";
 import { NotAuthenticatedError } from "./getSetServerSession";
 import { PaymentRequiredError, assertNotReadOnly } from "./billing";
 import type { MemberRole } from "./schema";
+import { touchActive } from "./salesBrain";
 import type { User } from "./User";
 
 // Server-only. Every business-data endpoint starts with requireMember(): it resolves the
@@ -44,6 +45,7 @@ export async function requireMember(
     .executeTakeFirst();
   if (!m) throw new ForbiddenError("Your login isn't linked to a business yet.");
   if (!roles.includes(m.role)) throw new ForbiddenError();
+  touchActive(m.businessId);
   if (request.method !== "GET" && !opts.allowExpired) await assertNotReadOnly(m.businessId);
   return { user, businessId: m.businessId, businessName: m.businessName, role: m.role, staffId: m.staffId };
 }

@@ -77,7 +77,7 @@ Use the **Test mode** keys first and switch to live once you've tried it.
 **D. Webhook for subscriptions**
 1. **Add endpoint** again. Endpoint URL: `API/stripe/billing_webhook`.
 2. Choose **Events on your account**.
-3. Events: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.created`, `customer.subscription.updated` and `customer.subscription.deleted`.
+3. Events: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` and `charge.refunded` (refunds go to Sales Brain).
 4. Copy its **Signing secret** → secret **`STRIPE_BILLING_WEBHOOK_SECRET`**.
 
 The plan prices (AUD, `hso_solo_monthly_aud` and `hso_team_monthly_aud`) are created in Stripe automatically the first time someone picks a plan. You can also turn on the **Customer portal** (Settings → Billing → Customer portal) so "Manage billing" works.

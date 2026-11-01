@@ -21,6 +21,7 @@ export async function loadMe(ctx: MemberCtx): Promise<OutputType> {
     billing,
     onboarded: !!biz.onboardedAt,
     trade: biz.trade,
+    platformAdmin: ctx.user.role === "admin",
   };
 }
 

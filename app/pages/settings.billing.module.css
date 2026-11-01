@@ -599,3 +599,18 @@
   }
 }
 
+.cancelWhy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+.cancelWhy b {
+  font-size: 14px;
+  color: var(--foreground);
+}
+.cancelChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

@@ -1,6 +1,7 @@
 import { sql, type Transaction } from "kysely";
 import { db } from "./db";
 import type { DB, MemberRole } from "./schema";
+import { queueAccountSync } from "./salesBrain";
 
 // Server-only. Links a newly registered user to a business: either the one their invite
 // is for, or a brand-new business they own (with a starter settings row).
@@ -59,6 +60,7 @@ export async function linkNewUser(
     })
     .execute();
   await trx.insertInto("memberships").values({ businessId: biz.id, userId: user.id, role: "owner" }).execute();
+  await queueAccountSync(trx, biz.id, { force: true });
   return { businessId: biz.id, role: "owner" };
 }
 
