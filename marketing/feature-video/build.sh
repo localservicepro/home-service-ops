@@ -26,7 +26,7 @@ clip() { # name src out_dur [segments...] -- segment = start:end[:speed]
 clip hero      hero      7.41  0:7.41
 clip leadform  leadform  13.15 0:6.0 9.0:15.43
 clip pipeline  pipeline  8.39  0:6.6
-clip quote     quote     10.29 0:6.95:1.25
+clip quote     quote     10.29 0:6.6:1.25
 clip schedule  schedule  4.95  2.0:6.95
 clip crew      crew      9.81  0:7.9:1.15
 clip pay       pay       9.85  0:4.9:1.4
