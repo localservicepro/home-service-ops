@@ -164,6 +164,14 @@ It queues every real account, every payment in the ledger (paid, failed, refunde
 
 **Live dashboard numbers for Sales Brain.** `GET /api/integrations/sales-brain/summary?days=30` (add `&include_demo=1` to count demo customers), signed with `x-lsp-timestamp` and `x-lsp-signature: sha256=<HMAC-SHA256 of "<timestamp>.">`. It returns revenue, customers and support computed by the same code as /admin's Dashboard and Support overview (`helpers/adminMetrics.tsx`). 401 on a bad or stale signature, 400 on a bad `days`.
 
+**Per-customer reads for Sales Brain.** Same signature. Demo customers are left out unless `include_demo=1`. Money is integer cents, AUD.
+
+- `GET /api/integrations/sales-brain/customers?range=month` lists every customer. Each entry has the account (status, access, plan, MRR, sign-up, last active, users, open tickets) and `analytics` from the customer's own dashboard: money collected, jobs completed, outstanding and overdue, booked ahead, quotes and win rate, payment methods, top services, lead sources, crew and pipeline. `range` is `month`, `quarter` or `fy` (the Australian financial year), bucketed in Brisbane time.
+- `GET /api/integrations/sales-brain/customer?account_id=N&range=month` returns one customer in full: account, billing and payments to us, team, pending invites, usage totals, analytics and tickets.
+- `GET /api/integrations/sales-brain/tickets` lists support tickets. Add `status=open,in_progress,pending,solved,closed` or `active`, and/or `account_id=N`. `ticket_id=N` returns one ticket with its whole conversation, with internal staff notes marked `internal_note`.
+
+The account fields come from the staff admin's rules (`helpers/adminData.tsx`). The analytics come from the customer dashboard's own maths (`helpers/dashboardStats.tsx`), through `helpers/salesBrainCustomers.tsx`.
+
 **Tests.** `npm test` covers the signature (a known secret, timestamp and body give a fixed hex), every payload shape, and the response handling and backoff. They never call the real endpoint.
 
 ## Local development

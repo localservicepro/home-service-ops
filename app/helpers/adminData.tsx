@@ -8,6 +8,7 @@ import { deleteFolder } from "./storage";
 import { AUTH_URL, env } from "./serverEnv";
 import { listStaff, listTickets } from "./support";
 import type { AdminCustomer, AdminCustomerDetail, AdminOverview, CustomerAccess, SupportOverview } from "./adminShared";
+import type { OpsRows } from "./salesBrainCustomers";
 import { DAY, computeOverview, computeSupport, loadWindow, type MetricsData } from "./adminMetrics";
 
 // Server-only. The staff admin (/admin): every business with its status, revenue, usage and support
@@ -398,4 +399,24 @@ export async function customerAction(id: number, staff: { id: number }, a: Custo
       await db.deleteFrom("customerNotes").where("id", "=", a.noteId).where("businessId", "=", id).execute();
       return "Note deleted.";
   }
+}
+
+/** Jobs, quotes and crew of the given businesses: what their own dashboards compute from. */
+export async function loadOpsRows(businessIds: number[]): Promise<OpsRows> {
+  if (!businessIds.length) return { jobs: [], quotes: [], staff: [] };
+  const [jobs, quotes, staff] = await Promise.all([
+    db
+      .selectFrom("jobs")
+      .select(["businessId", "status", "price", "statusChangedAt", "createdAt", "payMethod", "payProvider", "service", "staffId", "source"])
+      .select(sql<string | null>`to_char(scheduled_date, 'YYYY-MM-DD')`.as("scheduledDate"))
+      .where("businessId", "in", businessIds)
+      .execute(),
+    db.selectFrom("quotes").select(["businessId", "status", "price", "sentAt", "statusChangedAt", "createdAt"]).where("businessId", "in", businessIds).execute(),
+    db.selectFrom("staff").select(["businessId", "id", "name", "color"]).where("businessId", "in", businessIds).orderBy("id").execute(),
+  ]);
+  return {
+    jobs: jobs.map((j) => ({ ...j, price: Number(j.price) || 0 })),
+    quotes: quotes.map((q) => ({ ...q, price: Number(q.price) || 0 })),
+    staff,
+  };
 }

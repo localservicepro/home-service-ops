@@ -41,7 +41,7 @@ export function moneyK(n: number) {
 }
 
 export type TrendBucket = { key: string; label: string; long: string; paid: number; awaiting: number; booked: number; jobs: number; current: boolean; future: boolean };
-export type BarItem = { label: string; value: number; sub?: string; color?: string };
+export type BarItem = { label: string; value: number; sub?: string; color?: string; count?: number };
 
 const SOURCE_LABEL: Record<string, string> = {
   manual: "Added manually",
@@ -186,6 +186,7 @@ export function computeDashboard(input: { jobs: Job[]; quotes: Quote[]; staff: S
   const services: BarItem[] = groupTop(doneNow.map((j) => ({ key: j.service || "Other", value: j.price }))).map((g) => ({
     label: g.label,
     value: g.value,
+    count: g.count,
     sub: `${g.count} job${g.count === 1 ? "" : "s"}`,
   }));
 
@@ -193,6 +194,7 @@ export function computeDashboard(input: { jobs: Job[]; quotes: Quote[]; staff: S
   const sources: BarItem[] = groupTop(newJobs.map((j) => ({ key: SOURCE_LABEL[j.source] ?? (j.source ? j.source[0].toUpperCase() + j.source.slice(1) : "Other"), value: j.price }))).map((g) => ({
     label: g.label,
     value: g.value,
+    count: g.count,
     sub: `${g.count} lead${g.count === 1 ? "" : "s"}`,
   }));
 
