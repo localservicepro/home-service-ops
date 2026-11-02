@@ -1,0 +1,77 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--muted, #eef3f9);
+  color: var(--muted-foreground);
+}
+.iconOn {
+  background: color-mix(in srgb, #0c6fd0 12%, transparent);
+  color: #0c6fd0;
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.text b {
+  font-size: 15px;
+  color: var(--foreground);
+}
+.text small {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.skel {
+  height: 14px;
+  width: 60%;
+}
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.row > span {
+  display: flex;
+  flex-direction: column;
+}
+.row b {
+  font-size: 14px;
+  color: var(--foreground);
+}
+.row small {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.test {
+  align-self: flex-start;
+}

@@ -1,0 +1,111 @@
+.methods {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-bottom: var(--spacing-4);
+}
+.method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--card);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-family-base);
+}
+.method:hover {
+  border-color: var(--primary);
+}
+.method:disabled {
+  opacity: 0.5;
+}
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.cash {
+  color: var(--status-done);
+  background: var(--status-done-bg);
+}
+.online {
+  color: var(--primary);
+  background: var(--secondary);
+}
+.bank {
+  color: var(--status-quote);
+  background: var(--status-quote-bg);
+}
+.dd {
+  color: var(--status-progress);
+  background: var(--status-progress-bg);
+}
+.mText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.mLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+.mDesc {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.amt {
+  font-weight: 800;
+  color: var(--foreground);
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding-bottom: var(--spacing-4);
+}
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--navy-700);
+}
+.status {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  padding: 10px 12px;
+  background: var(--muted);
+  border-radius: 11px;
+}
+.bank {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.bank div {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.bank div:last-child {
+  border-bottom: none;
+}
+.bank span {
+  color: var(--muted-foreground);
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

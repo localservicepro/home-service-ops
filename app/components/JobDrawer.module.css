@@ -1,0 +1,199 @@
+.drawer {
+  max-width: 460px !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: var(--background) !important;
+  gap: 0;
+}
+.hero {
+  position: relative;
+  padding: 22px 22px 20px;
+  color: #fff;
+  background:
+    radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--crew) 45%, transparent) 0%, transparent 60%),
+    linear-gradient(160deg, var(--navy-800), var(--navy-900));
+  border-left: 4px solid var(--crew);
+}
+.heroTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 36px;
+}
+.num {
+  font: 600 12px var(--font-family-monospace);
+  color: var(--navy-muted);
+  letter-spacing: 0.04em;
+}
+.title {
+  margin: 12px 0 0;
+  font: 800 22px/1.2 var(--font-family-display);
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.when {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c9dbef;
+}
+.when span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.price {
+  margin-top: 14px;
+  font: 800 26px var(--font-family-display);
+  color: #fff;
+}
+.price small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--navy-muted);
+  margin-left: 6px;
+}
+.body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+.block h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.personText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.personText b {
+  font-size: 15px;
+  color: var(--foreground);
+}
+.personText span {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.quick {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.quick a {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--status-scheduled-bg);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.quick a:hover {
+  filter: brightness(0.97);
+}
+.address {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.4;
+}
+.address svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--primary);
+}
+.address span {
+  flex: 1;
+}
+.addrGo {
+  color: var(--muted-foreground) !important;
+}
+.muted {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 13.5px;
+  border-top: 1px solid var(--border);
+  color: var(--foreground);
+}
+.lines li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.lines .addon span {
+  padding-left: 12px;
+  color: var(--muted-foreground);
+}
+.notes {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  color: var(--navy-700);
+}
+.footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border);
+}
+.footer > * {
+  flex: 1;
+}
+/* Radix close button sits on the dark header. */
+.drawer > button {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}

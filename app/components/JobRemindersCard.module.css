@@ -1,0 +1,101 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.skel {
+  height: 44px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--muted, #eef3f9);
+  color: var(--muted-foreground);
+}
+.iconOn {
+  background: color-mix(in srgb, #0c6fd0 12%, transparent);
+  color: #0c6fd0;
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.text b {
+  font-size: 15px;
+  color: var(--foreground);
+}
+.text small {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field > span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.segs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 11px;
+  background: var(--surface);
+}
+.seg,
+.segOn {
+  padding: 8px 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font: 700 12.5px var(--font-family-base);
+  color: var(--navy-700);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.segOn {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.foot {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}

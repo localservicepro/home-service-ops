@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Connecting…</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #f4f7fb; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #51637a; }
+      p { padding: 32px 24px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <p id="msg">Opening sign-in…</p>
+    <script>
+      // Android app: integration sign-ins start here in an in-app browser tab. The cookie tells
+      // Vercel to send the final /done page back into the app (vercel.json). Only known sign-in
+      // sites are allowed, so this page can't be used to send people elsewhere.
+      (function () {
+        var allowed = /(^|\.)(stripe\.com|leadconnectorhq\.com|gohighlevel\.com|google\.com|xero\.com|squareup\.com|squareupsandbox\.com|gocardless\.com|mycrmsim\.com|supabase\.co)$/;
+        var to = new URLSearchParams(location.search).get("to") || "";
+        var u;
+        try { u = new URL(to); } catch (e) { u = null; }
+        if (!u || u.protocol !== "https:" || !allowed.test(u.hostname)) {
+          document.getElementById("msg").textContent = "This link isn't valid.";
+          return;
+        }
+        document.cookie = "hso_app_connect=1; Max-Age=900; Path=/; Secure; SameSite=Lax";
+        location.replace(u.href);
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.done {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--foreground);
+}
+.err {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+}
+.back {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 13px;
+}
+.back a {
+  color: var(--primary);
+  font-weight: 700;
+}

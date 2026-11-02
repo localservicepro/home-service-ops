@@ -1,0 +1,228 @@
+.page {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+.top {
+  background: var(--navy-900, #08172b);
+  border-bottom: 1px solid rgba(143, 178, 216, 0.14);
+}
+.topInner,
+.heroInner,
+.footerInner {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.topInner {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+}
+.logo span:last-child {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.logo b {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.logo small {
+  font-family: var(--font-family-monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  color: #8fb2d8;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--signal-gradient, linear-gradient(135deg, #0c6fd0, #35c6f4));
+  color: #fff;
+}
+.top nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.top nav a {
+  color: #c8d9ec;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+.top nav a:hover {
+  color: #fff;
+}
+.top nav .login {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.top nav a {
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .logo small {
+    display: none;
+  }
+  .top nav a:not(.login) {
+    display: none;
+  }
+}
+.hero {
+  background: linear-gradient(150deg, #08172b, #0e2942 70%);
+  color: #fff;
+  padding: 44px 0 40px;
+}
+.eyebrow {
+  font-family: var(--font-family-monospace);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #35c6f4;
+}
+.hero h1 {
+  font-size: clamp(30px, 6vw, 42px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 8px 0 6px;
+}
+.updated {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #8fb2d8;
+}
+.intro {
+  color: #c3d5ea;
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 680px;
+}
+.intro p {
+  margin: 0 0 10px;
+}
+.body {
+  padding: 32px 0 64px;
+}
+.article {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0 16px;
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--surface-foreground, #16374f);
+}
+.article section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 22px 8px;
+  margin-bottom: 14px;
+}
+.article h2 {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  margin: 0 0 10px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.article h2 > span {
+  font-family: var(--font-family-monospace);
+  font-size: 12px;
+  color: var(--primary);
+  letter-spacing: 0.08em;
+}
+.article h3 {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--foreground);
+  margin: 16px 0 6px;
+}
+.article p,
+.article ul {
+  margin: 0 0 14px;
+}
+.article ul {
+  padding-left: 20px;
+}
+.article li {
+  margin-bottom: 6px;
+}
+.article a {
+  color: var(--primary);
+  font-weight: 600;
+}
+.article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 16px;
+  font-size: 14px;
+}
+.article th,
+.article td {
+  text-align: left;
+  vertical-align: top;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.article th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.article .tableWrap {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+.article .note {
+  background: var(--secondary, #eaf3fc);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  color: var(--ink-2, #16374f);
+}
+.footer {
+  background: #06111f;
+  color: #8fa3bc;
+  padding: 28px 0;
+}
+.footerInner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.footer nav a {
+  color: #b8c8dc;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.footer small {
+  font-size: 12.5px;
+}

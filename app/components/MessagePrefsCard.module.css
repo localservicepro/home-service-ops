@@ -1,0 +1,103 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 16px 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.skel {
+  height: 44px;
+  margin: 6px 0;
+  border-radius: 10px;
+}
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+  padding: 10px 0;
+}
+.row + .row {
+  border-top: 1px solid var(--border);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--secondary);
+  color: var(--primary);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.text b {
+  font-size: 14px;
+  color: var(--foreground);
+}
+.text small {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+/* Phones: the choice sits under the label. */
+.picker {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+@container (min-width: 520px) {
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .picker {
+    grid-column: auto;
+  }
+}
+@media (min-width: 640px) {
+  .row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .picker {
+    grid-column: auto;
+  }
+}
+.note,
+.warn {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.note {
+  background: var(--surface);
+  color: var(--muted-foreground);
+}
+.warn {
+  background: var(--status-progress-bg);
+  color: #8a5a14;
+}
+.note svg,
+.warn svg {
+  flex: none;
+  margin-top: 2px;
+}
+.note a,
+.warn a {
+  color: var(--primary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.foot {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}

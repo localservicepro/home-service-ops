@@ -1,0 +1,83 @@
+.cal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.month {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--foreground);
+}
+.arrow {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: var(--muted);
+  color: var(--navy-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.dow {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  padding-bottom: 4px;
+}
+.day {
+  position: relative;
+  height: 38px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--navy-700);
+  font: 600 13px var(--font-family-base);
+  cursor: pointer;
+  transition: background var(--animation-duration-fast);
+}
+.compact .day {
+  height: 32px;
+}
+.day:hover {
+  background: var(--muted);
+}
+.today {
+  color: var(--primary);
+  background: var(--secondary);
+  font-weight: 800;
+}
+.sel,
+.sel:hover {
+  color: #fff;
+  background: var(--signal-gradient);
+  font-weight: 800;
+  box-shadow: var(--shadow-glow);
+}
+.dot {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.sel .dot {
+  background: #fff;
+}

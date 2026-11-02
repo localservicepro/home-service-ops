@@ -1,0 +1,139 @@
+name: Android app
+
+# Builds the Play Store bundle (.aab) and an installable .apk. Run it from the Actions tab
+# ("Run workflow"), or push a tag like android-v1.0.1. Download the files from the run's
+# Artifacts section.
+#
+# Signing (optional until you upload to Play): add these repository secrets
+#   ANDROID_KEYSTORE_BASE64   base64 of upload-keystore.jks
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+# Without them the APK is a debug build (fine for testing on a phone) and the AAB is unsigned.
+#
+# Every build also replaces home-service-ops.apk on the "android-app" GitHub release, which the
+# website's /download page links to (vercel.json: /android.apk).
+#
+# Push notifications: add GOOGLE_SERVICES_JSON (the whole google-services.json file from Firebase).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Version shown in the Play Store (e.g. 1.0.1)"
+        required: false
+        default: "1.0.0"
+  push:
+    tags: ["android-v*"]
+  pull_request:
+    paths: ["android/**", "capacitor.config.ts", "native/**", ".github/workflows/android.yml"]
+
+# Publishing the APK to the "android-app" release needs to write releases.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # Ubuntu 24.04 images ship the Android SDK (ANDROID_HOME); Gradle fetches any missing platform.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Install
+        run: npm ci
+
+      - name: Firebase config (push notifications)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+            echo "Push notifications: on"
+          else
+            echo "::warning::No GOOGLE_SERVICES_JSON secret: this build has no push notifications."
+          fi
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Version
+        id: ver
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/android-v* ]]; then name="${GITHUB_REF#refs/tags/android-v}"; else name="${{ inputs.version_name || '1.0.0' }}"; fi
+          # Play needs every upload's versionCode to be higher than the last.
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+
+      - name: Upload key
+        id: key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload-keystore.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: building an unsigned bundle and a debug APK."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          args="-PversionCode=${{ steps.ver.outputs.code }} -PversionName=${{ steps.ver.outputs.name }}"
+          if [ "${{ steps.key.outputs.signed }}" = "true" ]; then
+            ./gradlew --no-daemon $args bundleRelease assembleRelease
+          else
+            ./gradlew --no-daemon $args bundleRelease assembleDebug
+          fi
+          mkdir -p ../out
+          name="home-service-ops-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}"
+          cp app/build/outputs/bundle/release/*.aab "../out/$name.aab"
+          cp app/build/outputs/apk/*/*.apk "../out/$name.apk"
+          ls -la ../out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: home-service-ops-android-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.code }}
+          path: out/*
+          if-no-files-found: error
+
+      - name: Publish APK for the website's download link
+        # Same-repo runs only (fork PRs can't write releases).
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp out/*.apk "$RUNNER_TEMP/home-service-ops.apk"
+          signed="${{ steps.key.outputs.signed }}"
+          notes="Home Service Ops ${{ steps.ver.outputs.name }} (build ${{ steps.ver.outputs.code }}), built $(date -u +'%d %b %Y %H:%M UTC') from ${GITHUB_SHA::7}."
+          if [ "$signed" != "true" ]; then notes="$notes Test build (debug-signed): uninstall an older copy before installing."; fi
+          if ! gh release view android-app >/dev/null 2>&1; then
+            gh release create android-app --title "Home Service Ops for Android" --notes "$notes" --target "$GITHUB_SHA" --latest=false
+          fi
+          gh release upload android-app "$RUNNER_TEMP/home-service-ops.apk" --clobber
+          gh release edit android-app --notes "$notes"
+          echo "APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/android-app/home-service-ops.apk" >> "$GITHUB_STEP_SUMMARY"

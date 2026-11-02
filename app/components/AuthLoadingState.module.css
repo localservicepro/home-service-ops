@@ -1,0 +1,82 @@
+.container {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: radial-gradient(ellipse at 70% 20%, rgba(53, 198, 244, 0.16), transparent 60%), linear-gradient(150deg, #08172b, #0e2942 70%);
+  color: #fff;
+  z-index: var(--z-overlay);
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  animation: fadeIn 0.25s ease-out both;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--signal-gradient, linear-gradient(135deg, #0c6fd0, #35c6f4));
+  box-shadow: 0 12px 30px rgba(12, 111, 208, 0.45);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.brand b {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.brand small {
+  font-family: var(--font-family-monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  color: #8fb2d8;
+}
+.bar {
+  position: relative;
+  width: 180px;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: 4px;
+  background: var(--signal-gradient, linear-gradient(90deg, #0c6fd0, #35c6f4));
+  animation: slide 1.1s ease-in-out infinite;
+}
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c3d5ea;
+}
+@keyframes slide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(260%); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mark, .bar i, .content { animation: none; }
+}

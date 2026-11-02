@@ -1,0 +1,191 @@
+.chart {
+  position: relative;
+  width: 100%;
+  user-select: none;
+}
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+.grid {
+  stroke: var(--border);
+  stroke-dasharray: 3 5;
+}
+.axis {
+  font: 500 11px var(--font-family-base);
+  fill: var(--muted-foreground);
+}
+.axisOn {
+  fill: var(--primary);
+  font-weight: 800;
+}
+.cursor {
+  stroke: var(--primary);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 4;
+}
+.tip {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(8, 23, 43, 0.18);
+}
+.tip b {
+  font: 800 12.5px var(--font-family-base);
+}
+.tip span {
+  font-size: 10.5px;
+  opacity: 0.85;
+}
+.legend {
+  display: flex;
+  gap: 14px;
+  justify-content: flex-end;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+.trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 7px;
+  font: 800 11.5px var(--font-family-base);
+  white-space: nowrap;
+}
+.trendUp {
+  background: color-mix(in srgb, #2c9e73 14%, transparent);
+  color: #1e7a57;
+}
+.trendDown {
+  background: color-mix(in srgb, #c4453c 13%, transparent);
+  color: #b0352c;
+}
+.trendFlat,
+.trendNew {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.barList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.barRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.barIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+.barBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.barTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.barLabel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 600;
+}
+.barLabel small {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.barTop b {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.track {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--muted);
+  overflow: hidden;
+}
+.track span {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+}
+.barCount {
+  flex: none;
+  min-width: 26px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.donut {
+  position: relative;
+  flex: none;
+}
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--muted);
+}
+.segBtn,
+.segOn {
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: 700 12.5px var(--font-family-base);
+  cursor: pointer;
+}
+.segOn {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(8, 23, 43, 0.12);
+}
