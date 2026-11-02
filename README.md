@@ -158,7 +158,11 @@ select net.http_post(
   body := '{}'::jsonb, timeout_milliseconds := 120000);
 ```
 
-It queues every account, the last 90 days of Stripe payments and refunds, and every open or pending ticket. Ids are deterministic (`backfill-account-<id>-<YYYY-MM-DD>`, `backfill-payment-<invoice>-paid`, `refund-<id>`, `backfill-ticket-<id>-<YYYY-MM-DD>`), so running it twice on the same day queues nothing new. The cron sends the queue over the next few minutes.
+It queues every real account, every payment in the ledger (paid, failed, refunded) plus the last 90 days of Stripe invoices and refunds, and every ticket. Demo customers are never sent. Ids are fixed by each record's current state (`backfill-account-<id>-<state hash>`, `ledger-payment-<id>-<status>`, `backfill-payment-<invoice>-paid`, `refund-<id>`, `backfill-ticket-<id>-<updated ms>`), so running it again only queues what changed since. It reports `queued` (new) and `total` for each. The cron sends the queue over the next few minutes.
+
+`sales_brain_customer_id` is sent on every `account.upserted`: the UUID Sales Brain sent in `account.provision` for accounts it created, otherwise `null`.
+
+**Live dashboard numbers for Sales Brain.** `GET /api/integrations/sales-brain/summary?days=30` (add `&include_demo=1` to count demo customers), signed with `x-lsp-timestamp` and `x-lsp-signature: sha256=<HMAC-SHA256 of "<timestamp>.">`. It returns revenue, customers and support computed by the same code as /admin's Dashboard and Support overview (`helpers/adminMetrics.tsx`). 401 on a bad or stale signature, 400 on a bad `days`.
 
 **Tests.** `npm test` covers the signature (a known secret, timestamp and body give a fixed hex), every payload shape, and the response handling and backoff. They never call the real endpoint.
 

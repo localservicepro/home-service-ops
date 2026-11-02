@@ -131,7 +131,8 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
 
   return {
     account_id: String(src.id),
-    ...(src.salesBrainCustomerId ? { sales_brain_customer_id: src.salesBrainCustomerId } : {}),
+    // Only on accounts Sales Brain created: the id it sent in account.provision (nothing else sets it).
+    sales_brain_customer_id: src.salesBrainCustomerId || null,
     business_name: src.name,
     owner_name: src.ownerName || null,
     email: src.email || null,
@@ -192,6 +193,20 @@ export function paymentFromInvoice(accountId: number | string, inv: StripeInvoic
     kind: (inv.billing_reason ?? "").startsWith("subscription") ? "subscription" : "one_off",
     description: invoiceDescription(inv),
     paid_at: new Date(when * 1000).toISOString(),
+  };
+}
+
+/** A row of the admin's payments ledger (hso.billing_payments), as a payment.recorded event. */
+export function paymentFromLedger(p: { id: string; businessId: number; amountCents: number; status: string; kind: string; description: string; paidAt: Date }): Record<string, unknown> {
+  return {
+    account_id: String(p.businessId),
+    payment_id: p.id,
+    amount_cents: Math.abs(Math.round(p.amountCents)),
+    currency: "aud",
+    status: p.status,
+    kind: p.kind,
+    description: p.description,
+    paid_at: new Date(p.paidAt).toISOString(),
   };
 }
 

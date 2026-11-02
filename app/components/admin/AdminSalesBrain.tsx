@@ -25,7 +25,7 @@ export function AdminSalesBrain() {
   if (error) return <p className={styles.denied}>{error instanceof Error ? error.message : "Not allowed"}</p>;
   if (isLoading || !data) return <Skeleton className={styles.skelBig} />;
   const backfill = () => {
-    if (window.confirm("Queue every account, the last 90 days of payments and every open ticket for Sales Brain? Safe to repeat: Sales Brain ignores events it already has.")) act.mutate("backfill");
+    if (window.confirm("Queue every account, every payment and every ticket for Sales Brain (demo customers left out)? Safe to repeat: only what changed since is sent again.")) act.mutate("backfill");
   };
   return (
     <div className={styles.sb}>

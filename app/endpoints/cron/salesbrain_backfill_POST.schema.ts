@@ -4,4 +4,5 @@ import { z } from "zod";
 // (see README). Staff can also run it from /admin.
 export const schema = z.object({});
 export type InputType = z.infer<typeof schema>;
-export type OutputType = { ok: true; accounts: number; payments: number; tickets: number; errors: string[] };
+type Count = { queued: number; total: number };
+export type OutputType = { ok: true; accounts: Count; payments: Count; tickets: Count; errors: string[] };

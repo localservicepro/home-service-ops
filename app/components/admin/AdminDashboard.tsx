@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CreditCard, Clock, Gift, Sparkles, AlertTriangle, PauseCircle, UserX, Leaf, SprayCan, Droplets, Bug, Hammer, Waves, Wrench, CalendarClock, MessageSquare, LogOut as Churn } from "lucide-react";
-import { ACCESS_LABEL, TRADE_LABEL, aud, pctChange, type AdminCustomer, type AdminOverview, type CustomerAccess } from "../../helpers/adminShared";
+import { ACCESS_LABEL, TRADE_LABEL, aud, churnPct, pctChange, type AdminCustomer, type AdminOverview, type CustomerAccess } from "../../helpers/adminShared";
 import { priorityLabel, staffStatusLabel } from "../../helpers/supportShared";
 import { opsFormat } from "../../helpers/opsFormat";
 import { BarList, Donut, LineChart, Segmented, Trend } from "./AdminCharts";
@@ -51,7 +51,7 @@ export function AdminDashboard({ data: d }: { data: AdminOverview }) {
         <Kpi label="Revenue, last 30 days" value={aud(k.revenue30Cents)} trend={pctChange(k.revenue30Cents, k.revenuePrev30Cents)} hint={`vs ${aud(k.revenuePrev30Cents)} the 30 days before`} />
         <Kpi label="Customers with access" value={k.withAccess.toLocaleString("en-AU")} trend={pctChange(k.withAccess, k.withAccessPrev)} hint={`${totalCustomers} accounts in total`} />
         <Kpi label="New sign-ups (30 days)" value={k.signups30.toLocaleString("en-AU")} trend={pctChange(k.signups30, k.signupsPrev30)} hint={`${k.signupsPrev30} the 30 days before`} />
-        <Kpi label="Lost (30 days)" value={k.churned30.toLocaleString("en-AU")} trend={pctChange(k.churned30, k.churnedPrev30)} invert hint={`cancelled or trial ended · ${((k.churned30 / Math.max(1, k.withAccessPrev)) * 100).toFixed(1)}% churn`} />
+        <Kpi label="Lost (30 days)" value={k.churned30.toLocaleString("en-AU")} trend={pctChange(k.churned30, k.churnedPrev30)} invert hint={`cancelled or trial ended · ${churnPct(k.churned30, k.withAccessPrev).toFixed(1)}% churn`} />
       </section>
 
       <div className={styles.grid2}>

@@ -29,7 +29,7 @@ export async function handle(request: Request) {
         const r = await runBackfill();
         out = {
           ok: r.errors.length === 0,
-          message: `Queued ${r.accounts} accounts, ${r.payments} payments and ${r.tickets} open tickets.${r.errors.length ? ` Problems: ${r.errors.slice(0, 3).join("; ")}` : ""}`,
+          message: `Queued ${r.accounts.queued} of ${r.accounts.total} accounts, ${r.payments.queued} of ${r.payments.total} payments and ${r.tickets.queued} of ${r.tickets.total} tickets (the rest were already sent as they are now).${r.errors.length ? ` Problems: ${r.errors.slice(0, 3).join("; ")}` : ""}`,
         };
         break;
       }

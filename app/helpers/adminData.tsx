@@ -7,14 +7,13 @@ import { isStripeConfigured } from "./stripeConnect";
 import { deleteFolder } from "./storage";
 import { AUTH_URL, env } from "./serverEnv";
 import { listStaff, listTickets } from "./support";
-import type { AdminCustomer, AdminCustomerDetail, AdminOverview, AdminPayment, CustomerAccess, Point, SupportOverview } from "./adminShared";
+import type { AdminCustomer, AdminCustomerDetail, AdminOverview, CustomerAccess, SupportOverview } from "./adminShared";
+import { DAY, computeOverview, computeSupport, loadWindow, type MetricsData } from "./adminMetrics";
 
 // Server-only. The staff admin (/admin): every business with its status, revenue, usage and support
 // load. Status and monthly revenue come from the same rules as the account.upserted events sent to
 // Sales Brain (salesBrainEvents.accountData), so both always agree. Revenue history comes from the
 // payments ledger (hso.billing_payments), filled from Stripe's invoice and refund events.
-
-const DAY = 86_400_000;
 
 type Row = Awaited<ReturnType<typeof loadRows>>[number];
 
@@ -135,267 +134,60 @@ export async function listCustomers(): Promise<AdminCustomer[]> {
   return (await loadRows()).map(toCustomer);
 }
 
-const HAS_ACCESS: CustomerAccess[] = ["paying", "past_due", "trial", "included", "free"];
-
-// Day, week and month boundaries in Brisbane time (UTC+10, no daylight saving), where the
-// business and its customers are, rather than the server's UTC.
-const TZ = 10 * 3_600_000;
-function startOfDay(t: number) {
-  return Math.floor((t + TZ) / DAY) * DAY - TZ;
-}
-function startOfWeek(t: number) {
-  const d = startOfDay(t);
-  const dow = new Date(d + TZ).getUTCDay(); // 0 = Sunday
-  return d - ((dow + 6) % 7) * DAY;
-}
-function startOfMonth(t: number, back = 0) {
-  const d = new Date(t + TZ);
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - back, 1) - TZ;
-}
-
-/** Buckets dates into a series: daily (n days), weekly (n weeks) or monthly (n months), oldest first. */
-function series(dates: number[], unit: "day" | "week" | "month", n: number, weight?: (i: number) => number): Point[] {
+/**
+ * Everything the Dashboard and Support overview compute from, for a period of `days`.
+ * The maths is in adminMetrics.tsx, shared with Sales Brain's summary.
+ */
+export async function loadMetrics(days = 30): Promise<MetricsData> {
   const now = Date.now();
-  const starts =
-    unit === "month"
-      ? Array.from({ length: n }, (_, i) => startOfMonth(now, n - 1 - i))
-      : Array.from({ length: n }, (_, i) => (unit === "day" ? startOfDay(now) - (n - 1 - i) * DAY : startOfWeek(now) - (n - 1 - i) * 7 * DAY));
-  const values = new Array(n).fill(0);
-  dates.forEach((t, idx) => {
-    for (let i = n - 1; i >= 0; i--) {
-      if (t >= starts[i]) {
-        if (i === n - 1 || t < starts[i + 1] || unit === "month") values[i] += weight ? weight(idx) : 1;
-        break;
-      }
-    }
-  });
-  return starts.map((s, i) => ({ at: new Date(s), value: values[i] }));
-}
-
-async function ledger(since: Date) {
-  return db
-    .selectFrom("billingPayments as p")
-    .innerJoin("businesses as b", "b.id", "p.businessId")
-    .select(["p.id", "p.businessId", "b.name as businessName", "p.amountCents", "p.status", "p.kind", "p.description", "p.paidAt"])
-    .where("p.paidAt", ">=", since)
-    .orderBy("p.paidAt", "desc")
-    .execute();
+  const { paymentsSince, ticketsSince } = loadWindow(days, now);
+  const [customers, payments, lifetime, jobsPrev, tickets, activeTickets, staff] = await Promise.all([
+    listCustomers(),
+    db
+      .selectFrom("billingPayments as p")
+      .innerJoin("businesses as b", "b.id", "p.businessId")
+      .select(["p.id", "p.businessId", "b.name as businessName", "p.amountCents", "p.status", "p.kind", "p.description", "p.paidAt"])
+      .where("p.paidAt", ">=", paymentsSince)
+      .orderBy("p.paidAt", "desc")
+      .execute(),
+    db
+      .selectFrom("billingPayments")
+      .select(["businessId", sql<string>`coalesce(sum(case status when 'paid' then amount_cents when 'refunded' then -amount_cents else 0 end), 0)`.as("cents")])
+      .groupBy("businessId")
+      .execute(),
+    db
+      .selectFrom("jobs")
+      .select(["businessId", (eb) => eb.fn.countAll<string>().as("n")])
+      .where("status", "!=", "Cancelled")
+      .where("scheduledDate", ">=", new Date(now - 60 * DAY))
+      .where("scheduledDate", "<", new Date(now - 30 * DAY))
+      .groupBy("businessId")
+      .execute(),
+    db
+      .selectFrom("supportTickets")
+      .select(["id", "businessId", "status", "priority", "category", "assignedTo", "openedAt", "solvedAt", "firstResponseAt"])
+      .where((eb) => eb.or([eb("openedAt", ">=", ticketsSince), eb("solvedAt", ">=", ticketsSince), eb("status", "in", ["open", "in_progress", "pending"])]))
+      .execute(),
+    listTickets({ status: ["open", "in_progress", "pending"], limit: 300 }),
+    listStaff(),
+  ]);
+  return {
+    customers,
+    payments,
+    lifetime: lifetime.map((l) => ({ businessId: l.businessId, cents: Number(l.cents) })),
+    jobsPrev: jobsPrev.map((j) => ({ businessId: j.businessId, n: Number(j.n) })),
+    tickets,
+    activeTickets,
+    staff,
+  };
 }
 
 export async function overview(): Promise<AdminOverview> {
-  const customers = await listCustomers();
-  const now = Date.now();
-  const ts = (d: Date | string | null) => (d ? new Date(d).getTime() : 0);
-  const by = (a: CustomerAccess) => customers.filter((c) => c.access === a).length;
-  const within = (d: Date | string | null, from: number, to: number) => !!d && now - ts(d) >= from && now - ts(d) < to;
-
-  const payments = await ledger(new Date(Math.min(startOfMonth(now, 12), now - 60 * DAY)));
-  const paid = payments.filter((p) => p.status === "paid");
-  const refunded = payments.filter((p) => p.status === "refunded");
-  const failed = payments.filter((p) => p.status === "failed");
-  // The last 12 full months, plus this month once it's a week in (a near-empty last point reads as a crash).
-  const showCurrent = now - startOfMonth(now) >= 6 * DAY;
-  const monthStarts = Array.from({ length: 12 }, (_, i) => startOfMonth(now, (showCurrent ? 11 : 12) - i));
-  const monthEnd = showCurrent ? now + 1 : startOfMonth(now);
-  const monthOf = (t: number) => {
-    if (t >= monthEnd) return -1;
-    for (let i = 11; i >= 0; i--) if (t >= monthStarts[i]) return i;
-    return -1;
-  };
-  const revenueMonthly = monthStarts.map((m) => ({ at: new Date(m), paidCents: 0, refundedCents: 0, failedCents: 0, payments: 0 }));
-  for (const p of payments) {
-    const i = monthOf(ts(p.paidAt));
-    if (i < 0) continue;
-    if (p.status === "paid") {
-      revenueMonthly[i].paidCents += p.amountCents;
-      revenueMonthly[i].payments++;
-    } else if (p.status === "refunded") revenueMonthly[i].refundedCents += p.amountCents;
-    else if (p.status === "failed") revenueMonthly[i].failedCents += p.amountCents;
-  }
-  const net = (list: typeof payments, from: number, to: number) =>
-    list.filter((p) => ts(p.paidAt) >= from && ts(p.paidAt) < to).reduce((s, p) => s + (p.status === "refunded" ? -p.amountCents : p.amountCents), 0);
-  const paidOrRefunded = [...paid, ...refunded];
-
-  const paying = customers.filter((c) => c.access === "paying" || c.access === "past_due");
-  const mrrCents = paying.reduce((s, c) => s + c.mrrCents, 0);
-  const withAccess = customers.filter((c) => HAS_ACCESS.includes(c.access));
-  const churned = (from: number, to: number) => customers.filter((c) => c.status === "cancelled" && within(c.cancelledAt, from, to)).length;
-  const churned30 = churned(0, 30 * DAY);
-
-  const jobsPrev = await db
-    .selectFrom("jobs")
-    .select((eb) => eb.fn.countAll<string>().as("n"))
-    .where("status", "!=", "Cancelled")
-    .where("scheduledDate", ">=", new Date(now - 60 * DAY))
-    .where("scheduledDate", "<", new Date(now - 30 * DAY))
-    .executeTakeFirstOrThrow();
-
-  const planMap = new Map<string, { count: number; mrrCents: number }>();
-  for (const c of withAccess) {
-    const k = c.access === "trial" ? "Trial" : c.plan;
-    const e = planMap.get(k) ?? { count: 0, mrrCents: 0 };
-    e.count++;
-    e.mrrCents += c.access === "paying" || c.access === "past_due" ? c.mrrCents : 0;
-    planMap.set(k, e);
-  }
-  const tradeMap = new Map<string, number>();
-  for (const c of customers) tradeMap.set(c.trade || "other", (tradeMap.get(c.trade || "other") ?? 0) + 1);
-  const reasonMap = new Map<string, number>();
-  for (const c of customers) {
-    if (c.status !== "cancelled" || !within(c.cancelledAt, 0, 180 * DAY)) continue;
-    const r = (c.cancelReason || "No reason given").split(":")[0].trim();
-    reasonMap.set(r, (reasonMap.get(r) ?? 0) + 1);
-  }
-
-  const signupTimes = customers.map((c) => ts(c.signedUpAt));
-  const soon = now + 7 * DAY;
-  const [ticketCounts, frt, solved30] = await Promise.all([
-    db
-      .selectFrom("supportTickets")
-      .select([
-        sql<string>`count(*) filter (where status in ('open','in_progress'))`.as("open"),
-        sql<string>`count(*) filter (where status = 'pending')`.as("pending"),
-        sql<string>`count(*) filter (where status in ('open','in_progress','pending') and priority in ('urgent','high'))`.as("urgent"),
-        sql<string>`count(*) filter (where status in ('open','in_progress','pending') and assigned_to is null)`.as("unassigned"),
-      ])
-      .executeTakeFirstOrThrow(),
-    db
-      .selectFrom("supportTickets")
-      .select(sql<string | null>`avg(extract(epoch from (first_response_at - opened_at)) / 3600)`.as("hours"))
-      .where("openedAt", ">=", new Date(now - 30 * DAY))
-      .where("firstResponseAt", "is not", null)
-      .executeTakeFirstOrThrow(),
-    db.selectFrom("supportTickets").select((eb) => eb.fn.countAll<string>().as("n")).where("solvedAt", ">=", new Date(now - 30 * DAY)).executeTakeFirstOrThrow(),
-  ]);
-  const lifetime = await db
-    .selectFrom("billingPayments")
-    .select(sql<string>`coalesce(sum(case status when 'paid' then amount_cents when 'refunded' then -amount_cents else 0 end), 0)`.as("cents"))
-    .executeTakeFirstOrThrow();
-
-  const toPayment = (p: (typeof payments)[number]): AdminPayment => ({ ...p });
-  return {
-    demo: customers.some((c) => c.demo),
-    kpis: {
-      mrrCents,
-      arpaCents: paying.length ? Math.round(mrrCents / paying.length) : 0,
-      paying: paying.length,
-      revenue30Cents: net(paidOrRefunded, now - 30 * DAY, now + 1),
-      revenuePrev30Cents: net(paidOrRefunded, now - 60 * DAY, now - 30 * DAY),
-      withAccess: withAccess.length,
-      withAccessPrev: withAccess.filter((c) => now - ts(c.signedUpAt) >= 30 * DAY).length + churned30,
-      signups30: customers.filter((c) => within(c.signedUpAt, 0, 30 * DAY)).length,
-      signupsPrev30: customers.filter((c) => within(c.signedUpAt, 30 * DAY, 60 * DAY)).length,
-      churned30,
-      churnedPrev30: churned(30 * DAY, 60 * DAY),
-      active7: customers.filter((c) => within(c.lastActiveAt, 0, 7 * DAY)).length,
-      jobs30: customers.reduce((s, c) => s + c.jobs30d, 0),
-      jobsPrev30: Number(jobsPrev.n),
-    },
-    revenueMonthly,
-    revenueDaily: series(
-      paid.map((p) => ts(p.paidAt)),
-      "day",
-      30,
-      (i) => paid[i].amountCents,
-    ),
-    signups: { daily: series(signupTimes, "day", 30), weekly: series(signupTimes, "week", 12), monthly: series(signupTimes, "month", 12) },
-    mix: (["paying", "trial", "included", "free", "past_due", "suspended", "none"] as CustomerAccess[]).map((a) => ({
-      access: a,
-      count: a === "none" ? by("none") + by("paused") : by(a),
-    })),
-    plans: [...planMap.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.count - a.count),
-    trades: [...tradeMap.entries()].map(([trade, count]) => ({ trade, count })).sort((a, b) => b.count - a.count),
-    activity: {
-      today: customers.filter((c) => ts(c.lastActiveAt) >= startOfDay(now)).length,
-      week: customers.filter((c) => within(c.lastActiveAt, 0, 7 * DAY)).length,
-      month: customers.filter((c) => within(c.lastActiveAt, 0, 30 * DAY)).length,
-      dormant: withAccess.filter((c) => !within(c.lastActiveAt, 0, 14 * DAY)).length,
-    },
-    payments: payments.slice(0, 12).map(toPayment),
-    paymentHealth: {
-      failed30: failed.filter((p) => within(p.paidAt, 0, 30 * DAY)).length,
-      failedCents30: failed.filter((p) => within(p.paidAt, 0, 30 * DAY)).reduce((s, p) => s + p.amountCents, 0),
-      refundedCents30: refunded.filter((p) => within(p.paidAt, 0, 30 * DAY)).reduce((s, p) => s + p.amountCents, 0),
-      lifetimeCents: Number(lifetime.cents),
-    },
-    cancelReasons: [...reasonMap.entries()].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count),
-    trialsEnding: customers
-      .filter((c) => c.access === "trial" && c.trialEndsAt && ts(c.trialEndsAt) <= soon)
-      .sort((a, b) => ts(a.trialEndsAt) - ts(b.trialEndsAt))
-      .slice(0, 8),
-    pastDueList: customers.filter((c) => c.access === "past_due").slice(0, 8),
-    recentSignups: customers.slice(0, 8),
-    recentlyCancelled: customers
-      .filter((c) => c.status === "cancelled" && c.cancelledAt)
-      .sort((a, b) => ts(b.cancelledAt) - ts(a.cancelledAt))
-      .slice(0, 6),
-    support: {
-      open: Number(ticketCounts.open),
-      pending: Number(ticketCounts.pending),
-      urgent: Number(ticketCounts.urgent),
-      unassigned: Number(ticketCounts.unassigned),
-      solved30: Number(solved30.n),
-      avgFirstResponseHours: frt.hours == null ? null : Math.round(Number(frt.hours) * 10) / 10,
-    },
-    recentTickets: await listTickets({ status: ["open", "in_progress", "pending"], limit: 6 }),
-  };
+  return computeOverview(await loadMetrics(30));
 }
 
 export async function supportOverview(): Promise<SupportOverview> {
-  const now = Date.now();
-  const since = new Date(now - 30 * DAY);
-  const recent = await db
-    .selectFrom("supportTickets")
-    .select(["id", "status", "priority", "category", "assignedTo", "openedAt", "solvedAt", "firstResponseAt"])
-    .where((eb) => eb.or([eb("openedAt", ">=", since), eb("solvedAt", ">=", since), eb("status", "in", ["open", "in_progress", "pending"])]))
-    .execute();
-  const ts = (d: Date | null) => (d ? new Date(d).getTime() : 0);
-  const active = recent.filter((t) => t.status === "open" || t.status === "in_progress" || t.status === "pending");
-  const inLast = (d: Date | null, days: number, offset = 0) => !!d && now - ts(d) >= offset * DAY && now - ts(d) < (days + offset) * DAY;
-  const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
-  const days = Array.from({ length: 14 }, (_, i) => startOfDay(now) - (13 - i) * DAY);
-  const dayOf = (d: Date | null) => {
-    const t = ts(d);
-    for (let i = 13; i >= 0; i--) if (t >= days[i]) return i;
-    return -1;
-  };
-  const daily = days.map((d) => ({ at: new Date(d), created: 0, solved: 0 }));
-  for (const t of recent) {
-    const c = dayOf(t.openedAt);
-    if (c >= 0) daily[c].created++;
-    const s = dayOf(t.solvedAt);
-    if (s >= 0 && (t.status === "solved" || t.status === "closed")) daily[s].solved++;
-  }
-  const cats = new Map<string, { open: number; total30: number }>();
-  for (const t of recent) {
-    const e = cats.get(t.category) ?? { open: 0, total30: 0 };
-    if (t.status !== "solved" && t.status !== "closed") e.open++;
-    if (inLast(t.openedAt, 30)) e.total30++;
-    cats.set(t.category, e);
-  }
-  const staff = await listStaff();
-  return {
-    open: active.filter((t) => t.status === "open" || t.status === "in_progress").length,
-    pending: active.filter((t) => t.status === "pending").length,
-    urgent: active.filter((t) => t.priority === "urgent" || t.priority === "high").length,
-    unassigned: active.filter((t) => !t.assignedTo).length,
-    created7: recent.filter((t) => inLast(t.openedAt, 7)).length,
-    createdPrev7: recent.filter((t) => inLast(t.openedAt, 7, 7)).length,
-    solved7: recent.filter((t) => (t.status === "solved" || t.status === "closed") && inLast(t.solvedAt, 7)).length,
-    solved30: recent.filter((t) => (t.status === "solved" || t.status === "closed") && inLast(t.solvedAt, 30)).length,
-    avgFirstReplyHours: avg(recent.filter((t) => t.firstResponseAt && inLast(t.openedAt, 30)).map((t) => (ts(t.firstResponseAt) - ts(t.openedAt)) / 3_600_000)),
-    avgResolveHours: avg(recent.filter((t) => t.solvedAt && inLast(t.solvedAt, 30)).map((t) => (ts(t.solvedAt) - ts(t.openedAt)) / 3_600_000)),
-    daily,
-    byCategory: [...cats.entries()].map(([category, v]) => ({ category, ...v })).sort((a, b) => b.total30 + b.open - (a.total30 + a.open)),
-    byPriority: ["urgent", "high", "normal", "low"].map((p) => ({ priority: p, count: active.filter((t) => t.priority === p).length })),
-    staff: staff.map((s) => ({
-      id: s.id,
-      name: s.displayName,
-      open: active.filter((t) => t.assignedTo === s.id).length,
-      solved30: recent.filter((t) => t.assignedTo === s.id && (t.status === "solved" || t.status === "closed") && inLast(t.solvedAt, 30)).length,
-    })),
-    oldest: (await listTickets({ status: ["open", "in_progress"], limit: 300 })).sort((a, b) => ts(a.updatedAt) - ts(b.updatedAt)).slice(0, 6),
-  };
+  return computeSupport(await loadMetrics(30));
 }
 
 export async function customerDetail(id: number): Promise<AdminCustomerDetail> {

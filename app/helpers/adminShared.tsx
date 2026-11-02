@@ -104,7 +104,7 @@ export type AdminOverview = {
   revenueDaily: Point[];
   signups: { daily: Point[]; weekly: Point[]; monthly: Point[] };
   mix: { access: CustomerAccess; count: number }[];
-  plans: { name: string; count: number; mrrCents: number }[];
+  plans: { name: string; count: number; paying: number; mrrCents: number }[];
   trades: { trade: string; count: number }[];
   activity: { today: number; week: number; month: number; dormant: number };
   payments: AdminPayment[];
@@ -150,6 +150,9 @@ export const aud = (cents: number, opts: { compact?: boolean } = {}) =>
   opts.compact && Math.abs(cents) >= 1_000_00
     ? `$${(cents / 100_000).toLocaleString("en-AU", { maximumFractionDigits: 1 })}k`
     : (cents / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 });
+
+/** Lost in the period as a share of who had access at its start, one decimal (Dashboard "% churn"). */
+export const churnPct = (lost: number, withAccessPrev: number) => Math.round((lost / Math.max(1, withAccessPrev)) * 1000) / 10;
 
 /** Percent change, or null when there's nothing to compare with. */
 export const pctChange = (now: number, prev: number) => (prev > 0 ? ((now - prev) / prev) * 100 : now > 0 ? null : 0);

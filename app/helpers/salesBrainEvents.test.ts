@@ -8,6 +8,7 @@ import {
   classifyResponse,
   compActive,
   paymentFromInvoice,
+  paymentFromLedger,
   paymentFromRefund,
   retryDelayMs,
   signPayload,
@@ -62,6 +63,7 @@ describe("account.upserted", () => {
   it("sends the full current state with every field", () => {
     expect(accountData(base, NOW)).toEqual({
       account_id: "42",
+      sales_brain_customer_id: null,
       business_name: "Bob's Plumbing",
       owner_name: "Bob Smith",
       email: "bob@bobsplumbing.com.au",
@@ -127,7 +129,7 @@ describe("account.upserted", () => {
     const d = accountData({ ...included, cancelReason: "old reason" }, NOW);
     expect(d).toMatchObject({ account_id: "42", sales_brain_customer_id: SB, status: "active", plan: "Included with Sales Brain", mrr_cents: 0, cancel_reason: null });
     // Accounts not from Sales Brain don't carry the field.
-    expect(accountData(base, NOW)).not.toHaveProperty("sales_brain_customer_id");
+    expect(accountData(base, NOW)).toHaveProperty("sales_brain_customer_id", null);
   });
 
   it("still included until ends_at, then like an account without a subscription", () => {
@@ -289,5 +291,16 @@ describe("responses and retries", () => {
     expect([1, 2, 3, 4, 5, 9].map(retryDelayMs)).toEqual([60_000, 300_000, 1_800_000, 7_200_000, 7_200_000, 7_200_000]);
     expect(BACKOFF_MS).toHaveLength(4);
     expect(ALERT_AFTER).toBe(5);
+  });
+});
+
+describe("payment.recorded from the ledger", () => {
+  it("paid, failed and refunded rows keep their status, amount in cents and time", () => {
+    const at = new Date("2026-10-15T03:00:00.000Z");
+    for (const [status, kind] of [["paid", "subscription"], ["failed", "subscription"], ["refunded", "refund"]]) {
+      expect(paymentFromLedger({ id: "in_1", businessId: 42, amountCents: 5390, status, kind, description: "Team plan, October", paidAt: at })).toEqual({
+        account_id: "42", payment_id: "in_1", amount_cents: 5390, currency: "aud", status, kind, description: "Team plan, October", paid_at: "2026-10-15T03:00:00.000Z",
+      });
+    }
   });
 });

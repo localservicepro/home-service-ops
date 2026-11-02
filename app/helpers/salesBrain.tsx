@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { sql, type Kysely } from "kysely";
 import { db } from "./db";
 import type { DB, Json } from "./schema";
@@ -14,6 +14,7 @@ import {
   batchBody,
   classifyResponse,
   paymentFromInvoice,
+  paymentFromLedger,
   paymentFromRefund,
   retryDelayMs,
   signedHeaders,
@@ -45,24 +46,26 @@ export const brisbaneDate = (d = new Date()) => new Intl.DateTimeFormat("en-CA",
 
 // ---------- writing events (call inside the transaction that made the change) ----------
 
-export async function enqueue(exec: Exec, events: { id?: string; type: SbEventType; occurredAt?: Date; data: Record<string, unknown> }[]) {
-  if (!events.length) return;
+/** Returns how many were new (an id already in the outbox is skipped). */
+export async function enqueue(exec: Exec, events: { id?: string; type: SbEventType; occurredAt?: Date; data: Record<string, unknown> }[]): Promise<number> {
+  if (!events.length) return 0;
   // Demo customers (Admin → Demo data) never reach Sales Brain.
   const ids = [...new Set(events.map((e) => Number(e.data.account_id)).filter((n) => Number.isInteger(n) && n > 0))];
   if (ids.length) {
     const demo = new Set((await exec.selectFrom("businesses").select("id").where("id", "in", ids).where("isDemo", "=", true).execute()).map((b) => String(b.id)));
     if (demo.size) events = events.filter((e) => !demo.has(String(e.data.account_id)));
-    if (!events.length) return;
+    if (!events.length) return 0;
   }
   const rows = events.map((e) => {
     const event: SbEvent = { id: e.id ?? newEventId(), type: e.type, occurred_at: (e.occurredAt ?? new Date()).toISOString(), data: e.data };
     return { id: event.id, type: event.type, payload: event as unknown as Json };
   });
-  await exec
+  const r = await exec
     .insertInto("salesbrainOutbox")
     .values(rows)
     .onConflict((oc) => oc.column("id").doNothing())
-    .execute();
+    .executeTakeFirst();
+  return Number(r?.numInsertedOrUpdatedRows ?? 0);
 }
 
 async function loadAccount(exec: Exec, businessId: number): Promise<(AccountSource & { fingerprint: string | null }) | null> {
@@ -123,15 +126,16 @@ async function loadAccount(exec: Exec, businessId: number): Promise<(AccountSour
  * Queues the account's full current state when something Sales Brain cares about changed since
  * the last one (or always, with force). Returns whether an event was queued.
  */
-export async function queueAccountSync(exec: Exec, businessId: number, opts: { force?: boolean; eventId?: string } = {}) {
+export async function queueAccountSync(exec: Exec, businessId: number, opts: { force?: boolean; eventId?: string | ((fingerprint: string) => string) } = {}) {
   const src = await loadAccount(exec, businessId);
   if (!src) return false;
   const data = accountData(src);
   const fp = accountFingerprint(data);
   if (!opts.force && fp === src.fingerprint) return false;
-  await enqueue(exec, [{ id: opts.eventId, type: "account.upserted", data }]);
+  const id = typeof opts.eventId === "function" ? opts.eventId(fp) : opts.eventId;
+  const queued = await enqueue(exec, [{ id, type: "account.upserted", data }]);
   if (fp !== src.fingerprint) await exec.updateTable("businesses").set({ sbFingerprint: fp }).where("id", "=", businessId).execute();
-  return true;
+  return queued > 0;
 }
 
 /** The last word on an account that's being deleted (call before deleting it, same transaction). */
@@ -424,7 +428,8 @@ export async function endDueFreeAccess() {
 export async function syncAllAccounts() {
   await endDueFreeAccess().catch((e) => console.error("[salesbrain] ending free access failed", e instanceof Error ? e.message : e));
   const date = brisbaneDate();
-  const bizs = await db.selectFrom("businesses").select("id").orderBy("id").execute();
+  // Demo customers (Admin → Demo data) are never sent.
+  const bizs = await db.selectFrom("businesses").select("id").where("isDemo", "=", false).orderBy("id").execute();
   if (!bizs.length) return { queued: 0 };
   const dailyId = (id: number) => `daily-account-${id}-${date}`;
   const have = new Set(
@@ -481,27 +486,39 @@ export async function resendProblems() {
 type StripeInvoiceFull = StripeInvoiceLite & { status?: string | null; attempt_count?: number; customer?: string };
 type StripeRefundFull = StripeRefundLite & { charge?: { id: string; customer?: string | null } | string | null; status?: string };
 
+const shortHash = (v: string) => createHash("sha256").update(v).digest("hex").slice(0, 16);
+
 /**
- * One-off (re-runnable): every account, the last 90 days of payments and every open or pending
- * ticket. Ids are deterministic, so running it again the same day queues nothing new.
+ * Re-runnable: every real account, every payment in the ledger (paid, failed, refunded) plus the
+ * last 90 days from Stripe, and every ticket. Each event id is fixed by the record's current state,
+ * so running it again queues only what changed since. Demo customers are left out.
+ * `queued` = new events, `total` = everything it covered.
  */
 export async function runBackfill() {
-  const date = brisbaneDate();
   const errors: string[] = [];
-  let accounts = 0;
-  let payments = 0;
-  let tickets = 0;
+  const out = { accounts: { queued: 0, total: 0 }, payments: { queued: 0, total: 0 }, tickets: { queued: 0, total: 0 } };
 
-  const bizs = await db.selectFrom("businesses").select(["id", "stripeCustomerId"]).orderBy("id").execute();
+  const bizs = await db.selectFrom("businesses").select(["id", "stripeCustomerId"]).where("isDemo", "=", false).orderBy("id").execute();
+  const real = bizs.map((b) => b.id);
   for (const b of bizs) {
     try {
-      await db.transaction().execute((trx) => queueAccountSync(trx, b.id, { force: true, eventId: `backfill-account-${b.id}-${date}` }));
-      accounts++;
+      const did = await db.transaction().execute((trx) => queueAccountSync(trx, b.id, { force: true, eventId: (fp) => `backfill-account-${b.id}-${shortHash(fp)}` }));
+      out.accounts.total++;
+      if (did) out.accounts.queued++;
     } catch (e) {
       errors.push(`account ${b.id}: ${e instanceof Error ? e.message : e}`);
     }
   }
 
+  // The ledger: every payment the webhooks recorded, whatever its age.
+  if (real.length) {
+    const ledger = await db.selectFrom("billingPayments").selectAll().where("businessId", "in", real).orderBy("paidAt").execute();
+    const events = ledger.map((p) => ({ id: `ledger-payment-${p.id}-${p.status}`, type: "payment.recorded" as const, occurredAt: p.paidAt, data: paymentFromLedger(p) }));
+    for (let i = 0; i < events.length; i += 200) out.payments.queued += await enqueue(db, events.slice(i, i + 200));
+    out.payments.total += events.length;
+  }
+
+  // Stripe, in case a webhook never arrived.
   if (isStripeConfigured()) {
     const since = Math.floor((Date.now() - 90 * 86_400_000) / 1000);
     const byCustomer = new Map(bizs.filter((b) => b.stripeCustomerId).map((b) => [b.stripeCustomerId!, b.id]));
@@ -515,8 +532,8 @@ export async function runBackfill() {
           }
           return [];
         });
-        await enqueue(db, events);
-        payments += events.length;
+        out.payments.queued += await enqueue(db, events);
+        out.payments.total += events.length;
       } catch (e) {
         errors.push(`invoices for ${businessId}: ${e instanceof Error ? e.message : e}`);
       }
@@ -534,8 +551,8 @@ export async function runBackfill() {
           const chargeId = typeof ref.charge === "object" && ref.charge ? ref.charge.id : ref.charge ?? null;
           return [{ id: `refund-${ref.id}`, type: "payment.recorded" as const, data: paymentFromRefund(businessId, { ...ref, charge: chargeId }) }];
         });
-        await enqueue(db, events);
-        payments += events.length;
+        out.payments.queued += await enqueue(db, events);
+        out.payments.total += events.length;
         if (!r.has_more || !r.data.length) break;
         after = r.data[r.data.length - 1].id;
       }
@@ -544,12 +561,13 @@ export async function runBackfill() {
     }
   }
 
-  const open = await db.selectFrom("supportTickets").selectAll().where("status", "in", ["open", "in_progress", "pending"]).execute();
-  await enqueue(
-    db,
-    open.map((t) => ({ id: `backfill-ticket-${t.id}-${date}`, type: "ticket.upserted" as const, occurredAt: t.updatedAt, data: ticketData(t) })),
-  );
-  tickets = open.length;
+  // Every ticket, open or not.
+  if (real.length) {
+    const all = await db.selectFrom("supportTickets").selectAll().where("businessId", "in", real).orderBy("id").execute();
+    const events = all.map((t) => ({ id: `backfill-ticket-${t.id}-${new Date(t.updatedAt).getTime()}`, type: "ticket.upserted" as const, occurredAt: t.updatedAt, data: ticketData(t) }));
+    for (let i = 0; i < events.length; i += 200) out.tickets.queued += await enqueue(db, events.slice(i, i + 200));
+    out.tickets.total += events.length;
+  }
 
-  return { accounts, payments, tickets, errors };
+  return { ...out, errors };
 }
