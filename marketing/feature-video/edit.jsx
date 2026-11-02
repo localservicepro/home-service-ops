@@ -76,7 +76,7 @@ function pushIn(dur, delay, w, h, end = 1.035) {
   const settle = delay + 0.9;
   const shift = (sc, size) => -((sc - 1) * size) / 2;
   return [
-    ...fade(dur, delay, 0),
+    ...fade(dur, delay, 0).filter((a) => a.property === "opacity"),
     { property: "scale", keyframes: [{ at: delay, value: 0.94, easing: "house" }, { at: settle, value: 1, easing: "linear" }, { at: dur, value: end }] },
     { property: "offsetX", keyframes: [{ at: delay, value: shift(0.94, w), easing: "house" }, { at: settle, value: 0, easing: "linear" }, { at: dur, value: shift(end, w) }] },
     { property: "offsetY", keyframes: [{ at: delay, value: shift(0.94, h) + 40, easing: "house" }, { at: settle, value: 0, easing: "linear" }, { at: dur, value: shift(end, h) }] },
