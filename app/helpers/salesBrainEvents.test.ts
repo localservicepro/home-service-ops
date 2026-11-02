@@ -8,6 +8,7 @@ import {
   classifyResponse,
   compActive,
   paymentFromInvoice,
+  isValidUuid,
   paymentFromLedger,
   paymentFromRefund,
   retryDelayMs,
@@ -302,5 +303,16 @@ describe("payment.recorded from the ledger", () => {
         account_id: "42", payment_id: "in_1", amount_cents: 5390, currency: "aud", status, kind, description: "Team plan, October", paid_at: "2026-10-15T03:00:00.000Z",
       });
     }
+  });
+});
+
+describe("sales_brain_customer_id", () => {
+  it("is sent only when it's a UUID Sales Brain accepts, otherwise null", () => {
+    expect(isValidUuid("c049e71c-392c-4a08-a505-8970e97520bb")).toBe(true);
+    expect(isValidUuid("00000000-0000-0000-0000-000000000000")).toBe(true);
+    expect(isValidUuid("00000000-0000-0000-0000-000000000006")).toBe(false); // version 0
+    expect(isValidUuid("not-a-uuid")).toBe(false);
+    expect(accountData({ ...base, salesBrainCustomerId: "00000000-0000-0000-0000-000000000006" }, NOW)).toHaveProperty("sales_brain_customer_id", null);
+    expect(accountData({ ...base, salesBrainCustomerId: "c049e71c-392c-4a08-a505-8970e97520bb" }, NOW)).toHaveProperty("sales_brain_customer_id", "c049e71c-392c-4a08-a505-8970e97520bb");
   });
 });

@@ -75,6 +75,10 @@ const planKey = (p: string): PlanKey | null => (p === "solo" || p === "team" ? p
 export const planMrrCents = (plan: PlanKey, lastInvoiceCents: number | null) =>
   lastInvoiceCents && lastInvoiceCents > 0 ? lastInvoiceCents : Math.round(PLANS[plan].price * 110);
 
+/** An RFC 9562 UUID (version 1 to 8, standard variant), or the nil or max UUID: what Sales Brain accepts. */
+export const isValidUuid = (v: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v) || /^(0{8}-0{4}-0{4}-0{4}-0{12}|f{8}-f{4}-f{4}-f{4}-f{12})$/i.test(v);
+
 /** The account as Sales Brain sees it right now. */
 export function accountData(src: AccountSource, now = new Date()): Record<string, unknown> {
   const subscribed = planKey(src.plan);
@@ -131,8 +135,9 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
 
   return {
     account_id: String(src.id),
-    // Only on accounts Sales Brain created: the id it sent in account.provision (nothing else sets it).
-    sales_brain_customer_id: src.salesBrainCustomerId || null,
+    // Only on accounts Sales Brain created: the id it sent in account.provision (nothing else sets
+    // it). Null otherwise, and null for one that isn't a valid UUID, which Sales Brain refuses.
+    sales_brain_customer_id: src.salesBrainCustomerId && isValidUuid(src.salesBrainCustomerId) ? src.salesBrainCustomerId : null,
     business_name: src.name,
     owner_name: src.ownerName || null,
     email: src.email || null,
