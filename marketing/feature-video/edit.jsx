@@ -227,7 +227,7 @@ export default async function edit({ project, icon }) {
   {
     const at = S[9] + 3.0, d = S[10] - at;
     const chips = ["LeadConnector", "Xero", "Google reviews", "Stripe", "Square"];
-    let cx = 1000;
+    let cx = 1190;
     p.compose([
       ...Background(),
       ...Brand({ dur: d }),
@@ -236,7 +236,7 @@ export default async function edit({ project, icon }) {
       <text x={96} y={300} width={900} fontFamily={FONT} fontSize={30} fontWeight={600} color={SOFT} animate={fade(d, 0.5)}>Text your customers from one shared inbox.</text>,
       ...chips.flatMap((c, i) => {
         const w = 44 + c.length * 15;
-        if (i === 3) cx = 1100;
+        if (i === 3) cx = 1190;
         const x = cx; cx += w + 16;
         const y = i < 3 ? 200 : 272;
         return [
