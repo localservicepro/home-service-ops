@@ -316,3 +316,15 @@ describe("sales_brain_customer_id", () => {
     expect(accountData({ ...base, salesBrainCustomerId: "c049e71c-392c-4a08-a505-8970e97520bb" }, NOW)).toHaveProperty("sales_brain_customer_id", "c049e71c-392c-4a08-a505-8970e97520bb");
   });
 });
+
+describe("usage", () => {
+  it("carries the account's numbers, flat; users and jobs_last_30d always present", () => {
+    const d = accountData({ ...base, usage: { logins_last_30d: 9, quotes_won_last_30d: 3, invoiced_last_30d_cents: 108900, last_job_at: "2026-10-18T23:20:06.894Z", users: 99 } }, NOW);
+    expect(d.usage).toEqual({ logins_last_30d: 9, quotes_won_last_30d: 3, invoiced_last_30d_cents: 108900, last_job_at: "2026-10-18T23:20:06.894Z", jobs_last_30d: 18, users: 2 });
+    for (const v of Object.values(d.usage as Record<string, unknown>)) expect(["number", "string"].includes(typeof v) || v === null).toBe(true);
+  });
+
+  it("isn't part of the change fingerprint (it goes out daily, not on every job)", () => {
+    expect(accountFingerprint(accountData({ ...base, usage: { jobs_total: 1 } }, NOW))).toBe(accountFingerprint(accountData({ ...base, usage: { jobs_total: 2 } }, NOW)));
+  });
+});

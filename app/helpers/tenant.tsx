@@ -4,7 +4,8 @@ import { getServerUserSession } from "./getServerUserSession";
 import { NotAuthenticatedError } from "./getSetServerSession";
 import { PaymentRequiredError, assertNotReadOnly } from "./billing";
 import type { MemberRole } from "./schema";
-import { touchActive } from "./salesBrain";
+import { recordActivity, sessionIdOf } from "./salesBrain";
+import { bearerToken } from "./getSetServerSession";
 import type { User } from "./User";
 
 // Server-only. Every business-data endpoint starts with requireMember(): it resolves the
@@ -88,7 +89,7 @@ export async function requireMember(
   if (!roles.includes(m.role)) throw new ForbiddenError();
   // Suspended by Local Service Pro staff: only the account summary and support stay open.
   if (m.suspendedAt && !opts.allowSuspended) throw new ForbiddenError(SUSPENDED_MESSAGE);
-  touchActive(m.businessId);
+  recordActivity(m.businessId, user.id, sessionIdOf(bearerToken(request)));
   if (request.method !== "GET" && !opts.allowExpired) await assertNotReadOnly(m.businessId);
   return { user, businessId: m.businessId, businessName: m.businessName, role: m.role, staffId: m.staffId };
 }

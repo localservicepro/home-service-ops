@@ -45,6 +45,19 @@ export type UserRole = "admin" | "user";
 
 export type WorkState = "done" | "idle" | "running";
 
+export interface AccountSessions {
+  sessionId: string;
+  businessId: number;
+  userId: number;
+  firstSeenAt: Generated<Timestamp>;
+}
+
+export interface AccountActivity {
+  businessId: number;
+  userId: number;
+  day: Timestamp;
+}
+
 export interface Addons {
   businessId: number;
   createdAt: Generated<Timestamp>;
@@ -611,6 +624,8 @@ export interface SupportMessages {
 }
 
 export interface DB {
+  accountActivity: AccountActivity;
+  accountSessions: AccountSessions;
   billingPayments: BillingPayments;
   customerNotes: CustomerNotes;
   salesbrainInbound: SalesbrainInbound;

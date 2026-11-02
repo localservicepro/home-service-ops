@@ -59,6 +59,8 @@ export type AccountSource = {
   phone: string;
   jobsLast30d: number;
   users: number;
+  /** The account's current numbers (helpers/accountUsage.tsx), sent as `usage`. */
+  usage?: Record<string, number | string | null>;
 };
 
 const iso = (d: Date | null | undefined) => (d ? new Date(d).toISOString() : null);
@@ -150,7 +152,7 @@ export function accountData(src: AccountSource, now = new Date()): Record<string
     cancelled_at: cancelledAt,
     cancel_reason: cancelReason,
     last_active_at: iso(src.lastActiveAt),
-    usage: { jobs_last_30d: src.jobsLast30d, users: src.users },
+    usage: { ...src.usage, jobs_last_30d: src.jobsLast30d, users: src.users },
   };
 }
 

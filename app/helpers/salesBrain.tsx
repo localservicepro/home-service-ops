@@ -3,6 +3,7 @@ import { sql, type Kysely } from "kysely";
 import { db } from "./db";
 import type { DB, Json } from "./schema";
 import { env } from "./serverEnv";
+import { loadUsage } from "./accountUsage";
 import { sendAppEmail, EmailNotConfiguredError } from "./mailer";
 import { isStripeConfigured, stripeApi } from "./stripeConnect";
 import {
@@ -118,6 +119,23 @@ async function loadAccount(exec: Exec, businessId: number): Promise<(AccountSour
     phone: o.phone || biz.phone || "",
     jobsLast30d: Number(jobs.n),
     users: Number(users.n),
+    usage: {
+      ...(await loadUsage(exec, [businessId])).get(businessId),
+      subscription_status: b.subscriptionStatus,
+      trial_ends_at: b.trialEndsAt ? new Date(b.trialEndsAt).toISOString() : null,
+      // They've cancelled but keep access until the period ends.
+      cancels_at: b.cancelAtPeriodEnd && b.currentPeriodEnd ? new Date(b.currentPeriodEnd).toISOString() : null,
+      open_tickets: Number(
+        (
+          await exec
+            .selectFrom("supportTickets")
+            .select((eb) => eb.fn.countAll<string>().as("n"))
+            .where("businessId", "=", businessId)
+            .where("status", "in", ["open", "in_progress", "pending"])
+            .executeTakeFirstOrThrow()
+        ).n,
+      ),
+    },
     fingerprint: b.sbFingerprint,
   };
 }
@@ -126,13 +144,13 @@ async function loadAccount(exec: Exec, businessId: number): Promise<(AccountSour
  * Queues the account's full current state when something Sales Brain cares about changed since
  * the last one (or always, with force). Returns whether an event was queued.
  */
-export async function queueAccountSync(exec: Exec, businessId: number, opts: { force?: boolean; eventId?: string | ((fingerprint: string) => string) } = {}) {
+export async function queueAccountSync(exec: Exec, businessId: number, opts: { force?: boolean; eventId?: string | ((data: Record<string, unknown>) => string) } = {}) {
   const src = await loadAccount(exec, businessId);
   if (!src) return false;
   const data = accountData(src);
   const fp = accountFingerprint(data);
   if (!opts.force && fp === src.fingerprint) return false;
-  const id = typeof opts.eventId === "function" ? opts.eventId(fp) : opts.eventId;
+  const id = typeof opts.eventId === "function" ? opts.eventId(data) : opts.eventId;
   const queued = await enqueue(exec, [{ id, type: "account.upserted", data }]);
   if (fp !== src.fingerprint) await exec.updateTable("businesses").set({ sbFingerprint: fp }).where("id", "=", businessId).execute();
   return queued > 0;
@@ -174,6 +192,38 @@ export function touchActive(businessId: number) {
     .where("id", "=", businessId)
     .execute()
     .catch(() => undefined);
+}
+
+/** The Supabase Auth session id in an access token that was already verified, or null. */
+export function sessionIdOf(accessToken: string | null): string | null {
+  const part = accessToken?.split(".")[1];
+  if (!part) return null;
+  try {
+    const claims = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((part.length + 3) % 4))) as { session_id?: unknown };
+    return typeof claims.session_id === "string" && /^[0-9a-f-]{36}$/i.test(claims.session_id) ? claims.session_id : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A member used the app: records the sign-in (each Auth session once) and the Brisbane day, for
+ * the logins and active-days numbers sent to Sales Brain. Once per worker per key. Never throws.
+ */
+const seen = new Set<string>();
+export function recordActivity(businessId: number, userId: number, sessionId: string | null) {
+  touchActive(businessId);
+  const day = brisbaneDate();
+  const dayKey = `d:${businessId}:${userId}:${day}`;
+  if (!seen.has(dayKey)) {
+    seen.add(dayKey);
+    db.insertInto("accountActivity").values({ businessId, userId, day: new Date(`${day}T00:00:00Z`) }).onConflict((oc) => oc.doNothing()).execute().catch(() => seen.delete(dayKey));
+  }
+  if (sessionId && !seen.has(`s:${sessionId}`)) {
+    seen.add(`s:${sessionId}`);
+    db.insertInto("accountSessions").values({ sessionId, businessId, userId }).onConflict((oc) => oc.doNothing()).execute().catch(() => seen.delete(`s:${sessionId}`));
+  }
+  if (seen.size > 20_000) seen.clear();
 }
 
 // ---------- Stripe billing webhooks → payment.recorded ----------
@@ -502,7 +552,7 @@ export async function runBackfill() {
   const real = bizs.map((b) => b.id);
   for (const b of bizs) {
     try {
-      const did = await db.transaction().execute((trx) => queueAccountSync(trx, b.id, { force: true, eventId: (fp) => `backfill-account-${b.id}-${shortHash(fp)}` }));
+      const did = await db.transaction().execute((trx) => queueAccountSync(trx, b.id, { force: true, eventId: (data) => `backfill-account-${b.id}-${shortHash(JSON.stringify(data))}` }));
       out.accounts.total++;
       if (did) out.accounts.queued++;
     } catch (e) {

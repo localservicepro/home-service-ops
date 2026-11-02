@@ -158,7 +158,18 @@ select net.http_post(
   body := '{}'::jsonb, timeout_milliseconds := 120000);
 ```
 
-It queues every real account, every payment in the ledger (paid, failed, refunded) plus the last 90 days of Stripe invoices and refunds, and every ticket. Demo customers are never sent. Ids are fixed by each record's current state (`backfill-account-<id>-<state hash>`, `ledger-payment-<id>-<status>`, `backfill-payment-<invoice>-paid`, `refund-<id>`, `backfill-ticket-<id>-<updated ms>`), so running it again only queues what changed since. It reports `queued` (new) and `total` for each. The cron sends the queue over the next few minutes.
+It queues every real account, every payment in the ledger (paid, failed, refunded) plus the last 90 days of Stripe invoices and refunds, and every ticket. Demo customers are never sent. Ids are fixed by each record's current state (`backfill-account-<id>-<hash of the account data, usage included>`, `ledger-payment-<id>-<status>`, `backfill-payment-<invoice>-paid`, `refund-<id>`, `backfill-ticket-<id>-<updated ms>`), so running it again only queues what changed since. It reports `queued` (new) and `total` for each. The cron sends the queue over the next few minutes.
+
+`usage` on every `account.upserted` holds the account's current numbers, flat (`helpers/accountUsage.tsx`). Windows are the last 30 days and money is integer cents:
+- **Team:** `users`, `crew_total`, `logins_last_30d`, `active_days_last_30d`, `active_users_last_30d`.
+- **Customers:** `customers_total`, `customers_new_last_30d`.
+- **Jobs:** `jobs_last_30d`, `jobs_created_last_30d`, `jobs_completed_last_30d`, `completed_value_last_30d_cents`, `jobs_total`, `leads_last_30d`.
+- **Quotes:** `quotes_last_30d`, `quotes_sent_last_30d`, `quotes_won_last_30d`, `quotes_lost_last_30d`, `quotes_won_last_30d_cents`, `quote_win_rate_last_30d_pct`, `quotes_open`, `quotes_open_cents`, `quotes_total`.
+- **Invoices and payments:** `invoices_last_30d`, `invoiced_last_30d_cents`, `payments_collected_last_30d`, `collected_last_30d_cents`, `unpaid_jobs`, `outstanding_cents`.
+- **Bookings and reviews:** `booked_ahead_jobs`, `booked_ahead_cents`, `review_requests_last_30d`.
+- **Dates and state:** `last_job_at`, `last_quote_at`, `subscription_status`, `trial_ends_at`, `cancels_at`, `open_tickets`.
+
+Sign-ins and active days come from `hso.account_sessions` (each Auth session once) and `hso.account_activity` (each member per Brisbane day). They're recorded on every signed-in request, but not during staff support views.
 
 `sales_brain_customer_id` is sent on every `account.upserted`: the UUID Sales Brain sent in `account.provision` for accounts it created, otherwise `null`.
 
