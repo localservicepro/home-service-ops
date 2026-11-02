@@ -8,6 +8,7 @@ set -euo pipefail
 V=~/vid
 P=$V/proj2
 mkdir -p $P/media $V/music2
+cp $V/edit.jsx $P/
 cd $V
 
 # ---- App clips: one demo cycle each, ending on its payoff, held to the scene length (no loops) ----
@@ -38,6 +39,8 @@ for i in 2 3 4 5 6 7 8; do cp broll/b${i}s.mp4 $P/media/b$i.mp4; done
 
 # ---- Picture ----
 cd $P
+# The first build creates the project; fonts are registered into it, then it builds again with them.
+higgsedit build edit.jsx > build.log 2>&1
 higgsedit fonts add . Inter:400 Inter:600 Inter:700 Inter:900 "JetBrains Mono:400" >/dev/null
 higgsedit build edit.jsx > build.log 2>&1
 higgsedit render . --out renders/picture.mp4 --quality final > render.log 2>&1

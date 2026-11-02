@@ -36,10 +36,11 @@ const dissolve = (dur, out = true) => [
 ];
 
 function Background({ dur, flip = false, out = true }) {
+  const drift = (dx, dy) => [...dissolve(dur, out), { property: "offsetX", from: -dx, to: dx, duration: dur, easing: "linear" }, { property: "offsetY", from: -dy, to: dy, duration: dur, easing: "linear" }];
   return [
     <rect x={0} y={0} width={1920} height={1080} fill={{ kind: "linear", angle: flip ? 225 : 135, stops: [{ offset: 0, color: "#0A2142" }, { offset: 0.55, color: NAVY }, { offset: 1, color: "#050E1C" }] }} animate={dissolve(dur, out)} />,
-    <rect x={flip ? -500 : 900} y={-300} width={1400} height={1400} radius={700} fill={{ kind: "radial", stops: [{ offset: 0, color: BLUE, opacity: 0.38 }, { offset: 1, color: BLUE, opacity: 0 }] }} animate={dissolve(dur, out)} />,
-    <rect x={flip ? 1300 : -400} y={600} width={1000} height={1000} radius={500} fill={{ kind: "radial", stops: [{ offset: 0, color: CYAN, opacity: 0.14 }, { offset: 1, color: CYAN, opacity: 0 }] }} animate={dissolve(dur, out)} />,
+    <rect x={flip ? -500 : 900} y={-300} width={1400} height={1400} radius={700} fill={{ kind: "radial", stops: [{ offset: 0, color: BLUE, opacity: 0.38 }, { offset: 1, color: BLUE, opacity: 0 }] }} animate={drift(flip ? -70 : 70, 30)} />,
+    <rect x={flip ? 1300 : -400} y={600} width={1000} height={1000} radius={500} fill={{ kind: "radial", stops: [{ offset: 0, color: CYAN, opacity: 0.14 }, { offset: 1, color: CYAN, opacity: 0 }] }} animate={drift(flip ? 50 : -50, -25)} />,
   ];
 }
 
@@ -69,10 +70,23 @@ function Copy({ dur, x = 96, num, eyebrow, title, bullets, width = 660, y = 250,
   ];
 }
 
+// Pops in, then pushes in slowly for the rest of the scene so a held frame never sits still.
+// Scale anchors at the top-left, so the offsets keep it centred.
+function pushIn(dur, delay, w, h, end = 1.035) {
+  const settle = delay + 0.9;
+  const shift = (sc, size) => -((sc - 1) * size) / 2;
+  return [
+    ...fade(dur, delay, 0),
+    { property: "scale", keyframes: [{ at: delay, value: 0.94, easing: "house" }, { at: settle, value: 1, easing: "linear" }, { at: dur, value: end }] },
+    { property: "offsetX", keyframes: [{ at: delay, value: shift(0.94, w), easing: "house" }, { at: settle, value: 0, easing: "linear" }, { at: dur, value: shift(end, w) }] },
+    { property: "offsetY", keyframes: [{ at: delay, value: shift(0.94, h) + 40, easing: "house" }, { at: settle, value: 0, easing: "linear" }, { at: dur, value: shift(end, h) }] },
+  ];
+}
+
 function Card({ file, x, y, w, h, dur, delay = 0.25, radius = 22 }) {
   return [
-    <rect x={x - 10} y={y - 10} width={w + 20} height={h + 20} radius={radius + 8} fill="#FFFFFF" opacity={0.1} animate={pop(dur, delay)} />,
-    <media file={file} x={x} y={y} width={w} height={h} fit="cover" radius={radius} shadow={{ x: 0, y: 30, blur: 70, color: "rgba(0,0,0,0.55)" }} animate={pop(dur, delay)} />,
+    <rect x={x - 10} y={y - 10} width={w + 20} height={h + 20} radius={radius + 8} fill="#FFFFFF" opacity={0.1} animate={pushIn(dur, delay, w + 20, h + 20)} />,
+    <media file={file} x={x} y={y} width={w} height={h} fit="cover" radius={radius} shadow={{ x: 0, y: 30, blur: 70, color: "rgba(0,0,0,0.55)" }} animate={pushIn(dur, delay, w, h)} />,
   ];
 }
 
@@ -155,8 +169,8 @@ export default async function edit({ project, icon }) {
       <rect x={96} y={790} width={880} height={150} radius={18} fill="#030A14" opacity={0.9} strokeColor="#1E3A5F" strokeWidth={2} animate={fade(d, 3.4)} />,
       <text x={124} y={808} width={820} fontFamily={FONT} fontSize={20} fontWeight={700} letterSpacing={2} color={CYAN} animate={fade(d, 3.4)}>ONE LINE OF CODE ON YOUR WEBSITE</text>,
       <text x={124} y={850} width={830} fontFamily="JetBrains Mono" fontSize={21} fontWeight={400} lineHeight={1.4} color="#E6EEF8" animate={fade(d, 3.6)}>{snippet}</text>,
-      <rect x={1176} y={70} width={468} height={952} radius={62} fill="#0B0F17" strokeColor="#2A3A52" strokeWidth={3} shadow={{ x: 0, y: 40, blur: 80, color: "rgba(0,0,0,0.6)" }} animate={pop(d, 0.4)} />,
-      <media file={ui.leadform} x={1196} y={92} width={428} height={908} fit="cover" radius={46} animate={pop(d, 0.4)} />,
+      <rect x={1176} y={70} width={468} height={952} radius={62} fill="#0B0F17" strokeColor="#2A3A52" strokeWidth={3} shadow={{ x: 0, y: 40, blur: 80, color: "rgba(0,0,0,0.6)" }} animate={pushIn(d, 0.4, 468, 952, 1.025)} />,
+      <media file={ui.leadform} x={1196} y={92} width={428} height={908} fit="cover" radius={46} animate={pushIn(d, 0.4, 428, 908, 1.025)} />,
       <group at={S[3] + sent} duration={d - sent}>
         <rect x={1500} y={760} width={380} height={126} radius={20} fill={WHITE} shadow={{ x: 0, y: 20, blur: 50, color: "rgba(0,0,0,0.45)" }} animate={pop(d - sent, 0)} />
         <rect x={1522} y={784} width={44} height={44} radius={12} fill={BLUE} animate={pop(d - sent, 0)} />

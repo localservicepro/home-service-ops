@@ -33,6 +33,8 @@ def place(buf, start_s, sig, pan=0.5, gain=1.0):
     s = int(start_s * SR)
     if s >= N or s + len(sig) <= 0:
         return
+    if s < 0:  # starts before the video: keep the audible part
+        sig, s = sig[-s:], 0
     sig = sig[: N - s]
     buf[s : s + len(sig), 0] += sig * gain * (1 - pan) * 2 ** 0.5 * 0.71
     buf[s : s + len(sig), 1] += sig * gain * pan * 2 ** 0.5 * 0.71
