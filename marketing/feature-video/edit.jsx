@@ -6,6 +6,7 @@ const CYAN = "#35C6F4";
 const WHITE = "#FFFFFF";
 const SOFT = "#C9D6E8";
 const FONT = "Inter";
+const ICON = { fn: null };
 
 // Scene starts, matched to the narration lines (each line starts 0.3s in).
 const S = [0, 10.76, 17.19, 24.0, 36.55, 44.34, 57.53, 64.38, 87.72, 102.27, 111.14];
@@ -15,7 +16,6 @@ const fade = (dur, delay = 0, rise = 26, out = true) => [
   {
     property: "opacity",
     keyframes: [
-      { at: 0, value: 0 },
       { at: delay, value: 0, easing: "house" },
       { at: delay + 0.55, value: 1 },
       ...(out ? [{ at: Math.max(delay + 0.6, dur - 0.45), value: 1 }, { at: dur, value: 0 }] : []),
@@ -45,7 +45,7 @@ function Brand({ dur }) {
 }
 
 // Left column copy for a feature scene.
-function Copy({ dur, num, eyebrow, title, bullets, width = 660, y = 250, titleSize = 66, bulletStart = 1.4, bulletGap = 0.55 }) {
+function Copy({  dur, num, eyebrow, title, bullets, width = 660, y = 250, titleSize = 66, bulletStart = 1.4, bulletGap = 0.55 }) {
   const lines = Math.ceil(title.length / (width / (titleSize * 0.52)));
   const by = y + 70 + lines * titleSize * 1.12 + 36;
   return [
@@ -56,7 +56,7 @@ function Copy({ dur, num, eyebrow, title, bullets, width = 660, y = 250, titleSi
       const d = bulletStart + i * bulletGap;
       return [
         <rect x={96} y={yy + 9} width={22} height={22} radius={11} fill={CYAN} animate={fade(dur, d, 14)} />,
-        <text x={102} y={yy + 9} width={20} fontFamily={FONT} fontSize={16} fontWeight={900} color={NAVY} align="center" animate={fade(dur, d, 14)}>✓</text>,
+        ICON.fn("check", { x: 99, y: yy + 12, size: 16, color: NAVY, strokeWidth: 3.5, animate: fade(dur, d, 14) }),
         <text x={136} y={yy} width={width - 40} fontFamily={FONT} fontSize={30} fontWeight={600} color={SOFT} animate={fade(dur, d, 14)}>{b}</text>,
       ];
     }),
@@ -75,16 +75,17 @@ function Caption({ dur, label, sub }) {
   return [
     <rect x={0} y={680} width={1920} height={400} fill={{ kind: "linear", angle: 90, stops: [{ offset: 0, color: "#000000", opacity: 0 }, { offset: 1, color: "#000000", opacity: 0.62 }] }} animate={fade(dur, 0, 0)} />,
     <rect x={96} y={884} width={6} height={sub ? 92 : 52} radius={3} fill={CYAN} animate={fade(dur, 0.2, 10)} />,
-    <text x={124} y={880} width={1400} fontFamily={FONT} fontSize={44} fontWeight={800} color={WHITE} animate={fade(dur, 0.25)}>{label}</text>,
-    ...(sub ? [<text x={124} y={940} width={1400} fontFamily={FONT} fontSize={28} fontWeight={500} color={SOFT} animate={fade(dur, 0.45)}>{sub}</text>] : []),
+    <text x={124} y={880} width={1400} fontFamily={FONT} fontSize={44} fontWeight={700} color={WHITE} animate={fade(dur, 0.25)}>{label}</text>,
+    ...(sub ? [<text x={124} y={940} width={1400} fontFamily={FONT} fontSize={28} fontWeight={400} color={SOFT} animate={fade(dur, 0.45)}>{sub}</text>] : []),
   ];
 }
 
 function Subtitle({ dur, delay, text, y = 860, size = 54 }) {
-  return <text x={160} y={y} width={1600} align="center" fontFamily={FONT} fontSize={size} fontWeight={800} color={WHITE} shadow={{ x: 0, y: 4, blur: 24, color: "rgba(0,0,0,0.7)" }} animate={fade(dur, delay)}>{text}</text>;
+  return <text x={160} y={y} width={1600} align="center" fontFamily={FONT} fontSize={size} fontWeight={700} color={WHITE} shadow={{ x: 0, y: 4, blur: 24, color: "rgba(0,0,0,0.7)" }} animate={fade(dur, delay)}>{text}</text>;
 }
 
-export default async function edit({ project }) {
+export default async function edit({ project, icon }) {
+  ICON.fn = icon;
   const p = await project({ size: "1920x1080", fps: 30, background: NAVY });
   const b = [];
   for (let i = 0; i <= 8; i++) b.push(await p.add(`media/b${i}s.mp4`));
@@ -108,7 +109,7 @@ export default async function edit({ project }) {
     p.compose([
       <rect x={0} y={700} width={1920} height={380} fill={{ kind: "linear", angle: 90, stops: [{ offset: 0, color: "#000000", opacity: 0 }, { offset: 1, color: "#000000", opacity: 0.55 }] }} animate={fade(d, 0, 0)} />,
       <Subtitle dur={5.6} delay={0.6} text="You started your business to do great work." />,
-      <group at={5.6} duration={d - 5.6}><Subtitle dur={d - 5.6} delay={0} text="Not to drown in paperwork." /></group>,
+      <group at={S[0] + 5.6} duration={d - 5.6}><Subtitle dur={d - 5.6} delay={0} text="Not to drown in paperwork." /></group>,
     ], { at: S[0], dur: d, name: "hook" });
   }
 
@@ -117,9 +118,9 @@ export default async function edit({ project }) {
     const d = S[2] - S[1];
     p.compose([
       <rect x={0} y={0} width={1920} height={1080} fill="#000000" opacity={0.25} />,
-      <text x={160} y={330} width={1600} align="center" fontFamily={FONT} fontSize={60} fontWeight={800} color={WHITE} animate={fade(d, 0.3)}>Quotes on scraps of paper.</text>,
-      <text x={160} y={440} width={1600} align="center" fontFamily={FONT} fontSize={60} fontWeight={800} color={WHITE} animate={fade(d, 2.0)}>Jobs juggled in your head.</text>,
-      <text x={160} y={550} width={1600} align="center" fontFamily={FONT} fontSize={60} fontWeight={800} color={CYAN} animate={fade(d, 3.7)}>Invoices chased at midnight.</text>,
+      <text x={160} y={330} width={1600} align="center" fontFamily={FONT} fontSize={60} fontWeight={700} color={WHITE} animate={fade(d, 0.3)}>Quotes on scraps of paper.</text>,
+      <text x={160} y={440} width={1600} align="center" fontFamily={FONT} fontSize={60} fontWeight={700} color={WHITE} animate={fade(d, 2.0)}>Jobs juggled in your head.</text>,
+      <text x={160} y={550} width={1600} align="center" fontFamily={FONT} fontSize={60} fontWeight={700} color={CYAN} animate={fade(d, 3.7)}>Invoices chased at midnight.</text>,
     ], { at: S[1], dur: d, name: "problem" });
   }
 
@@ -151,12 +152,12 @@ export default async function edit({ project }) {
       <rect x={1176} y={70} width={468} height={952} radius={62} fill="#0B0F17" strokeColor="#2A3A52" strokeWidth={3} shadow={{ x: 0, y: 40, blur: 80, color: "rgba(0,0,0,0.6)" }} animate={pop(d, 0.4)} />,
       <media file={ui.leadform} x={1196} y={92} width={428} height={908} fit="cover" radius={46} animate={pop(d, 0.4)} />,
       // lands in your account
-      <group at={9.2} duration={d - 9.2}>
+      <group at={S[3] + 9.2} duration={d - 9.2}>
         <rect x={1500} y={760} width={380} height={126} radius={20} fill={WHITE} shadow={{ x: 0, y: 20, blur: 50, color: "rgba(0,0,0,0.45)" }} animate={pop(d - 9.2, 0)} />
         <rect x={1522} y={784} width={44} height={44} radius={12} fill={BLUE} animate={pop(d - 9.2, 0)} />
         <text x={1522} y={790} width={44} align="center" fontFamily={FONT} fontSize={24} fontWeight={900} color={WHITE} animate={pop(d - 9.2, 0)}>+</text>
-        <text x={1582} y={782} width={290} fontFamily={FONT} fontSize={22} fontWeight={800} color={NAVY} animate={pop(d - 9.2, 0)}>New enquiry</text>
-        <text x={1582} y={814} width={290} fontFamily={FONT} fontSize={19} fontWeight={500} color="#3B4B63" lineHeight={1.3} animate={pop(d - 9.2, 0)}>{"Sarah Mitchell\nLawn mowing, hedges"}</text>
+        <text x={1582} y={782} width={290} fontFamily={FONT} fontSize={22} fontWeight={700} color={NAVY} animate={pop(d - 9.2, 0)}>New enquiry</text>
+        <text x={1582} y={814} width={290} fontFamily={FONT} fontSize={19} fontWeight={400} color="#3B4B63" lineHeight={1.3} animate={pop(d - 9.2, 0)}>{"Sarah Mitchell\nLawn mowing, hedges"}</text>
       </group>,
     ], { at: S[3], dur: d, name: "leadform" });
   }
@@ -264,7 +265,7 @@ export default async function edit({ project }) {
       <text x={160} y={330} width={1600} align="center" fontFamily={FONT} fontSize={96} fontWeight={900} color={WHITE} animate={fade(d, 0.25, 26, false)}>Home Service Ops</text>,
       <text x={160} y={455} width={1600} align="center" fontFamily={FONT} fontSize={30} fontWeight={600} color={SOFT} animate={fade(d, 0.5, 26, false)}>Quotes, jobs, crews and payments. One app.</text>,
       <rect x={700} y={560} width={520} height={96} radius={48} fill={{ kind: "linear", angle: 90, stops: [{ offset: 0, color: BLUE }, { offset: 1, color: CYAN }] }} shadow={{ x: 0, y: 18, blur: 50, color: "rgba(12,111,208,0.55)" }} animate={pop(d, 1.0)} />,
-      <text x={700} y={586} width={520} align="center" fontFamily={FONT} fontSize={36} fontWeight={800} color={WHITE} animate={pop(d, 1.0)}>Start your free trial</text>,
+      <text x={700} y={586} width={520} align="center" fontFamily={FONT} fontSize={36} fontWeight={700} color={WHITE} animate={pop(d, 1.0)}>Start your free trial</text>,
       <text x={160} y={700} width={1600} align="center" fontFamily={FONT} fontSize={40} fontWeight={700} color={WHITE} animate={fade(d, 1.5, 20, false)}>home.localservicepro.com.au</text>,
       <text x={160} y={930} width={1600} align="center" fontFamily={FONT} fontSize={22} fontWeight={600} letterSpacing={3} color={SOFT} animate={fade(d, 2.0, 10, false)}>BY LOCAL SERVICE PRO</text>,
       <rect x={0} y={0} width={1920} height={1080} fill="#000000" animate={[{ property: "opacity", keyframes: [{ at: 0, value: 0 }, { at: d - 1.2, value: 0 }, { at: d, value: 1 }] }]} />,
