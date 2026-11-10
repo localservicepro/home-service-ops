@@ -75,6 +75,44 @@ describe("parseOsrm", () => {
     expect(steps[0].at).toEqual([-27.23, 153.01]);
     expect(steps[1].km).toBeCloseTo(12.045);
   });
+  it("reads a roundabout once, with the distance after it", () => {
+    const steps = parseOsrm(
+      {
+        code: "Ok",
+        routes: [
+          {
+            distance: 2000,
+            duration: 200,
+            geometry: "",
+            legs: [
+              {
+                distance: 2000,
+                duration: 200,
+                summary: "Endeavour Boulevard",
+                steps: [
+                  step("depart", { name: "Maddock Street", distance: 118.8 }, { bearing_after: 274 }),
+                  step("end of road", { distance: 106.4 }, { modifier: "left" }),
+                  step("roundabout", { name: "Endeavour Boulevard", distance: 33.4, duration: 3 }, { exit: 2, modifier: "slight left" }),
+                  step("exit roundabout", { name: "Endeavour Boulevard", distance: 355.2, duration: 27 }, { exit: 2, modifier: "straight" }),
+                  step("turn", { name: "Burke Crescent", distance: 38 }, { modifier: "right" }),
+                  step("arrive", { distance: 0, duration: 0 }, { modifier: "left" }),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      true,
+    )[0].legs[0].steps;
+    expect(steps.map((s) => s.text)).toEqual([
+      "Head west on Maddock Street",
+      "At the end of the road, turn left",
+      "At the roundabout, take the 2nd exit onto Endeavour Boulevard",
+      "Turn right onto Burke Crescent",
+      "Arrive at the destination, on the left",
+    ]);
+    expect(steps[2].km).toBeCloseTo(0.389, 2);
+  });
   it("leaves steps out unless asked", () => {
     expect(parseOsrm(json, false)[0].legs[0].steps).toEqual([]);
   });

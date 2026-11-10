@@ -179,6 +179,29 @@ export function osrmInstruction(s: OsrmStep): string {
   }
 }
 
+function osrmSteps(raw: OsrmStep[]): RoadStep[] {
+  const out: RoadStep[] = [];
+  for (const s of raw) {
+    const type = s.maneuver.type;
+    const prev = out[out.length - 1];
+    // "Exit the roundabout" right after "take the 2nd exit" says the same thing twice: fold it in.
+    // Zero-length name changes add nothing to read.
+    if (prev && (type === "exit roundabout" || type === "exit rotary" || (type === "new name" && s.distance === 0))) {
+      prev.km = round3(prev.km + s.distance / 1000);
+      prev.min = round1(prev.min + s.duration / 60);
+      continue;
+    }
+    out.push({
+      text: osrmInstruction(s),
+      km: round3(s.distance / 1000),
+      min: round1(s.duration / 60),
+      at: [s.maneuver.location[1], s.maneuver.location[0]],
+      icon: osrmIcon(s),
+    });
+  }
+  return out;
+}
+
 /** OSRM /route response → our routes. */
 export function parseOsrm(json: unknown, withSteps: boolean): RoadRoute[] {
   const j = json as { code?: string; routes?: OsrmRoute[] };
@@ -193,18 +216,7 @@ export function parseOsrm(json: unknown, withSteps: boolean): RoadRoute[] {
     legs: r.legs.map((l) => ({
       km: round1(l.distance / 1000),
       min: Math.round(l.duration / 60),
-      steps: withSteps
-        ? (l.steps ?? [])
-            // Zero-length name changes add nothing to read.
-            .filter((s) => s.distance > 0 || s.maneuver.type === "arrive" || s.maneuver.type === "depart")
-            .map((s) => ({
-              text: osrmInstruction(s),
-              km: round3(s.distance / 1000),
-              min: round1(s.duration / 60),
-              at: [s.maneuver.location[1], s.maneuver.location[0]] as [number, number],
-              icon: osrmIcon(s),
-            }))
-        : [],
+      steps: withSteps ? osrmSteps(l.steps ?? []) : [],
     })),
   }));
 }
