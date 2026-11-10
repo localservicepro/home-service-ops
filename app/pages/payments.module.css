@@ -1,0 +1,196 @@
+.pad {
+  padding: var(--spacing-4) var(--spacing-6) var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+.skel {
+  height: 190px;
+  border-radius: 20px;
+}
+.skelRow {
+  height: 64px;
+  border-radius: 16px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.statHero {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--hero-gradient);
+  color: #fff;
+  box-shadow: var(--shadow-glow);
+}
+.statHero .statLbl,
+.statHero .statSub {
+  color: rgba(255, 255, 255, 0.72);
+}
+.statBig {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.statLbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.statNum {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.due {
+  color: var(--status-progress);
+}
+.statSub {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+.tabs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  text-decoration: none;
+}
+.row:active {
+  transform: scale(0.98);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: 14px;
+}
+.iconPaid {
+  background: var(--status-paid-bg);
+  color: var(--status-paid);
+}
+.iconDue {
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+.iconQuote {
+  background: var(--status-quote-bg);
+  color: var(--status-quote);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+}
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+.amount {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--foreground);
+}
+.amountPaid {
+  color: var(--status-paid);
+}
+.chev {
+  color: var(--faint);
+}
+
+@media (min-width: 768px) {
+  .pad {
+    padding: var(--spacing-2) 0 var(--spacing-8);
+  }
+  .stats {
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 14px;
+  }
+  .statHero {
+    grid-column: auto;
+    padding: 22px 24px;
+  }
+  .statBig {
+    font-size: 36px;
+  }
+  .stat {
+    padding: 20px;
+    justify-content: center;
+  }
+  .stat:hover,
+  .row:hover {
+    border-color: #bcd3ea;
+  }
+  .statNum {
+    font-size: 26px;
+  }
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 12px;
+  }
+  .list > :only-child,
+  .list > .hint {
+    grid-column: 1 / -1;
+  }
+}

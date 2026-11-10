@@ -1,0 +1,22 @@
+.skel {
+  height: 220px;
+  border-radius: 14px;
+}
+.note {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+.note a {
+  color: var(--primary);
+  font-weight: 700;
+}
+.error {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--error) 10%, var(--card));
+  color: var(--error);
+  font-size: 13px;
+}

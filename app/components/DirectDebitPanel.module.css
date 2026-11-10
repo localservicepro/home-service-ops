@@ -1,0 +1,114 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skel {
+  height: 120px;
+  border-radius: 14px;
+}
+.intro {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--muted);
+}
+.intro p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--navy-700);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  flex: none;
+  background: var(--status-quote-bg);
+  color: var(--status-quote);
+}
+.state {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+.state div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.state b {
+  font-size: 14px;
+}
+.state small {
+  font-size: 12.5px;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+.state svg {
+  flex: none;
+  margin-top: 1px;
+}
+.ok {
+  background: var(--status-paid-bg);
+  color: var(--status-paid);
+}
+.wait {
+  background: var(--status-progress-bg);
+  color: var(--status-progress);
+}
+.bad {
+  background: var(--status-cancelled-bg);
+  color: var(--status-cancelled);
+}
+.linkBox {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--status-quote-bg);
+  border: 1px solid color-mix(in srgb, var(--status-quote) 25%, transparent);
+}
+.linkLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--status-quote);
+}
+.url {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+.grid > :only-child {
+  grid-column: 1 / -1;
+}
+.note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

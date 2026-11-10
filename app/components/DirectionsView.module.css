@@ -1,0 +1,198 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 4px;
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+}
+.state a,
+.fine a {
+  color: var(--primary);
+  font-weight: 700;
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The ways to go. */
+.ways {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.way {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  font: inherit;
+  color: var(--navy-900);
+}
+.way b {
+  font-size: 15px;
+  font-weight: 800;
+}
+.way span {
+  grid-column: 1;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.way em {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.way em.fastest {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--status-done-bg);
+  color: var(--status-done);
+}
+.way:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+.wayOn,
+.wayOn:hover {
+  border-color: var(--primary);
+  background: var(--secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.summary b {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--navy-900);
+}
+.summary span {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.traffic {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--status-progress);
+}
+
+/* Turn by turn. */
+.steps,
+.steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.leg + .leg {
+  margin-top: 8px;
+}
+.legHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px 4px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--navy-900);
+}
+.leg:first-child .legHead {
+  border-top: none;
+}
+.legHead span {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.steps li li button {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 4px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+  font: inherit;
+  color: var(--navy-900);
+  cursor: pointer;
+}
+.steps li li button:disabled {
+  cursor: default;
+}
+.steps li li button:not(:disabled):hover {
+  background: var(--surface);
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--secondary);
+  color: var(--primary);
+}
+.iconEnd {
+  background: var(--navy-900);
+  color: #fff;
+}
+.text {
+  font-size: 13.5px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.dist {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.here button {
+  background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.fine {
+  margin: 4px 2px 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.compact .text {
+  font-size: 13px;
+}

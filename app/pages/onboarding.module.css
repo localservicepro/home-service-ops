@@ -1,0 +1,262 @@
+.stage {
+  min-height: 100vh;
+  background: radial-gradient(120% 80% at 50% -10%, #16374f 0%, var(--navy-800) 45%, var(--navy-900) 100%);
+  font-family: var(--font-family-base);
+}
+.column {
+  max-width: 560px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--background);
+  display: flex;
+  flex-direction: column;
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--navy-900);
+}
+.logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--signal-gradient);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.brand {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 16px var(--spacing-4) 4px;
+}
+.stepDot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+.stepDot span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 800;
+}
+.stepDot small {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.current span {
+  background: var(--signal-gradient);
+  color: #fff;
+  box-shadow: var(--shadow-glow);
+}
+.current small {
+  color: var(--foreground);
+}
+.done span {
+  background: var(--status-paid);
+  color: #fff;
+}
+.body {
+  flex: 1;
+  padding: var(--spacing-4) var(--spacing-6) var(--spacing-8);
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.section h1 {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.lead {
+  margin: -8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 10px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.field > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.full {
+  grid-column: 1 / -1;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.svc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.off {
+  opacity: 0.45;
+}
+.tick {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--card);
+  color: #fff;
+  cursor: pointer;
+}
+.ticked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.svcName {
+  flex: 1;
+  min-width: 0;
+}
+.money {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 96px;
+  flex-shrink: 0;
+}
+.money > span {
+  position: absolute;
+  left: 10px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  z-index: 1;
+}
+.money input {
+  padding-left: 22px;
+}
+.crewRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--navy-900);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.crewFields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.crewSub {
+  display: flex;
+  gap: 8px;
+}
+.crewSub > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.iconBtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Tablet and desktop: setup sits in a centred card over the navy backdrop. */
+@media (min-width: 768px) {
+  .stage {
+    padding: 48px 24px;
+  }
+  .column {
+    max-width: 720px;
+    min-height: 0;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .top {
+    padding: var(--spacing-4) var(--spacing-8);
+  }
+  .progress {
+    padding: 24px var(--spacing-8) 4px;
+  }
+  .body {
+    padding: var(--spacing-6) var(--spacing-8) var(--spacing-8);
+  }
+}

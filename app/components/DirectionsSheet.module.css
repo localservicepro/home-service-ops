@@ -1,0 +1,146 @@
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  grid-template-rows: auto minmax(240px, 46vh) 1fr;
+  background: var(--card);
+  isolation: isolate;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.back {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--navy-900);
+  cursor: pointer;
+}
+.title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.title b {
+  font-size: 15.5px;
+  color: var(--navy-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.title span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.google {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+.mapBox {
+  position: relative;
+  min-height: 0;
+}
+.map {
+  height: 100%;
+  border-radius: 0;
+  min-height: 0;
+}
+.mapBtns {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.mapBtns button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--navy-900);
+  font: 700 13px/1 var(--font-family-base);
+  box-shadow: 0 4px 14px rgba(8, 23, 43, 0.2);
+  cursor: pointer;
+}
+.mapBtns .reroute {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.body {
+  overflow: auto;
+  padding: 14px 14px calc(18px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 2px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.from {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Wide screens: map beside the turns. */
+@media (min-width: 900px) {
+  .sheet {
+    grid-template-columns: 1fr 400px;
+    grid-template-rows: auto 1fr;
+  }
+  .head {
+    grid-column: 1 / -1;
+  }
+  .body {
+    border-top: none;
+    border-left: 1px solid var(--border);
+  }
+}

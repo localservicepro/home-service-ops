@@ -1,0 +1,27 @@
+.toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 10px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--navy-700, var(--foreground));
+  font: 700 12.5px var(--font-family-base);
+  cursor: pointer;
+}
+.toggle:hover {
+  border-color: #bcd3ea;
+}
+.toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.toggle svg {
+  transition: transform 0.18s ease;
+}
+.up {
+  transform: rotate(180deg);
+}
