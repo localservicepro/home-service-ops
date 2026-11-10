@@ -49,6 +49,7 @@ Then set the function's secrets (Dashboard → Edge Functions → Secrets, or `s
 | `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `XERO_WEBHOOK_KEY` | Xero invoices and payments |
 | `LC_CLIENT_ID`, `LC_CLIENT_SECRET` | LeadConnector / GoHighLevel |
 | `GCAL_CLIENT_ID`, `GCAL_CLIENT_SECRET` | Google Calendar sync |
+| `GBP_CLIENT_ID`, `GBP_CLIENT_SECRET` | Optional. Google sign-in for Business Profile (reviews, replies, performance, posts). Without them the Calendar OAuth client (`GCAL_*`, else `GOOGLE_*`) is used. Add `API/gbp/callback` as a redirect URI on the client, enable the Business Profile APIs (Account Management, Business Information, Performance, and My Business for reviews and posts) and request Business Profile API access from Google: until Google approves the project, its quota is 0. |
 | `GOOGLE_MAPS_API_KEY` | Google Business Profile rating and review requests. Also used by the Dispatch map: to place addresses when the Geocoding API is enabled for the key, and for directions with live traffic when the Routes API is enabled. Without those, OpenStreetMap is used. |
 | `OSRM_URL` | Optional. Your own OSRM server for Dispatch road routes and travel times. Default: the public server at `router.project-osrm.org`, which is free but meant for light use. |
 
@@ -60,6 +61,7 @@ Callback and webhook URLs to register with each provider (`API = https://gcuzmuz
 | --- | --- | --- |
 | Stripe | `API/stripe/callback` | `API/stripe/webhook`, `API/stripe/billing_webhook` |
 | Square | `API/square/callback` | `API/square/webhook` |
+| Google Business Profile | `API/gbp/callback` | |
 | GoCardless | `API/gocardless/callback` | `API/gocardless/webhook` |
 | Xero | `API/xero/callback` | `API/xero/webhook` |
 | LeadConnector | `API/crm/callback` | `API/crm/webhook` |

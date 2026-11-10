@@ -19,6 +19,7 @@ const OFFICE: { k: PushKind; label: string; hint: string }[] = [
   { k: "leads", label: "New enquiries and leads", hint: "Website form and LeadConnector" },
   { k: "quotes", label: "Quote replies", hint: "When a customer accepts or declines" },
   { k: "payments", label: "Payments received", hint: "Invoices paid online" },
+  { k: "reviews", label: "New Google reviews", hint: "When your Business Profile is signed in with Google" },
 ];
 const CREW: { k: PushKind; label: string; hint: string }[] = [{ k: "jobs", label: "Jobs assigned to me", hint: "When the office books you in" }];
 

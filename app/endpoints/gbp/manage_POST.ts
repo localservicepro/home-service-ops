@@ -2,9 +2,11 @@ import superjson from "superjson";
 import { db } from "../../helpers/db";
 import { connectGbp, disconnectGbp, searchPlaces, sendReviewRequest, sendReviewTest } from "../../helpers/reviews";
 import { errorResponse, requireMember } from "../../helpers/tenant";
+import { connectGbpLocation, createGbpPost, deleteReviewReply, listGbpLocations, replyToReview, signOutGbpGoogle, syncGbpReviews } from "../../helpers/gbpGoogle";
 import { schema, type OutputType } from "./manage_POST.schema";
 
-// Office only: connect the Google Business Profile, send tests / manual requests, client opt-out.
+// Office only: connect the Google Business Profile (search, or sign in with Google and pick the
+// listing), send tests / manual requests, client opt-out; signed in: reply to reviews and post.
 export async function handle(request: Request) {
   try {
     const ctx = await requireMember(request, ["owner", "admin"], { allowExpired: true });
@@ -42,6 +44,35 @@ export async function handle(request: Request) {
         if (!Number(r.numUpdatedRows)) throw new Error("Client not found");
         break;
       }
+      case "locations":
+        out = { ok: true, locations: await listGbpLocations(ctx.businessId) };
+        break;
+      case "pick": {
+        const loc = await connectGbpLocation(ctx.businessId, input.locationName);
+        out = { ok: true, message: `${loc.title} connected` };
+        break;
+      }
+      case "sync": {
+        const r = await syncGbpReviews(ctx.businessId);
+        out = { ok: true, message: r.added ? `${r.added} new review${r.added === 1 ? "" : "s"}` : "Reviews are up to date" };
+        break;
+      }
+      case "reply":
+        await replyToReview(ctx.businessId, input.reviewId, input.comment);
+        out = { ok: true, message: "Reply posted on Google" };
+        break;
+      case "deleteReply":
+        await deleteReviewReply(ctx.businessId, input.reviewId);
+        out = { ok: true, message: "Reply removed" };
+        break;
+      case "post":
+        await createGbpPost(ctx.businessId, { summary: input.summary, action: input.button ?? null, url: input.url ?? null });
+        out = { ok: true, message: "Update posted to your Business Profile" };
+        break;
+      case "signout":
+        await signOutGbpGoogle(ctx.businessId);
+        out = { ok: true, message: "Signed out of Google" };
+        break;
     }
     return new Response(superjson.stringify(out));
   } catch (error) {

@@ -3,11 +3,11 @@ import { fcmMessage, pemToDer, readPushPrefs, readServiceAccount } from "./push"
 
 describe("push prefs", () => {
   it("defaults every alert to on", () => {
-    expect(readPushPrefs(null)).toEqual({ leads: true, quotes: true, payments: true, jobs: true });
-    expect(readPushPrefs("x")).toEqual({ leads: true, quotes: true, payments: true, jobs: true });
+    expect(readPushPrefs(null)).toEqual({ leads: true, quotes: true, payments: true, jobs: true, reviews: true });
+    expect(readPushPrefs("x")).toEqual({ leads: true, quotes: true, payments: true, jobs: true, reviews: true });
   });
   it("only false turns an alert off", () => {
-    expect(readPushPrefs({ leads: false, quotes: 0, payments: "no", jobs: true })).toEqual({ leads: false, quotes: true, payments: true, jobs: true });
+    expect(readPushPrefs({ leads: false, quotes: 0, payments: "no", jobs: true })).toEqual({ leads: false, quotes: true, payments: true, jobs: true, reviews: true });
   });
 });
 

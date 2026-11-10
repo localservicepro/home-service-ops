@@ -4,6 +4,7 @@ import { PUBLIC_APP_URL, businessBrand, esc, layout, sendAppEmail } from "./mail
 import { API_URL } from "./serverEnv";
 import { sendSms, smsState } from "./sms";
 import { getMessagePrefs } from "./messagePrefs";
+import { isGbpGoogleConfigured, signOutGbpGoogle } from "./gbpGoogle";
 
 // Server-only. Google Business Profile (via Places API) + post-job review request emails.
 // Requests are OFF unless the business turns them on in Settings.
@@ -20,6 +21,8 @@ function key() {
 }
 export const isGbpConfigured = () => !!(process.env as Record<string, string | undefined>).GOOGLE_MAPS_API_KEY?.trim();
 export const reviewLink = (placeId: string) => `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
+/** The "write a review" link: Google's own one when signed in, else built from the Places id. */
+const linkFor = (c: { placeId: string; reviewUrl?: string | null }) => c.reviewUrl || reviewLink(c.placeId);
 
 type Place = { id: string; displayName?: { text?: string }; formattedAddress?: string; rating?: number; userRatingCount?: number; googleMapsUri?: string };
 
@@ -64,6 +67,14 @@ export async function connectGbp(businessId: number, placeId: string) {
     reviewCount: p.userRatingCount ?? 0,
     mapsUrl: p.googleMapsUri ?? null,
     refreshedAt: new Date(),
+    source: "search",
+    accountName: null,
+    locationName: null,
+    reviewUrl: null,
+    lastSyncAt: null,
+    lastSyncError: null,
+    insights: null,
+    insightsAt: null,
   };
   await db
     .insertInto("gbpConnection")
@@ -73,13 +84,15 @@ export async function connectGbp(businessId: number, placeId: string) {
 }
 
 export async function disconnectGbp(businessId: number) {
+  await signOutGbpGoogle(businessId);
   await db.deleteFrom("gbpConnection").where("businessId", "=", businessId).execute();
 }
 
 /** Status for the settings card and dashboard. Refreshes the rating at most every 6 hours. */
 export async function gbpStatus(businessId: number) {
   let c = await db.selectFrom("gbpConnection").selectAll().where("businessId", "=", businessId).executeTakeFirst();
-  if (c && isGbpConfigured() && Date.now() - c.refreshedAt.getTime() > 6 * 3600_000) {
+  // Listings connected by Google sign-in are refreshed by the review sync instead.
+  if (c && c.source !== "google" && isGbpConfigured() && Date.now() - c.refreshedAt.getTime() > 6 * 3600_000) {
     try {
       const p = await placeDetails(c.placeId);
       c = await db
@@ -100,15 +113,28 @@ export async function gbpStatus(businessId: number) {
     .where("reviewStatus", "=", "sent")
     .where("reviewRequestedAt", ">=", since)
     .executeTakeFirst();
+  const [auth, unreplied] = await Promise.all([
+    db.selectFrom("gbpGoogleAuth").select("email").where("businessId", "=", businessId).executeTakeFirst(),
+    c?.source === "google"
+      ? db.selectFrom("gbpReviews").select((eb) => eb.fn.countAll<string>().as("n")).where("businessId", "=", businessId).where("reply", "is", null).executeTakeFirst()
+      : Promise.resolve(undefined),
+  ]);
   return {
-    configured: isGbpConfigured(),
+    configured: isGbpConfigured() || isGbpGoogleConfigured(),
+    googleConfigured: isGbpGoogleConfigured(),
+    searchConfigured: isGbpConfigured(),
+    source: (c?.source === "google" ? "google" : c ? "search" : null) as "google" | "search" | null,
+    googleEmail: auth?.email ?? null,
+    lastSyncAt: c?.lastSyncAt ?? null,
+    lastSyncError: c?.lastSyncError ?? null,
+    unreplied: Number(unreplied?.n ?? 0),
     connected: !!c,
     name: c?.name ?? null,
     address: c?.address ?? null,
     rating: c?.rating != null ? Number(c.rating) : null,
     reviewCount: c?.reviewCount ?? 0,
     mapsUrl: c?.mapsUrl ?? null,
-    reviewUrl: c ? reviewLink(c.placeId) : null,
+    reviewUrl: c ? linkFor(c) : null,
     sent30d: Number(sent?.n ?? 0),
   };
 }
@@ -155,7 +181,7 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
     if (!opts.force) await db.updateTable("jobs").set({ reviewStatus: status, reviewRequestedAt: new Date() }).where("id", "=", jobId).execute();
     return { status: "skipped", reason };
   };
-  const gbp = await db.selectFrom("gbpConnection").select("placeId").where("businessId", "=", businessId).executeTakeFirst();
+  const gbp = await db.selectFrom("gbpConnection").select(["placeId", "reviewUrl"]).where("businessId", "=", businessId).executeTakeFirst();
   if (!gbp) throw new Error("Connect your Google Business Profile in Settings first.");
   // Route by the business's choice in Settings; fall back to whichever contact detail the client has.
   const sms = await smsState(businessId);
@@ -188,7 +214,7 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
     brand: brand.name,
     firstName: (job.clientName || job.customer || "").trim().split(/\s+/)[0] ?? "",
     message: s?.reviewMessage?.trim() || DEFAULT_REVIEW_MESSAGE,
-    url: reviewLink(gbp.placeId),
+    url: linkFor(gbp),
     optOut: await unsubscribeUrl(job.clientId),
   });
   try {
@@ -200,7 +226,7 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
         to: phone,
         kind: "review",
         jobId,
-        message: `${first ? `Hi ${first}, ` : ""}${s?.reviewMessage?.trim() || DEFAULT_REVIEW_MESSAGE}\n\nLeave a Google review: ${reviewLink(gbp.placeId)}\n\nNo more review requests: ${await unsubscribeUrl(job.clientId)}`,
+        message: `${first ? `Hi ${first}, ` : ""}${s?.reviewMessage?.trim() || DEFAULT_REVIEW_MESSAGE}\n\nLeave a Google review: ${linkFor(gbp)}\n\nNo more review requests: ${await unsubscribeUrl(job.clientId)}`,
       });
       if (r.ok) sent = true;
       else lastError = r.error;
@@ -220,13 +246,13 @@ export async function sendReviewRequest(businessId: number, jobId: number, opts:
 
 /** Test email to the owner with the business's current wording. */
 export async function sendReviewTest(businessId: number, to: string) {
-  const gbp = await db.selectFrom("gbpConnection").select("placeId").where("businessId", "=", businessId).executeTakeFirst();
+  const gbp = await db.selectFrom("gbpConnection").select(["placeId", "reviewUrl"]).where("businessId", "=", businessId).executeTakeFirst();
   if (!gbp) throw new Error("Connect your Google Business Profile first.");
   const [brand, s] = await Promise.all([
     businessBrand(businessId),
     db.selectFrom("settings").select("reviewMessage").where("businessId", "=", businessId).executeTakeFirst(),
   ]);
-  const mail = buildEmail({ brand: brand.name, firstName: "", message: s?.reviewMessage?.trim() || DEFAULT_REVIEW_MESSAGE, url: reviewLink(gbp.placeId) });
+  const mail = buildEmail({ brand: brand.name, firstName: "", message: s?.reviewMessage?.trim() || DEFAULT_REVIEW_MESSAGE, url: linkFor(gbp) });
   await sendAppEmail({ to, subject: `[Test] ${mail.subject}`, html: mail.html, text: mail.text, fromName: brand.name });
 }
 
@@ -241,8 +267,8 @@ export async function processReviewRequests(businessId: number) {
     .select(["reviewRequestsEnabled", "reviewTrigger", "reviewDelayMinutes", "reviewEnabledAt"])
     .where("businessId", "=", businessId)
     .executeTakeFirst();
-  if (!s?.reviewRequestsEnabled || !s.reviewEnabledAt || !isGbpConfigured()) return 0;
-  const gbp = await db.selectFrom("gbpConnection").select("placeId").where("businessId", "=", businessId).executeTakeFirst();
+  if (!s?.reviewRequestsEnabled || !s.reviewEnabledAt) return 0;
+  const gbp = await db.selectFrom("gbpConnection").select(["placeId", "reviewUrl"]).where("businessId", "=", businessId).executeTakeFirst();
   if (!gbp) return 0;
   const statuses = s.reviewTrigger === "done" ? (["Done", "Paid"] as const) : (["Paid"] as const);
   const dueBefore = new Date(Date.now() - Math.max(0, s.reviewDelayMinutes) * 60_000);

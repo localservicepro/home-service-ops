@@ -3,7 +3,7 @@ import superjson from "superjson";
 import { apiFetch } from "../../helpers/apiFetch";
 
 // Which alerts the signed-in person wants on their phones.
-export const schema = z.object({ leads: z.boolean(), quotes: z.boolean(), payments: z.boolean(), jobs: z.boolean() });
+export const schema = z.object({ leads: z.boolean(), quotes: z.boolean(), payments: z.boolean(), jobs: z.boolean(), reviews: z.boolean().default(true) });
 export type InputType = z.infer<typeof schema>;
 export type OutputType = { ok: true };
 
