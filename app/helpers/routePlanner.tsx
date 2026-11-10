@@ -1,9 +1,8 @@
 // Shared by the browser and the api, no I/O: crew route planning for the Dispatch tab.
 //
-// Travel is estimated from straight-line distance (a road factor on top, and an average speed
-// that rises with the length of the trip), so it needs no paid routing service. It's for putting
-// stops in a sensible order and giving realistic arrival times, not turn-by-turn directions:
-// each route opens in Google Maps for that.
+// Travel comes from real road times when the caller has them (a table from the routing service,
+// see matrixTravel), otherwise it's estimated from straight-line distance (a road factor on top,
+// and an average speed that rises with the length of the trip).
 
 export type LatLng = { lat: number; lng: number };
 
@@ -29,7 +28,11 @@ export type PlanOptions = {
   crewIds: number[];
   /** Share the day's unassigned jobs among those crew members. */
   assignUnassigned: boolean;
+  /** Road km and minutes between two points; the straight-line estimate when left out. */
+  travel?: TravelFn;
 };
+
+export type TravelFn = (a: LatLng, b: LatLng) => { km: number; min: number };
 
 export type Stop = { jobId: number; driveMin: number; km: number; arriveMin: number; departMin: number };
 
@@ -69,13 +72,15 @@ export function haversineKm(a: LatLng, b: LatLng) {
 }
 
 /** Estimated road km and driving minutes between two points. */
-export function travel(a: LatLng, b: LatLng) {
+export function estimate(a: LatLng, b: LatLng) {
   const km = haversineKm(a, b) * ROAD_FACTOR;
   if (km < 0.05) return { km: 0, min: 0 };
   // Suburban streets at ~25 km/h for short hops, rising towards ~70 km/h on longer trips.
   const speed = 25 + 45 * (1 - Math.exp(-km / 15));
   return { km, min: 2 + (km / speed) * 60 };
 }
+
+export const travel: TravelFn = (a, b) => estimate(a, b);
 
 /** "9:00 AM" → minutes after midnight; anything else → null. */
 export function parseTime(t: string): number | null {
@@ -95,20 +100,41 @@ export function formatTime(min: number) {
   return `${h24 % 12 || 12}:${String(mm).padStart(2, "0")} ${h24 >= 12 ? "PM" : "AM"}`;
 }
 
+const ptKey = (p: LatLng) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+
+/**
+ * Travel from a road table: min[i][j] and km[i][j] between points[i] and points[j]. Pairs the
+ * table doesn't have (an unreachable spot, or a point not in it) fall back to the estimate.
+ */
+export function matrixTravel(points: LatLng[], min: (number | null)[][], km: (number | null)[][]): TravelFn {
+  const index = new Map<string, number>();
+  points.forEach((p, i) => {
+    if (!index.has(ptKey(p))) index.set(ptKey(p), i);
+  });
+  return (a, b) => {
+    const i = index.get(ptKey(a));
+    const j = index.get(ptKey(b));
+    if (i === j && i !== undefined) return { km: 0, min: 0 };
+    const m = i !== undefined && j !== undefined ? min[i]?.[j] : null;
+    const k = i !== undefined && j !== undefined ? km[i]?.[j] : null;
+    return m != null && k != null ? { km: k, min: m } : travel(a, b);
+  };
+}
+
 type Pt = { id: number; at: LatLng };
 
-function pathCost(depot: LatLng | null, order: Pt[], back: boolean) {
+function pathCost(depot: LatLng | null, order: Pt[], back: boolean, tv: TravelFn = travel) {
   let cost = 0;
   let prev = depot;
   for (const p of order) {
-    if (prev) cost += travel(prev, p.at).min;
+    if (prev) cost += tv(prev, p.at).min;
     prev = p.at;
   }
-  if (back && depot && prev && order.length) cost += travel(prev, depot).min;
+  if (back && depot && prev && order.length) cost += tv(prev, depot).min;
   return cost;
 }
 
-function nearestNeighbour(depot: LatLng | null, pts: Pt[]) {
+function nearestNeighbour(depot: LatLng | null, pts: Pt[], tv: TravelFn) {
   if (!pts.length) return [];
   const left = [...pts];
   const out: Pt[] = [];
@@ -126,7 +152,7 @@ function nearestNeighbour(depot: LatLng | null, pts: Pt[]) {
     let best = 0;
     let bestCost = Infinity;
     for (let i = 0; i < left.length; i++) {
-      const c = travel(here, left[i].at).min;
+      const c = tv(here, left[i].at).min;
       if (c < bestCost) {
         bestCost = c;
         best = i;
@@ -140,9 +166,9 @@ function nearestNeighbour(depot: LatLng | null, pts: Pt[]) {
 }
 
 /** 2-opt: reverse segments while that shortens the day. The start (depot) stays fixed. */
-function twoOpt(depot: LatLng | null, order: Pt[], back: boolean) {
+function twoOpt(depot: LatLng | null, order: Pt[], back: boolean, tv: TravelFn) {
   let best = [...order];
-  let bestCost = pathCost(depot, best, back);
+  let bestCost = pathCost(depot, best, back, tv);
   let improved = true;
   let guard = 0;
   while (improved && guard++ < 200) {
@@ -150,7 +176,7 @@ function twoOpt(depot: LatLng | null, order: Pt[], back: boolean) {
     for (let i = 0; i < best.length - 1; i++) {
       for (let k = i + 1; k < best.length; k++) {
         const cand = [...best.slice(0, i), ...best.slice(i, k + 1).reverse(), ...best.slice(k + 1)];
-        const c = pathCost(depot, cand, back);
+        const c = pathCost(depot, cand, back, tv);
         if (c < bestCost - 1e-9) {
           best = cand;
           bestCost = c;
@@ -163,11 +189,12 @@ function twoOpt(depot: LatLng | null, order: Pt[], back: boolean) {
 }
 
 /** The shortest order we can find for these stops. */
-export function bestOrder(depot: LatLng | null, pts: Pt[], back: boolean) {
-  return twoOpt(depot, nearestNeighbour(depot, pts), back);
+export function bestOrder(depot: LatLng | null, pts: Pt[], back: boolean, tv: TravelFn = travel) {
+  return twoOpt(depot, nearestNeighbour(depot, pts, tv), back, tv);
 }
 
 function timeline(staffId: number, depot: LatLng | null, order: Pt[], opts: PlanOptions): Route {
+  const travel = opts.travel ?? estimate;
   let t = opts.startMin;
   let prev = depot;
   let km = 0;
@@ -204,6 +231,7 @@ export function planRoutes(jobs: PlanJob[], opts: PlanOptions): Plan {
   const unlocated = jobs.filter((j) => !j.at).map((j) => j.id);
   const crew = [...new Set(opts.crewIds)];
   const back = opts.returnToDepot;
+  const tv = opts.travel ?? travel;
 
   // Current order: by booked time, then as given.
   const byTime = (a: PlanJob, b: PlanJob) => (parseTime(a.time) ?? 24 * 60) - (parseTime(b.time) ?? 24 * 60);
@@ -211,7 +239,7 @@ export function planRoutes(jobs: PlanJob[], opts: PlanOptions): Plan {
     timeline(sid, opts.depot, located.filter((j) => j.staffId === sid).sort(byTime).map((j) => ({ id: j.id, at: j.at })), opts),
   );
 
-  const routes = new Map<number, Pt[]>(crew.map((sid) => [sid, bestOrder(opts.depot, located.filter((j) => j.staffId === sid).map((j) => ({ id: j.id, at: j.at })), back)]));
+  const routes = new Map<number, Pt[]>(crew.map((sid) => [sid, bestOrder(opts.depot, located.filter((j) => j.staffId === sid).map((j) => ({ id: j.id, at: j.at })), back, tv)]));
   const pool = located.filter((j) => j.staffId === null);
   let unassigned = pool.map((j) => j.id);
 
@@ -223,10 +251,10 @@ export function planRoutes(jobs: PlanJob[], opts: PlanOptions): Plan {
       let best: { sid: number; pos: number; score: number } | null = null;
       for (const sid of crew) {
         const r = routes.get(sid)!;
-        const dayMin = pathCost(opts.depot, r, back) + r.length * opts.minutesPerJob;
+        const dayMin = pathCost(opts.depot, r, back, tv) + r.length * opts.minutesPerJob;
         for (let pos = 0; pos <= r.length; pos++) {
           const cand = [...r.slice(0, pos), { id: j.id, at: j.at }, ...r.slice(pos)];
-          const added = pathCost(opts.depot, cand, back) - pathCost(opts.depot, r, back);
+          const added = pathCost(opts.depot, cand, back, tv) - pathCost(opts.depot, r, back, tv);
           const score = added + 0.15 * dayMin;
           if (!best || score < best.score) best = { sid, pos, score };
         }
@@ -234,7 +262,7 @@ export function planRoutes(jobs: PlanJob[], opts: PlanOptions): Plan {
       const r = routes.get(best!.sid)!;
       routes.set(best!.sid, [...r.slice(0, best!.pos), { id: j.id, at: j.at }, ...r.slice(best!.pos)]);
     }
-    for (const sid of crew) routes.set(sid, bestOrder(opts.depot, routes.get(sid)!, back));
+    for (const sid of crew) routes.set(sid, bestOrder(opts.depot, routes.get(sid)!, back, tv));
     unassigned = [];
   }
 

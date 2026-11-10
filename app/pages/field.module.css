@@ -131,7 +131,7 @@
 }
 .stopActions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 42px 1fr;
   gap: 8px;
   margin-top: 12px;
 }
@@ -148,6 +148,10 @@
   text-decoration: none;
 }
 .navBtn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
   background: var(--background);
   border: 1px solid var(--border);
   color: var(--foreground);
@@ -184,12 +188,21 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 11px 14px;
   border-radius: 14px;
-  background: var(--signal-gradient);
-  color: #fff;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--primary);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13.5px;
   text-decoration: none;
-  box-shadow: 0 6px 18px rgba(12, 111, 208, 0.3);
+}
+.gmapBtn {
+  display: grid;
+  place-items: center;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--muted-foreground);
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bestOrder, formatTime, haversineKm, parseTime, planRoutes, routeLinks, travel, type PlanOptions } from "./routePlanner";
+import { bestOrder, estimate, formatTime, haversineKm, matrixTravel, parseTime, planRoutes, routeLinks, travel, type PlanOptions } from "./routePlanner";
 
 // A yard in North Lakes (QLD) and jobs along a line heading south, a few km apart.
 const DEPOT = { lat: -27.235, lng: 153.0 };
@@ -132,5 +132,39 @@ describe("routeLinks", () => {
     expect(a.searchParams.get("destination")).toBe("10 Main St");
     expect(b.searchParams.get("origin")).toBe("10 Main St");
     expect(b.searchParams.get("destination")).toBe("15 Main St");
+  });
+});
+
+describe("matrixTravel", () => {
+  const a = { lat: -27.2, lng: 153.0 };
+  const b = { lat: -27.21, lng: 153.01 };
+  const c = { lat: -27.5, lng: 153.3 };
+  it("uses the road table and falls back to the estimate for gaps", () => {
+    const tv = matrixTravel([a, b], [[0, 7], [null, 0]], [[0, 3.2], [null, 0]]);
+    expect(tv(a, b)).toEqual({ km: 3.2, min: 7 });
+    expect(tv(b, a)).toEqual(estimate(b, a));
+    expect(tv(a, c)).toEqual(estimate(a, c));
+  });
+  it("orders stops by road time, not straight-line distance", () => {
+    // B is closer as the crow flies, but a river makes it slow to reach first.
+    const depot = { lat: -27.0, lng: 153.0 };
+    const near = { lat: -27.01, lng: 153.0 };
+    const far = { lat: -27.05, lng: 153.0 };
+    const pts = [depot, near, far];
+    const min = [
+      [0, 40, 6],
+      [40, 0, 5],
+      [6, 5, 0],
+    ];
+    const km = min.map((r) => r.map((m) => m / 2));
+    const plan = planRoutes(
+      [
+        { id: 1, at: near, staffId: 9, time: "" },
+        { id: 2, at: far, staffId: 9, time: "" },
+      ],
+      { depot, startMin: 480, minutesPerJob: 60, returnToDepot: false, crewIds: [9], assignUnassigned: false, travel: matrixTravel(pts, min, km) },
+    );
+    expect(plan.routes[0].stops.map((s) => s.jobId)).toEqual([2, 1]);
+    expect(plan.routes[0].driveMin).toBe(11);
   });
 });

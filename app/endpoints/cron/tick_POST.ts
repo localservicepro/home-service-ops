@@ -5,6 +5,7 @@ import { processReminders } from "../../helpers/reminders";
 import { processReviewRequests } from "../../helpers/reviews";
 import { syncAllAccounts } from "../../helpers/salesBrain";
 import { locateUpcomingJobs } from "../../helpers/geocode";
+import { pruneRoadCache } from "../../helpers/roads";
 import type { OutputType } from "./tick_POST.schema";
 
 // Every 15 minutes (pg_cron): job reminders, delayed review requests, and Sales Brain account
@@ -34,6 +35,7 @@ export async function handle(request: Request) {
     console.error("[geocode] tick failed", e instanceof Error ? e.message : e);
     return -1;
   });
+  await pruneRoadCache().catch(() => undefined);
   const out: OutputType = { ok: true, businesses: rows.length, reminders, reviews, accountsQueued: accounts.queued, geocodePending };
   return new Response(superjson.stringify(out));
 }

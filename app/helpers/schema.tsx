@@ -68,6 +68,12 @@ export interface GeocodeCache {
   updatedAt: Generated<Timestamp>;
 }
 
+export interface RoadCache {
+  key: string;
+  data: Json;
+  expiresAt: Timestamp;
+}
+
 export interface Addons {
   businessId: number;
   createdAt: Generated<Timestamp>;
@@ -635,6 +641,7 @@ export interface SupportMessages {
 
 export interface DB {
   geocodeCache: GeocodeCache;
+  roadCache: RoadCache;
   accountActivity: AccountActivity;
   accountSessions: AccountSessions;
   billingPayments: BillingPayments;

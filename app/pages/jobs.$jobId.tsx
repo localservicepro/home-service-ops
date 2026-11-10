@@ -28,6 +28,7 @@ import { PhotoGallery } from "../components/PhotoGallery";
 import { JobReviewPanel } from "../components/GbpCard";
 import { JobXeroPanelInner } from "../components/XeroCard";
 import { JobDetailsList } from "../components/JobDetailsList";
+import { DirectionsSheet } from "../components/DirectionsSheet";
 import styles from "./jobs.$jobId.module.css";
 
 export default function JobDetailPage() {
@@ -42,6 +43,7 @@ export default function JobDetailPage() {
   const staff = job?.staffId ? data?.staff.find((s) => s.id === job.staffId) : undefined;
 
   const [sheet, setSheet] = useState<null | "edit" | "assign" | "extra" | "pay" | "cancel">(null);
+  const [directions, setDirections] = useState(false);
   const close = (o: boolean) => !o && setSheet(null);
   const [now, setNow] = useState(Date.now());
   const fileRef = useRef<HTMLInputElement>(null);
@@ -269,7 +271,7 @@ export default function JobDetailPage() {
               </div>
               <div className={styles.addrRow}>
                 <span className={styles.addr}>{job.address}</span>
-                <Button size="sm" variant="secondary" onClick={() => window.open(opsFormat.dirUrl(job.address), "_blank", "noopener")}>
+                <Button size="sm" variant="secondary" onClick={() => setDirections(true)}>
                   <Navigation size={14} /> Directions
                 </Button>
               </div>
@@ -393,7 +395,7 @@ export default function JobDetailPage() {
           </Button>
         )}
         {!isAdmin && job.address && (
-          <Button variant="secondary" onClick={() => window.open(opsFormat.dirUrl(job.address), "_blank", "noopener")}>
+          <Button variant="secondary" onClick={() => setDirections(true)}>
             <Navigation size={15} /> Navigate
           </Button>
         )}
@@ -422,6 +424,7 @@ export default function JobDetailPage() {
       >
         <span />
       </BottomSheet>
+      <DirectionsSheet open={directions} onClose={() => setDirections(false)} to={job.address ? { address: job.address, label: job.customer || job.service || "Job" } : null} />
     </div>
   );
 }

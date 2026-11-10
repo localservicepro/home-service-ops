@@ -49,7 +49,8 @@ Then set the function's secrets (Dashboard → Edge Functions → Secrets, or `s
 | `XERO_CLIENT_ID`, `XERO_CLIENT_SECRET`, `XERO_WEBHOOK_KEY` | Xero invoices and payments |
 | `LC_CLIENT_ID`, `LC_CLIENT_SECRET` | LeadConnector / GoHighLevel |
 | `GCAL_CLIENT_ID`, `GCAL_CLIENT_SECRET` | Google Calendar sync |
-| `GOOGLE_MAPS_API_KEY` | Google Business Profile rating and review requests |
+| `GOOGLE_MAPS_API_KEY` | Google Business Profile rating and review requests. Also used by the Dispatch map: to place addresses when the Geocoding API is enabled for the key, and for directions with live traffic when the Routes API is enabled. Without those, OpenStreetMap is used. |
+| `OSRM_URL` | Optional. Your own OSRM server for Dispatch road routes and travel times. Default: the public server at `router.project-osrm.org`, which is free but meant for light use. |
 
 Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_DB_URL` automatically. Until an integration's keys are set, its card shows "isn't set up for this app yet".
 

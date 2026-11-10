@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { Navigation, ChevronRight, Play, Timer, Route as RouteIcon } from "lucide-react";
+import { Navigation, ChevronRight, Play, Timer, Route as RouteIcon, ExternalLink } from "lucide-react";
 import { routeLinks } from "../helpers/routePlanner";
 import { useOpsData } from "../helpers/useOpsData";
 import { useRole } from "../helpers/useRole";
@@ -13,6 +13,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { JobCard } from "../components/JobCard";
 import { EmptyState } from "../components/EmptyState";
 import { Skeleton } from "../components/Skeleton";
+import { DirectionsSheet, type DirectionsTarget } from "../components/DirectionsSheet";
 import styles from "./field.module.css";
 
 export default function FieldHomePage() {
@@ -20,6 +21,7 @@ export default function FieldHomePage() {
   const { crewId } = useRole();
   const today = opsFormat.todayISO();
   const me = data?.staff.find((s) => s.id === crewId);
+  const [dir, setDir] = useState<{ to: DirectionsTarget; from?: string } | null>(null);
 
   const { route, upcoming } = useMemo(() => {
     const mine = (data?.jobs ?? []).filter((j) => j.staffId === me?.id && j.status !== "Cancelled");
@@ -75,7 +77,7 @@ export default function FieldHomePage() {
           <div className={styles.routeLinks}>
             {routeAhead.map((u, i) => (
               <a key={u} href={u} target="_blank" rel="noreferrer" className={styles.routeLink}>
-                <RouteIcon size={16} /> Navigate {routeAhead.length > 1 ? `stops ${i * 10 + 1} to ${Math.min((i + 1) * 10, left.length)}` : "today's route"}
+                <RouteIcon size={16} /> Whole route in Google Maps{routeAhead.length > 1 ? `: stops ${i * 10 + 1} to ${Math.min((i + 1) * 10, left.length)}` : ""}
               </a>
             ))}
           </div>
@@ -97,7 +99,20 @@ export default function FieldHomePage() {
                     <div className={styles.stopMeta}>{j.customer} · {j.address}</div>
                     {!finished && (
                       <div className={styles.stopActions}>
-                        <a href={opsFormat.dirUrl(j.address)} target="_blank" rel="noreferrer" className={styles.navBtn}><Navigation size={15} /> Navigate</a>
+                        {j.address && (
+                          <>
+                            <button
+                              type="button"
+                              className={styles.navBtn}
+                              onClick={() => setDir({ to: { address: j.address, label: j.customer || j.service || "Job" }, from: i > 0 ? route[i - 1].address : undefined })}
+                            >
+                              <Navigation size={15} /> Navigate
+                            </button>
+                            <a href={opsFormat.dirUrl(j.address)} target="_blank" rel="noreferrer" className={styles.gmapBtn} aria-label="Open in Google Maps" title="Open in Google Maps">
+                              <ExternalLink size={15} />
+                            </a>
+                          </>
+                        )}
                         <Link to={`/jobs/${j.id}`} className={styles.openBtn}>
                           {running ? <><Timer size={15} /> In progress</> : j.status === "Job Scheduled" ? <><Play size={15} /> Start job</> : <>Open job <ChevronRight size={15} /></>}
                         </Link>
@@ -120,6 +135,7 @@ export default function FieldHomePage() {
           </>
         )}
       </div>
+      <DirectionsSheet open={!!dir} onClose={() => setDir(null)} to={dir?.to ?? null} fromAddress={dir?.from} />
     </div>
   );
 }

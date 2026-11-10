@@ -3,8 +3,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import styles from "./DispatchMap.module.css";
 
-// The Dispatch tab's map (Leaflet). Pins are coloured by crew member and numbered in route order;
-// routes are drawn stop to stop. Map tiles come from OpenStreetMap unless VITE_MAP_TILE_URL is set
+// The Dispatch tab's map (Leaflet), also used for crew directions. Pins are coloured by crew member
+// and numbered in route order; routes follow the roads when a road route is known. Map tiles come from OpenStreetMap unless VITE_MAP_TILE_URL is set
 // (with VITE_MAP_ATTRIBUTION), e.g. for a paid tile provider on a busy account.
 
 export type MapPin = {
@@ -20,7 +20,18 @@ export type MapPin = {
   faded?: boolean;
   title: string;
 };
-export type MapLine = { key: string; color: string; points: [number, number][]; dashed?: boolean };
+export type MapLine = {
+  key: string;
+  color: string;
+  points: [number, number][];
+  dashed?: boolean;
+  /** Line width (default 4). */
+  weight?: number;
+  /** A route not chosen: drawn grey and thinner, under the others. */
+  muted?: boolean;
+  onClick?: () => void;
+  title?: string;
+};
 
 const TILE_URL = (import.meta.env.VITE_MAP_TILE_URL as string | undefined) || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const ATTRIBUTION =
@@ -54,6 +65,9 @@ export function DispatchMap({
   selectedId,
   onSelect,
   fitKey,
+  fitPoints,
+  focus,
+  me,
   className,
 }: {
   pins: MapPin[];
@@ -63,12 +77,19 @@ export function DispatchMap({
   onSelect: (id: number | null) => void;
   /** Change it to zoom the map to everything on it (e.g. a new day). */
   fitKey: string;
+  /** Fit to these instead of the pins (e.g. a route being shown). */
+  fitPoints?: [number, number][];
+  /** Zoom in on a point (e.g. a turn); change `key` to go there again. */
+  focus?: { lat: number; lng: number; key: string | number } | null;
+  /** The viewer's own position: a blue dot. */
+  me?: { lat: number; lng: number; accuracy?: number } | null;
   className?: string;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const pinLayer = useRef<L.LayerGroup | null>(null);
   const lineLayer = useRef<L.LayerGroup | null>(null);
+  const meLayer = useRef<L.LayerGroup | null>(null);
   const markers = useRef(new Map<number, L.Marker>());
   const select = useRef(onSelect);
   select.current = onSelect;
@@ -79,6 +100,7 @@ export function DispatchMap({
     L.tileLayer(TILE_URL, { maxZoom: 19, attribution: ATTRIBUTION }).addTo(m);
     lineLayer.current = L.layerGroup().addTo(m);
     pinLayer.current = L.layerGroup().addTo(m);
+    meLayer.current = L.layerGroup().addTo(m);
     m.on("click", () => select.current(null));
     map.current = m;
     // The container can change size after layout (side panel, mobile); keep tiles filling it.
@@ -96,10 +118,28 @@ export function DispatchMap({
     const g = lineLayer.current;
     if (!g) return;
     g.clearLayers();
-    for (const l of lines) {
+    // Routes not chosen go underneath.
+    for (const l of [...lines].sort((a, b) => Number(!!b.muted) - Number(!!a.muted))) {
       if (l.points.length < 2) continue;
-      L.polyline(l.points, { color: "#ffffff", weight: 7, opacity: 0.85 }).addTo(g);
-      L.polyline(l.points, { color: l.color, weight: 4, opacity: 0.9, dashArray: l.dashed ? "6 8" : undefined }).addTo(g);
+      const w = l.muted ? 5 : (l.weight ?? 4);
+      L.polyline(l.points, { color: "#ffffff", weight: w + 3, opacity: 0.85, interactive: false }).addTo(g);
+      const line = L.polyline(l.points, {
+        color: l.muted ? "#8a9bb0" : l.color,
+        weight: w,
+        opacity: l.muted ? 0.75 : 0.92,
+        dashArray: l.dashed ? "6 8" : undefined,
+        interactive: !!l.onClick,
+      }).addTo(g);
+      if (l.title) line.bindTooltip(l.title, { sticky: true });
+      if (l.onClick) {
+        // A wider invisible line makes thin routes easy to tap.
+        const hit = L.polyline(l.points, { color: "#000", weight: 18, opacity: 0, interactive: true }).addTo(g);
+        for (const x of [line, hit])
+          x.on("click", (e) => {
+            L.DomEvent.stopPropagation(e);
+            l.onClick!();
+          });
+      }
     }
   }, [lines]);
 
@@ -121,12 +161,30 @@ export function DispatchMap({
     }
   }, [pins, depot, selectedId]);
 
+  // The viewer's position.
+  useEffect(() => {
+    const g = meLayer.current;
+    if (!g) return;
+    g.clearLayers();
+    if (!me) return;
+    if (me.accuracy && me.accuracy > 25) L.circle([me.lat, me.lng], { radius: me.accuracy, color: "#1a73e8", weight: 1, opacity: 0.3, fillOpacity: 0.08, interactive: false }).addTo(g);
+    L.circleMarker([me.lat, me.lng], { radius: 8, color: "#ffffff", weight: 3, fillColor: "#1a73e8", fillOpacity: 1, interactive: false }).addTo(g);
+  }, [me?.lat, me?.lng, me?.accuracy]);
+
+  // Zoom in on a point when asked.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !focus) return;
+    m.setView([focus.lat, focus.lng], Math.max(m.getZoom(), 17), { animate: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.key]);
+
   // Zoom to fit when asked.
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    const pts: [number, number][] = pins.filter((p) => !p.faded).map((p) => [p.lat, p.lng]);
-    if (depot) pts.push([depot.lat, depot.lng]);
+    const pts: [number, number][] = fitPoints?.length ? [...fitPoints] : pins.filter((p) => !p.faded).map((p) => [p.lat, p.lng]);
+    if (depot && !fitPoints?.length) pts.push([depot.lat, depot.lng]);
     if (pts.length === 1) m.setView(pts[0], 14);
     else if (pts.length > 1) m.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 15 });
     // eslint-disable-next-line react-hooks/exhaustive-deps

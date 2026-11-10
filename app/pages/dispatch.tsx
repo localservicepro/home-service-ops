@@ -3,13 +3,17 @@ import { Helmet } from "react-helmet";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, MapPin, Navigation, Phone, Route as RouteIcon, ExternalLink, Clock, Home, Sparkles, X, TriangleAlert, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, Navigation, Phone, Route as RouteIcon, ExternalLink, Clock, Home, Sparkles, X, TriangleAlert, Loader2, ListOrdered } from "lucide-react";
 import { getDispatchDay, type DispatchJob, type OutputType as DayData } from "../endpoints/dispatch/day_GET.schema";
 import { postDispatchApply } from "../endpoints/dispatch/apply_POST.schema";
 import { postDispatchDepot } from "../endpoints/dispatch/depot_POST.schema";
+import { postDispatchMatrix } from "../endpoints/dispatch/matrix_POST.schema";
 import { opsFormat } from "../helpers/opsFormat";
 import { pricing } from "../helpers/pricing";
-import { formatTime, parseTime, planRoutes, routeLinks, type Plan, type Route } from "../helpers/routePlanner";
+import { formatTime, matrixTravel, parseTime, planRoutes, routeLinks, type LatLng, type Plan, type Route, type TravelFn } from "../helpers/routePlanner";
+import { decodePolyline } from "../helpers/roadRoute";
+import { useMyLocation, useRoads } from "../helpers/useRoads";
+import { DirectionsView, fmtDrive } from "../components/DirectionsView";
 import { OPS_QUERY_KEY } from "../helpers/useOpsData";
 import { DispatchMap, type MapLine, type MapPin as Pin } from "../components/DispatchMap";
 import { PageHeader } from "../components/PageHeader";
@@ -27,6 +31,8 @@ const byTime = (a: DispatchJob, b: DispatchJob) => (parseTime(a.scheduledTime) ?
 const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, "0")} min` : `${Math.round(m)} min`);
 const fmtKm = (k: number) => `${k < 10 ? k.toFixed(1) : Math.round(k)} km`;
 const prefsKey = "hso.dispatch.prefs";
+/** In-app directions: to one job (from the stop before, the yard, or here), or a crew member's whole route. */
+type Dir = { kind: "job"; jobId: number; from: "prev" | "yard" | "me" } | { kind: "route"; staffId: number };
 type Prefs = { startTime: string; minutesPerJob: number; returnToDepot: boolean };
 const loadPrefs = (): Prefs => {
   try {
@@ -44,6 +50,7 @@ export default function DispatchPage() {
     setParams(d === opsFormat.todayISO() ? {} : { date: d }, { replace: true });
     setSelectedId(null);
     setPlan(null);
+    setDirState(null);
   };
 
   const [hidden, setHidden] = useState<Set<string>>(() => new Set(["requests"]));
@@ -73,6 +80,16 @@ export default function DispatchPage() {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [editDepot, setEditDepot] = useState(false);
+  const [optimising, setOptimising] = useState(false);
+  const [planRoads, setPlanRoads] = useState(false);
+  const [dir, setDirState] = useState<Dir | null>(null);
+  const [dirPick, setDirPick] = useState(0);
+  const [focus, setFocus] = useState<{ lat: number; lng: number; key: string } | null>(null);
+  const setDir = (d: Dir | null) => {
+    setDirState(d);
+    setDirPick(0);
+    setFocus(null);
+  };
   const [depotDraft, setDepotDraft] = useState("");
 
   const day = useQuery({
@@ -117,6 +134,16 @@ export default function DispatchPage() {
     return m;
   }, [plan, jobs]);
   const staffAfter = (j: DispatchJob) => (plan && routeOf.has(j.id) ? routeOf.get(j.id)!.staffId : j.staffId);
+  // Each crew member's stops in route order (the plan's, else by booked time).
+  const orderOf = useMemo(() => {
+    const m = new Map<number, number[]>();
+    for (const [id, r] of [...routeOf.entries()].sort((a, b) => a[1].pos - b[1].pos)) if (r.staffId != null) m.set(r.staffId, [...(m.get(r.staffId) ?? []), id]);
+    return m;
+  }, [routeOf]);
+  const atOf = (id: number): LatLng | null => {
+    const j = jobById.get(id);
+    return j && j.lat != null && j.lng != null ? { lat: j.lat, lng: j.lng } : null;
+  };
 
   const pins: Pin[] = useMemo(() => {
     const out: Pin[] = [];
@@ -133,7 +160,7 @@ export default function DispatchPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs, data, hidden, routeOf, crewById, plan]);
 
-  const lines: MapLine[] = useMemo(() => {
+  const straightLines: MapLine[] = useMemo(() => {
     if (!showRoutes) return [];
     const at = (id: number) => {
       const j = jobById.get(id);
@@ -157,15 +184,43 @@ export default function DispatchPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRoutes, plan, jobs, hidden, depot, prefs.returnToDepot, busyCrew, crewById]);
 
-  const optimise = () => {
+  // The same routes along the roads (straight lines until the road routes arrive, or if none).
+  const roadable = straightLines.filter((l) => l.points.length >= 2).slice(0, 12);
+  const overviewRoads = useRoads(
+    roadable.map((l) => ({ points: l.points.map(([lat, lng]) => ({ lat, lng })) })),
+    { enabled: showRoutes && !dir },
+  );
+  const overviewLines: MapLine[] = useMemo(() => {
+    const res = overviewRoads.data?.results;
+    return straightLines.map((l) => {
+      const i = roadable.indexOf(l);
+      const r = i >= 0 ? res?.[i]?.routes[0] : undefined;
+      return r ? { ...l, points: decodePolyline(r.polyline, r.precision) } : l;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [straightLines, overviewRoads.data]);
+
+  const optimise = async () => {
     const ids = [...plannedCrew];
     if (!ids.length) return toast.error("Pick at least one crew member to plan routes for.");
     const start = parseTime(prefs.startTime) ?? 7.5 * 60;
+    setOptimising(true);
+    // Real road times between the yard and every stop in play, when the routing service answers.
+    const inPlay = jobs.filter((j) => j.lat != null && j.lng != null && (j.staffId != null ? ids.includes(j.staffId) : assignUnassigned));
+    const pts: LatLng[] = [...(depot ? [depot] : []), ...inPlay.map((j) => ({ lat: j.lat!, lng: j.lng! }))];
+    let tv: TravelFn | undefined;
+    if (pts.length >= 2 && pts.length <= 100) {
+      const m = await postDispatchMatrix({ points: pts }).catch(() => null);
+      if (m?.min && m.km) tv = matrixTravel(pts, m.min, m.km);
+    }
     const p = planRoutes(
       jobs.map((j) => ({ id: j.id, at: j.lat != null && j.lng != null ? { lat: j.lat, lng: j.lng } : null, staffId: j.staffId, time: j.scheduledTime })),
-      { depot, startMin: start, minutesPerJob: prefs.minutesPerJob, returnToDepot: prefs.returnToDepot, crewIds: ids, assignUnassigned },
+      { depot, startMin: start, minutesPerJob: prefs.minutesPerJob, returnToDepot: prefs.returnToDepot, crewIds: ids, assignUnassigned, travel: tv },
     );
+    setOptimising(false);
+    setPlanRoads(!!tv);
     setPlan(p);
+    setDirState(null);
     setTab("routes");
   };
 
@@ -205,11 +260,92 @@ export default function DispatchPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const linksFor = (r: Route) =>
+    routeLinks(
+      r.stops.map((s) => jobById.get(s.jobId)?.address ?? "").filter(Boolean),
+      data?.depot?.address,
+      prefs.returnToDepot ? data?.depot?.address : undefined,
+    );
+
+  // ---- in-app directions ----
+  const meOn = dir?.kind === "job" && dir.from === "me";
+  const { pos: myPos, error: myErr } = useMyLocation(meOn);
+  const [meStart, setMeStart] = useState<LatLng | null>(null);
+  useEffect(() => {
+    if (!meOn) setMeStart(null);
+    else if (myPos && !meStart) setMeStart({ lat: myPos.lat, lng: myPos.lng });
+  }, [meOn, myPos, meStart]);
+
+  const dirReq = useMemo(() => {
+    if (!dir) return null;
+    if (dir.kind === "route") {
+      const ids = (orderOf.get(dir.staffId) ?? []).filter((id) => atOf(id));
+      if (!ids.length) return null;
+      const back = depot && prefs.returnToDepot;
+      const points = [...(depot ? [depot] : []), ...ids.map((id) => atOf(id)!), ...(back ? [depot!] : [])];
+      const labels = ids.map((id, i) => `${i + 1}. ${jobById.get(id)?.customer || `#${jobById.get(id)?.num}`}`);
+      if (back) labels.push("Back to the yard");
+      // Without a yard the route starts at the first job, so its leg isn't driven.
+      return { points, labels: depot ? labels : labels.slice(1), alternatives: false, prevAddress: undefined as string | undefined };
+    }
+    const to = atOf(dir.jobId);
+    if (!to) return null;
+    const sid = routeOf.get(dir.jobId)?.staffId ?? null;
+    const list = sid != null ? orderOf.get(sid) ?? [] : [];
+    const prevId = [...list.slice(0, Math.max(0, list.indexOf(dir.jobId)))].reverse().find((id) => atOf(id));
+    let from: LatLng | null = null;
+    let fromAddress: string | undefined;
+    if (dir.from === "prev" && prevId != null) {
+      from = atOf(prevId);
+      fromAddress = jobById.get(prevId)?.address;
+    } else if (dir.from === "me") from = meStart;
+    else if (depot) {
+      from = depot;
+      fromAddress = data?.depot?.address;
+    }
+    if (!from) return null;
+    return { points: [from, to], labels: [jobById.get(dir.jobId)?.customer || "The job"], alternatives: true, prevAddress: fromAddress };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dir, orderOf, jobById, depot, prefs.returnToDepot, meStart, data]);
+  const dirRoads = useRoads(dirReq ? [{ points: dirReq.points }] : [], { alternatives: dirReq?.alternatives, steps: true, enabled: !!dirReq });
+  const dirAnswer = dirRoads.data?.results[0];
+  const dirRoutes = dirAnswer?.routes ?? [];
+  const dirPaths = useMemo(() => dirRoutes.map((r) => decodePolyline(r.polyline, r.precision)), [dirRoutes]);
+  const dirChosen = Math.min(dirPick, Math.max(0, dirRoutes.length - 1));
+  const dirColor = dir ? (dir.kind === "route" ? colorOf(dir.staffId) : colorOf(routeOf.get(dir.jobId)?.staffId ?? jobById.get(dir.jobId)?.staffId ?? null)) : UNASSIGNED;
+  const lines: MapLine[] = dir
+    ? dirRoutes.map((r, i) => ({
+        key: `dir${i}`,
+        color: dirColor === UNASSIGNED ? "#1a73e8" : dirColor,
+        points: dirPaths[i],
+        weight: 6,
+        muted: i !== dirChosen,
+        onClick: () => setDirPick(i),
+        title: i !== dirChosen ? `${fmtDrive(r.min)}${r.via ? ` via ${r.via}` : ""}` : undefined,
+      }))
+    : overviewLines;
+  const dirGoogle = (() => {
+    if (!dir) return undefined;
+    if (dir.kind === "route") {
+      const r = plan?.routes.find((x) => x.staffId === dir.staffId);
+      const addrs = (orderOf.get(dir.staffId) ?? []).map((id) => jobById.get(id)?.address ?? "").filter(Boolean);
+      return r ? linksFor(r)[0] : routeLinks(addrs, data?.depot?.address, prefs.returnToDepot ? data?.depot?.address : undefined)[0];
+    }
+    const addr = jobById.get(dir.jobId)?.address;
+    if (!addr) return undefined;
+    return dir.from === "me" || !dirReq?.prevAddress ? opsFormat.dirUrl(addr) : routeLinks([addr], dirReq.prevAddress)[0];
+  })();
+  const showOnMap = (at: [number, number], key: string) => {
+    setFocus({ lat: at[0], lng: at[1], key });
+    const el = mapColRef.current;
+    if (el && window.matchMedia("(max-width: 1000px)").matches && el.getBoundingClientRect().top < 0) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const selected = selectedId != null ? jobById.get(selectedId) ?? null : null;
   const isRequest = selected ? !jobs.some((j) => j.id === selected.id) : false;
   const unlocated = jobs.filter((j) => j.lat == null);
   const notFound = unlocated.filter((j) => j.notFound);
-  const fitKey = `${date}:${pins.length > 0}`;
+  const fitKey = dir ? `dir:${JSON.stringify(dir)}:${dirChosen}:${dirRoutes.length}` : `${date}:${pins.length > 0}`;
 
   const shift = (days: number) => setDate(opsFormat.addDays(date, days));
   const groups = [
@@ -217,12 +353,6 @@ export default function DispatchPage() {
     { key: "unassigned", label: "Unassigned", color: UNASSIGNED, list: jobs.filter((j) => j.staffId == null).sort(byTime) },
   ];
 
-  const linksFor = (r: Route) =>
-    routeLinks(
-      r.stops.map((s) => jobById.get(s.jobId)?.address ?? "").filter(Boolean),
-      data?.depot?.address,
-      prefs.returnToDepot ? data?.depot?.address : undefined,
-    );
 
   return (
     <div className={styles.page}>
@@ -295,14 +425,29 @@ export default function DispatchPage() {
           {day.isLoading ? (
             <Skeleton className={styles.mapSkel} />
           ) : (
-            <DispatchMap pins={pins} lines={lines} depot={depot} selectedId={selectedId} onSelect={setSelectedId} fitKey={fitKey} className={styles.map} />
+            <DispatchMap
+              pins={pins}
+              lines={lines}
+              depot={depot}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                // Picking another job while directions are open goes back to the job details.
+                if (id != null && dir) setDir(null);
+                setSelectedId(id);
+              }}
+              fitKey={fitKey}
+              fitPoints={dir && dirPaths[dirChosen] ? dirPaths[dirChosen] : undefined}
+              focus={focus}
+              me={meOn ? myPos : null}
+              className={styles.map}
+            />
           )}
           {!day.isLoading && jobs.length === 0 && (
             <div className={styles.mapEmpty}>
               <MapPin size={18} /> No jobs booked on this day.
             </div>
           )}
-          {selected && (
+          {selected && !dir && (
             <div className={styles.detail}>
               <button type="button" className={styles.detailClose} onClick={() => setSelectedId(null)} aria-label="Close">
                 <X size={16} />
@@ -340,7 +485,21 @@ export default function DispatchPage() {
                 )}
               </dl>
               <div className={styles.detailActions}>
-                {selected.address && (
+                {selected.lat != null && !isRequest && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const sid = routeOf.get(selected.id)?.staffId;
+                      const list = sid != null ? orderOf.get(sid) ?? [] : [];
+                      const hasPrev = list.indexOf(selected.id) > 0;
+                      setDir({ kind: "job", jobId: selected.id, from: hasPrev ? "prev" : depot ? "yard" : "me" });
+                    }}
+                  >
+                    <Navigation size={14} /> Directions
+                  </Button>
+                )}
+                {selected.address && (selected.lat == null || isRequest) && (
                   <Button asChild variant="outline" size="sm">
                     <a href={opsFormat.dirUrl(selected.address)} target="_blank" rel="noreferrer">
                       <Navigation size={14} /> Directions
@@ -363,7 +522,59 @@ export default function DispatchPage() {
         </div>
 
         <aside className={styles.panel}>
-          <div className={styles.tabs} role="tablist">
+          {dir && (
+            <div className={styles.dirPanel}>
+              <div className={styles.dirHead}>
+                <button type="button" onClick={() => setDir(null)} aria-label="Back">
+                  <ArrowLeft size={18} />
+                </button>
+                <div>
+                  <b>{dir.kind === "route" ? `${nameOf(dir.staffId)}'s route` : `Directions to ${jobById.get(dir.jobId)?.customer || "the job"}`}</b>
+                  <small>
+                    {dir.kind === "route"
+                      ? `${(orderOf.get(dir.staffId) ?? []).filter((id) => atOf(id)).length} stops${depot ? ", from the yard" : ""}${plan ? " in the new order" : ""}`
+                      : jobById.get(dir.jobId)?.address}
+                  </small>
+                </div>
+              </div>
+              {dir.kind === "job" && (
+                <div className={styles.fromPick} role="radiogroup" aria-label="Starting from">
+                  <span>From</span>
+                  {(() => {
+                    const sid = routeOf.get(dir.jobId)?.staffId;
+                    const list = sid != null ? orderOf.get(sid) ?? [] : [];
+                    const opts: { k: "prev" | "yard" | "me"; label: string }[] = [];
+                    if (list.indexOf(dir.jobId) > 0) opts.push({ k: "prev", label: "Previous stop" });
+                    if (depot) opts.push({ k: "yard", label: "Yard" });
+                    opts.push({ k: "me", label: "My location" });
+                    return opts.map((o) => (
+                      <button key={o.k} type="button" role="radio" aria-checked={dir.from === o.k} className={dir.from === o.k ? styles.fromOn : ""} onClick={() => setDir({ ...dir, from: o.k })}>
+                        {o.label}
+                      </button>
+                    ));
+                  })()}
+                </div>
+              )}
+              {dir.kind === "job" && dir.from === "me" && !meStart ? (
+                <p className={styles.note}>{myErr ?? "Finding your location…"}</p>
+              ) : !dirReq ? (
+                <p className={styles.note}>There's nothing on the map to route between yet.</p>
+              ) : (
+                <DirectionsView
+                  answer={dirAnswer}
+                  loading={dirRoads.isLoading}
+                  failed={dirRoads.isError || dirAnswer === null}
+                  picked={dirChosen}
+                  onPick={setDirPick}
+                  legLabels={dirReq.labels}
+                  onStep={showOnMap}
+                  me={meOn ? myPos : null}
+                  googleUrl={dirGoogle}
+                />
+              )}
+            </div>
+          )}
+          <div className={styles.tabs} role="tablist" hidden={!!dir}>
             <button type="button" role="tab" aria-selected={tab === "jobs"} className={tab === "jobs" ? styles.tabOn : ""} onClick={() => setTab("jobs")}>
               Jobs <b>{jobs.length}</b>
             </button>
@@ -372,7 +583,7 @@ export default function DispatchPage() {
             </button>
           </div>
 
-          {tab === "jobs" && (
+          {tab === "jobs" && !dir && (
             <div className={styles.list}>
               {day.isLoading && <Skeleton className={styles.listSkel} />}
               {groups
@@ -381,6 +592,11 @@ export default function DispatchPage() {
                   <section key={g.key} className={hidden.has(g.key) ? styles.groupOff : ""}>
                     <h4>
                       <i style={{ background: g.color }} /> {g.label} <span>{g.list.length} job{g.list.length === 1 ? "" : "s"}</span>
+                      {g.key.startsWith("crew:") && g.list.some((j) => j.lat != null) && (
+                        <button type="button" className={styles.groupRoute} onClick={() => setDir({ kind: "route", staffId: Number(g.key.slice(5)) })}>
+                          <ListOrdered size={13} /> Route
+                        </button>
+                      )}
                     </h4>
                     {g.list.map((j) => (
                       <button key={j.id} type="button" className={`${styles.row} ${selectedId === j.id ? styles.rowOn : ""}`} onClick={() => pickFromList(j.id)}>
@@ -422,7 +638,7 @@ export default function DispatchPage() {
             </div>
           )}
 
-          {tab === "routes" && (
+          {tab === "routes" && !dir && (
             <div className={styles.routes}>
               <div className={styles.depotRow}>
                 <Home size={15} />
@@ -511,8 +727,8 @@ export default function DispatchPage() {
               </div>
 
               <div className={styles.routeActions}>
-                <Button onClick={optimise} disabled={!jobs.length || !crew.length}>
-                  <Sparkles size={15} /> {plan ? "Optimise again" : "Optimise routes"}
+                <Button onClick={optimise} disabled={!jobs.length || !crew.length || optimising}>
+                  {optimising ? <Loader2 size={15} className={styles.spin} /> : <Sparkles size={15} />} {optimising ? "Checking the roads…" : plan ? "Optimise again" : "Optimise routes"}
                 </Button>
                 {plan && (
                   <Button variant="ghost" onClick={() => setPlan(null)}>
@@ -594,6 +810,9 @@ export default function DispatchPage() {
                             </ol>
                             {links.length > 0 && (
                               <div className={styles.links}>
+                                <button type="button" className={styles.turnBtn} onClick={() => setDir({ kind: "route", staffId: r.staffId })}>
+                                  <ListOrdered size={14} /> Turn-by-turn directions
+                                </button>
                                 {links.map((u, i) => (
                                   <a key={u} href={u} target="_blank" rel="noreferrer">
                                     <ExternalLink size={13} /> Open in Google Maps{links.length > 1 ? ` (part ${i + 1} of ${links.length})` : ""}
@@ -614,7 +833,11 @@ export default function DispatchPage() {
                       Apply routes
                     </Button>
                   </div>
-                  <p className={styles.fine}>Drive times are estimates from distance. Google Maps gives turn-by-turn directions.</p>
+                  <p className={styles.fine}>
+                    {planRoads
+                      ? "Drive times come from the road network (OpenStreetMap) and don't include traffic."
+                      : "Road times weren't available just now, so drive times are estimates from distance."}
+                  </p>
                 </>
               )}
             </div>
