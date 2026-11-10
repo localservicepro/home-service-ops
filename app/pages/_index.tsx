@@ -191,7 +191,7 @@ export default function DashboardPage() {
           { label: "Quote win rate", value: stats ? (stats.winRate === null ? "—" : `${Math.round(stats.winRate * 100)}%`) : "·", sub: rangeWord, to: "/quotes" },
           { label: "Crew on duty", value: view ? `${view.onDuty}/${data?.staff.length ?? 0}` : "·", sub: "today", to: "/crew" },
           ...(gbp?.connected
-            ? [{ label: "Google rating", value: gbp.rating ? `★ ${gbp.rating.toFixed(1)}` : "—", sub: `${gbp.reviewCount} · ${gbp.sent30d} asked`, to: "/settings" }]
+            ? [{ label: "Google rating", value: gbp.rating ? `★ ${gbp.rating.toFixed(1)}` : "—", sub: `${gbp.reviewCount} · ${gbp.sent30d} asked`, to: "/reviews" }]
             : []),
         ].map((s: { label: string; value: string; sub: string; to: string; hot?: boolean }) => (
           <Link key={s.label} to={s.to} className={`${styles.mini} ${s.hot ? styles.miniHot : ""}`}>

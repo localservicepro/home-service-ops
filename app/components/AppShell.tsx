@@ -1,5 +1,5 @@
 import { ReactNode, Suspense, lazy, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -19,11 +19,13 @@ import {
   X,
   LifeBuoy,
   Map as MapIcon,
+  Star,
 } from "lucide-react";
 import { useAuth } from "../helpers/useAuth";
 import { useMe } from "../helpers/useMe";
 import { opsFormat } from "../helpers/opsFormat";
 import { postCrmPull } from "../endpoints/crm/pull_POST.schema";
+import { getGbpStatus } from "../endpoints/gbp/status_GET.schema";
 import { postPaySync } from "../endpoints/payments/sync_POST.schema";
 import { AuthLoadingState } from "./AuthLoadingState";
 import { Button } from "./Button";
@@ -33,7 +35,6 @@ import { enablePush, isNativeApp } from "../helpers/nativeApp";
 import { DeleteAccountButton } from "./DeleteAccountButton";
 import { useInboxThreads } from "../helpers/useInbox";
 import { isAndroidBrowser } from "../helpers/appDownload";
-import { useQuery } from "@tanstack/react-query";
 import { getSupportList } from "../endpoints/support/list_GET.schema";
 import { SupportRequestSheet } from "./SupportRequestSheet";
 
@@ -51,6 +52,7 @@ const ADMIN_NAV = [
   { to: "/dispatch", label: "Dispatch", icon: MapIcon, match: (p: string) => p.startsWith("/dispatch") },
   { to: "/payments", label: "Payments", icon: CreditCard, match: (p: string) => p.startsWith("/payments") },
   { to: "/clients", label: "Clients", icon: Users, match: (p: string) => p.startsWith("/clients") },
+  { to: "/reviews", label: "Reviews", icon: Star, match: (p: string) => p.startsWith("/reviews") },
   { to: "/crew", label: "Crew", icon: HardHat, match: (p: string) => p.startsWith("/crew") },
 ];
 const CREW_NAV = [
@@ -58,7 +60,7 @@ const CREW_NAV = [
   { to: "/schedule", label: "Schedule", icon: CalendarDays, match: (p: string) => p.startsWith("/schedule") },
   { to: "/field/profile", label: "Profile", icon: UserRound, match: (p: string) => p.startsWith("/field/profile") },
 ];
-const ADMIN_ONLY = ["/payments", "/clients", "/crew", "/settings", "/quotes", "/dispatch"];
+const ADMIN_ONLY = ["/payments", "/clients", "/crew", "/settings", "/quotes", "/dispatch", "/reviews"];
 const SETTINGS_NAV = { to: "/settings", label: "Settings", icon: SettingsIcon, match: (p: string) => p.startsWith("/settings") };
 // Detail and form pages read best in a narrower centred column on wide screens.
 const NARROW = /^\/(clients|crew)\/.+|^\/quotes\/.+|^\/settings\/(?!form|integrations).+|^\/field\/profile/;
@@ -140,6 +142,8 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   const qc = useQueryClient();
   // Unread client texts for the Inbox badge (office only; quiet until SMS Gateway is set up).
   const inbox = useInboxThreads({ enabled: !!me && me.role !== "crew" && me.onboarded });
+  // Reviews waiting for a reply (Google sign-in listings): a badge on Reviews.
+  const gbp = useQuery({ queryKey: ["gbp", "status"], queryFn: () => getGbpStatus(), staleTime: 60_000, enabled: !!me && me.role !== "crew" && me.onboarded });
   // Support: replies from Local Service Pro waiting on this business (office only).
   const [supportOpen, setSupportOpen] = useState(false);
   const support = useQuery({
@@ -248,8 +252,9 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   if (me.role === "owner" && !me.onboarded) return <Navigate to="/onboarding" replace />;
 
   // Phones: Crew moves to Settings so the bottom bar keeps Inbox next to Home; Dispatch opens from Schedule.
-  const nav = crew ? CREW_NAV : ADMIN_NAV.filter((n) => n.to !== "/crew" && n.to !== "/dispatch");
+  const nav = crew ? CREW_NAV : ADMIN_NAV.filter((n) => n.to !== "/crew" && n.to !== "/dispatch" && n.to !== "/reviews");
   const unread = inbox.data?.unread ?? 0;
+  const toReply = gbp.data?.source === "google" ? gbp.data.unreplied : 0;
   const sideNav = crew ? CREW_NAV : [...ADMIN_NAV, SETTINGS_NAV];
   const width = NARROW.test(pathname) ? styles.narrow : MEDIUM.test(pathname) ? styles.medium : "";
   const roleLabel = me.role === "owner" ? "Owner" : me.role === "admin" ? "Office admin" : "Crew";
@@ -280,6 +285,7 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
                 <Icon size={20} strokeWidth={1.9} />
                 <span>{n.label}</span>
                 {n.to === "/inbox" && unread > 0 && <i className={styles.sideBadge}>{unread > 99 ? "99+" : unread}</i>}
+                {n.to === "/reviews" && toReply > 0 && <i className={styles.sideBadge}>{toReply > 99 ? "99+" : toReply}</i>}
               </Link>
             );
           })}

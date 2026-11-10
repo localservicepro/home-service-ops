@@ -5,9 +5,9 @@ import { env } from "./serverEnv";
 // Secret FCM_SERVICE_ACCOUNT holds the Firebase service account JSON. Sending is best-effort:
 // nothing here throws into the caller, and tokens Firebase reports as gone are removed.
 
-export type PushKind = "leads" | "quotes" | "payments" | "jobs";
+export type PushKind = "leads" | "quotes" | "payments" | "jobs" | "reviews";
 export type PushPrefs = Record<PushKind, boolean>;
-export const PUSH_KINDS: PushKind[] = ["leads", "quotes", "payments", "jobs"];
+export const PUSH_KINDS: PushKind[] = ["leads", "quotes", "payments", "jobs", "reviews"];
 
 export type PushMessage = { title: string; body: string; /** In-app path opened on tap, e.g. /jobs/12 */ url?: string };
 

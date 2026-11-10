@@ -147,6 +147,49 @@ export interface GbpConnection {
   rating: Numeric | null;
   refreshedAt: Generated<Timestamp>;
   reviewCount: Generated<number>;
+  source: Generated<string>;
+  accountName: string | null;
+  locationName: string | null;
+  phone: string | null;
+  website: string | null;
+  reviewUrl: string | null;
+  lastSyncAt: Timestamp | null;
+  lastSyncError: string | null;
+  insights: Json | null;
+  insightsAt: Timestamp | null;
+}
+
+export interface GbpOauthStates {
+  state: string;
+  codeVerifier: string;
+  redirectUri: string;
+  businessId: number;
+  createdAt: Generated<Timestamp>;
+}
+
+export interface GbpGoogleAuth {
+  businessId: number;
+  email: string;
+  refreshToken: string;
+  accessToken: string | null;
+  accessExpiresAt: Timestamp | null;
+  scopes: Generated<string>;
+  connectedAt: Generated<Timestamp>;
+}
+
+export interface GbpReviews {
+  businessId: number;
+  reviewId: string;
+  stars: number;
+  comment: Generated<string>;
+  reviewerName: Generated<string>;
+  reviewerPhoto: string | null;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  reply: string | null;
+  repliedAt: Timestamp | null;
+  clientId: number | null;
+  firstSeenAt: Generated<Timestamp>;
 }
 
 export interface GcalConnection {
@@ -657,6 +700,9 @@ export interface DB {
   businesses: Businesses;
   clients: Clients;
   gbpConnection: GbpConnection;
+  gbpOauthStates: GbpOauthStates;
+  gbpGoogleAuth: GbpGoogleAuth;
+  gbpReviews: GbpReviews;
   gcalConnection: GcalConnection;
   gcalOauthStates: GcalOauthStates;
   gocardlessConnection: GocardlessConnection;

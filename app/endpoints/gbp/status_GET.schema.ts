@@ -6,6 +6,18 @@ export const schema = z.object({});
 export type InputType = z.infer<typeof schema>;
 export type OutputType = {
   configured: boolean;
+  /** Sign in with Google is available (an OAuth client is set). */
+  googleConfigured: boolean;
+  /** Finding the listing by name is available (a Maps key is set). */
+  searchConfigured: boolean;
+  /** How the listing was connected. */
+  source: "google" | "search" | null;
+  /** The Google account signed in, even before a listing is picked. */
+  googleEmail: string | null;
+  lastSyncAt: Date | null;
+  lastSyncError: string | null;
+  /** Reviews without a reply (signed-in listings). */
+  unreplied: number;
   connected: boolean;
   name: string | null;
   address: string | null;

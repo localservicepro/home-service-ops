@@ -6,6 +6,7 @@ import { processReviewRequests } from "../../helpers/reviews";
 import { syncAllAccounts } from "../../helpers/salesBrain";
 import { locateUpcomingJobs } from "../../helpers/geocode";
 import { pruneRoadCache } from "../../helpers/roads";
+import { syncDueGbpReviews } from "../../helpers/gbpGoogle";
 import type { OutputType } from "./tick_POST.schema";
 
 // Every 15 minutes (pg_cron): job reminders, delayed review requests, and Sales Brain account
@@ -36,6 +37,8 @@ export async function handle(request: Request) {
     return -1;
   });
   await pruneRoadCache().catch(() => undefined);
+  // Google reviews for listings connected by sign-in (new ones alert the office).
+  await syncDueGbpReviews().catch((e) => console.error("[gbp] tick failed", e instanceof Error ? e.message : e));
   const out: OutputType = { ok: true, businesses: rows.length, reminders, reviews, accountsQueued: accounts.queued, geocodePending };
   return new Response(superjson.stringify(out));
 }
