@@ -18,6 +18,7 @@ import {
   Smartphone,
   X,
   LifeBuoy,
+  Map as MapIcon,
 } from "lucide-react";
 import { useAuth } from "../helpers/useAuth";
 import { useMe } from "../helpers/useMe";
@@ -47,6 +48,7 @@ const ADMIN_NAV = [
   { to: "/quotes", label: "Quotes", icon: FileText, match: (p: string) => p.startsWith("/quotes") },
   { to: "/jobs", label: "Jobs", icon: ClipboardList, match: (p: string) => p.startsWith("/jobs") },
   { to: "/schedule", label: "Schedule", icon: CalendarDays, match: (p: string) => p.startsWith("/schedule") },
+  { to: "/dispatch", label: "Dispatch", icon: MapIcon, match: (p: string) => p.startsWith("/dispatch") },
   { to: "/payments", label: "Payments", icon: CreditCard, match: (p: string) => p.startsWith("/payments") },
   { to: "/clients", label: "Clients", icon: Users, match: (p: string) => p.startsWith("/clients") },
   { to: "/crew", label: "Crew", icon: HardHat, match: (p: string) => p.startsWith("/crew") },
@@ -56,7 +58,7 @@ const CREW_NAV = [
   { to: "/schedule", label: "Schedule", icon: CalendarDays, match: (p: string) => p.startsWith("/schedule") },
   { to: "/field/profile", label: "Profile", icon: UserRound, match: (p: string) => p.startsWith("/field/profile") },
 ];
-const ADMIN_ONLY = ["/payments", "/clients", "/crew", "/settings", "/quotes"];
+const ADMIN_ONLY = ["/payments", "/clients", "/crew", "/settings", "/quotes", "/dispatch"];
 const SETTINGS_NAV = { to: "/settings", label: "Settings", icon: SettingsIcon, match: (p: string) => p.startsWith("/settings") };
 // Detail and form pages read best in a narrower centred column on wide screens.
 const NARROW = /^\/(clients|crew)\/.+|^\/quotes\/.+|^\/settings\/(?!form|integrations).+|^\/field\/profile/;
@@ -245,8 +247,8 @@ export function AppShell({ children, className }: { children: ReactNode; classNa
   // A new owner finishes setup before using the app.
   if (me.role === "owner" && !me.onboarded) return <Navigate to="/onboarding" replace />;
 
-  // Phones: Crew moves to Settings so the bottom bar keeps Inbox next to Home.
-  const nav = crew ? CREW_NAV : ADMIN_NAV.filter((n) => n.to !== "/crew");
+  // Phones: Crew moves to Settings so the bottom bar keeps Inbox next to Home; Dispatch opens from Schedule.
+  const nav = crew ? CREW_NAV : ADMIN_NAV.filter((n) => n.to !== "/crew" && n.to !== "/dispatch");
   const unread = inbox.data?.unread ?? 0;
   const sideNav = crew ? CREW_NAV : [...ADMIN_NAV, SETTINGS_NAV];
   const width = NARROW.test(pathname) ? styles.narrow : MEDIUM.test(pathname) ? styles.medium : "";

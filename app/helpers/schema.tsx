@@ -58,6 +58,16 @@ export interface AccountActivity {
   day: Timestamp;
 }
 
+export interface GeocodeCache {
+  key: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  status: string;
+  provider: string;
+  updatedAt: Generated<Timestamp>;
+}
+
 export interface Addons {
   businessId: number;
   createdAt: Generated<Timestamp>;
@@ -624,6 +634,7 @@ export interface SupportMessages {
 }
 
 export interface DB {
+  geocodeCache: GeocodeCache;
   accountActivity: AccountActivity;
   accountSessions: AccountSessions;
   billingPayments: BillingPayments;

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
-import { CalendarDays, CircleDollarSign, UserRoundX, Briefcase } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CalendarDays, CircleDollarSign, UserRoundX, Briefcase, Map as MapIcon } from "lucide-react";
 import type { Job } from "../endpoints/ops/snapshot_GET.schema";
 import { useOpsData } from "../helpers/useOpsData";
 import { useRole } from "../helpers/useRole";
@@ -70,7 +71,22 @@ export default function SchedulePage() {
       <PageHeader
         title="Schedule"
         subtitle={mine ? "Your booked jobs" : "All crew bookings"}
-        right={selected !== today || monthKey !== today.slice(0, 7) ? <Button variant="secondary" size="sm" onClick={goToday}>Today</Button> : undefined}
+        right={
+          <div style={{ display: "flex", gap: 8 }}>
+            {(selected !== today || monthKey !== today.slice(0, 7)) && (
+              <Button variant="secondary" size="sm" onClick={goToday}>
+                Today
+              </Button>
+            )}
+            {!mine && (
+              <Button asChild variant="outline" size="sm">
+                <Link to={selected === today ? "/dispatch" : `/dispatch?date=${selected}`}>
+                  <MapIcon size={14} /> Map & routes
+                </Link>
+              </Button>
+            )}
+          </div>
+        }
       />
 
       <div className={styles.page}>

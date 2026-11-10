@@ -1,0 +1,643 @@
+.page {
+  padding: var(--spacing-3) var(--spacing-5, 20px) var(--spacing-8);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---- toolbar ---- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.dateNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dateInput {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  font: 600 13px var(--font-family-base);
+  color: var(--navy-900);
+}
+.dayLabel {
+  margin-left: 6px;
+  font-weight: 700;
+  color: var(--navy-900);
+  font-size: 14px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font: 600 12.5px var(--font-family-base);
+  color: var(--navy-900);
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.chip i,
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.chip b {
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.chipOff {
+  opacity: 0.45;
+  background: transparent;
+}
+.chipOff i {
+  filter: grayscale(1);
+}
+.chipHollow {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px dashed;
+  background: #fff !important;
+}
+.routeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+/* ---- notes ---- */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  font-size: 13px;
+  margin: 0;
+}
+.note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.noteWarn {
+  background: var(--status-progress-bg);
+  color: #8a5a12;
+}
+.noteWarn a {
+  color: inherit;
+  font-weight: 700;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- body: map + side panel ---- */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 14px;
+  height: calc(100vh - 210px);
+  min-height: 560px;
+}
+.mapCol {
+  position: relative;
+  /* Leaflet's panes and the detail card use z-indexes up to 600: keep them below the app header. */
+  isolation: isolate;
+  scroll-margin-top: 72px;
+  min-width: 0;
+  height: 100%;
+}
+.map {
+  height: 100%;
+  border: 1px solid var(--border);
+}
+.mapSkel {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+}
+.mapEmpty {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 4px 16px rgba(8, 23, 43, 0.15);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+/* Job details over the map. */
+.detail {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 600;
+  width: min(360px, calc(100% - 28px));
+  max-height: calc(100% - 28px);
+  overflow: auto;
+  padding: 16px 16px 14px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 12px 40px rgba(8, 23, 43, 0.25);
+  border: 1px solid var(--border);
+}
+.detail h3 {
+  margin: 6px 0 4px;
+  font-size: 18px;
+  color: var(--navy-900);
+}
+.detailClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.detailTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 34px;
+}
+.detailNum {
+  font: 600 12px var(--font-family-monospace);
+  color: var(--muted-foreground);
+}
+.detailAddr {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.detailAddr svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.detailGrid {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 6px 10px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.detailGrid dt {
+  color: var(--muted-foreground);
+}
+.detailGrid dd {
+  margin: 0;
+  color: var(--navy-900);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.notes {
+  font-weight: 400 !important;
+  white-space: pre-wrap;
+}
+.newTime {
+  color: var(--primary);
+  font-weight: 700;
+}
+.detailActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---- side panel ---- */
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  overflow: hidden;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.tabs button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font: 700 13px var(--font-family-base);
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.tabs button b {
+  font-weight: 700;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--muted);
+  font-size: 11.5px;
+}
+.tabs .tabOn {
+  background: var(--card);
+  color: var(--navy-900);
+  box-shadow: var(--shadow);
+}
+
+.list,
+.routes {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px 16px;
+}
+.list section {
+  margin-bottom: 12px;
+}
+.groupOff {
+  opacity: 0.5;
+}
+.list h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 4px 6px;
+  font-size: 13px;
+  color: var(--navy-900);
+}
+.list h4 i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.list h4 span {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.listSkel {
+  height: 220px;
+  border-radius: 12px;
+}
+.row,
+.stops button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.row:hover,
+.stops button:hover {
+  background: var(--surface);
+}
+.rowOn,
+.rowOn:hover {
+  background: var(--secondary) !important;
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.rowNum {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #fff;
+  font: 800 12px var(--font-family-base);
+  flex-shrink: 0;
+}
+.rowNumHollow {
+  background: #fff;
+  border: 2px dashed #0c9bd6;
+  color: #0c9bd6;
+}
+.rowMain {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.rowMain b {
+  font-size: 13.5px;
+  color: var(--navy-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowMain small {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.rowSide b {
+  color: var(--navy-900);
+  font-size: 13px;
+}
+.rowSide s {
+  font-size: 11.5px;
+}
+.rowSide em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--status-progress);
+}
+.empty {
+  margin: 12px 4px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+/* ---- route optimisation ---- */
+.depotRow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--navy-900);
+}
+.depotRow > svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.depotRow small {
+  color: var(--muted-foreground);
+}
+.depotEdit {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.depotEdit > div:last-child {
+  display: flex;
+  gap: 6px;
+}
+.linkBtn {
+  margin-left: 6px;
+  border: none;
+  background: none;
+  padding: 0;
+  font: 700 13px var(--font-family-base);
+  color: var(--primary);
+  cursor: pointer;
+}
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0;
+}
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.form select {
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  font: 600 13px var(--font-family-base);
+  color: var(--navy-900);
+}
+.form .check {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy-900);
+  cursor: pointer;
+}
+.crewPick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.crewPick > span {
+  width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-foreground);
+}
+.crewPick small {
+  color: var(--muted-foreground);
+}
+.routeActions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.routes > .note {
+  margin-bottom: 10px;
+}
+.routeCard {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.routeCard header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px 6px;
+  font-size: 14px;
+  color: var(--navy-900);
+}
+.routeCard header i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.routeCard header span {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+.routeStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px 8px;
+}
+.routeStats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--navy-700);
+}
+.routeStats .saved {
+  background: var(--status-done-bg);
+  color: var(--status-done);
+}
+.stops {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px 2px;
+}
+.links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+.applyBar {
+  position: sticky;
+  bottom: -16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -12px;
+  padding: 12px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--navy-900);
+  font-weight: 600;
+}
+.fine {
+  margin: 10px 2px 0;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+
+/* ---- phones and small tablets: map on top, panel below ---- */
+@media (max-width: 1000px) {
+  .body {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+  }
+  .mapCol {
+    height: 58vh;
+    min-height: 360px;
+  }
+  .panel {
+    max-height: none;
+  }
+  .list,
+  .routes {
+    overflow: visible;
+  }
+  .detail {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+    max-height: 70%;
+  }
+  .applyBar {
+    position: static;
+    margin: 0;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .dayLabel {
+    width: 100%;
+    margin: 4px 0 0;
+  }
+  .dateNav {
+    flex-wrap: wrap;
+  }
+}

@@ -172,3 +172,24 @@
   flex-direction: column;
   gap: 9px;
 }
+
+.routeLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.routeLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--signal-gradient);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(12, 111, 208, 0.3);
+}

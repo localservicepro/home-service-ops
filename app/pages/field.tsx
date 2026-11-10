@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import { Navigation, ChevronRight, Play, Timer } from "lucide-react";
+import { Navigation, ChevronRight, Play, Timer, Route as RouteIcon } from "lucide-react";
+import { routeLinks } from "../helpers/routePlanner";
 import { useOpsData } from "../helpers/useOpsData";
 import { useRole } from "../helpers/useRole";
 import { opsFormat } from "../helpers/opsFormat";
@@ -46,6 +47,9 @@ export default function FieldHomePage() {
     );
 
   const done = route.filter((j) => j.status === "Done" || j.status === "Paid").length;
+  // The rest of the day in Google Maps, from where they are now, in route order.
+  const left = route.filter((j) => j.status !== "Done" && j.status !== "Paid" && j.address);
+  const routeAhead = left.length > 1 ? routeLinks(left.map((j) => j.address)) : [];
   const value = route.reduce((a, j) => a + j.price, 0);
   const first = me.name.split(" ")[0];
 
@@ -67,6 +71,15 @@ export default function FieldHomePage() {
         </div>
 
         <SectionLabel>Today's route</SectionLabel>
+        {routeAhead.length > 1 && (
+          <div className={styles.routeLinks}>
+            {routeAhead.map((u, i) => (
+              <a key={u} href={u} target="_blank" rel="noreferrer" className={styles.routeLink}>
+                <RouteIcon size={16} /> Navigate {routeAhead.length > 1 ? `stops ${i * 10 + 1} to ${Math.min((i + 1) * 10, left.length)}` : "today's route"}
+              </a>
+            ))}
+          </div>
+        )}
         {route.length ? (
           <div className={styles.route}>
             {route.map((j, i) => {
